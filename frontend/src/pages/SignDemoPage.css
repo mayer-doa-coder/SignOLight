@@ -1,0 +1,123 @@
+.sign-demo-page {
+  min-height: 100vh;
+  background: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+}
+
+.sign-demo-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 24px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+}
+
+.sign-demo-header h1 {
+  font-family: var(--font-display);
+  font-size: 18px;
+}
+
+.sign-demo-header p {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.sign-demo-main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  min-height: 0;
+}
+
+.demo-avatar-panel {
+  min-height: 0;
+  border-right: 1px solid var(--border);
+}
+
+.demo-control-panel {
+  padding: 20px;
+  background: var(--bg-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.demo-status {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.demo-label {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.demo-status strong {
+  color: var(--accent-cyan);
+  font-family: var(--font-display);
+  font-size: 28px;
+}
+
+.demo-word-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.demo-word {
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.demo-word.active {
+  color: var(--accent-cyan);
+  border-color: rgba(0, 212, 255, 0.5);
+  background: rgba(0, 212, 255, 0.12);
+}
+
+.demo-buttons {
+  display: grid;
+  gap: 10px;
+}
+
+.demo-select-btn {
+  min-height: 40px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.demo-select-btn.active,
+.demo-select-btn:hover {
+  color: var(--accent-cyan);
+  border-color: rgba(0, 212, 255, 0.45);
+  background: rgba(0, 212, 255, 0.1);
+}
+
+@media (max-width: 900px) {
+  .sign-demo-main {
+    grid-template-columns: 1fr;
+  }
+
+  .demo-avatar-panel {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+}

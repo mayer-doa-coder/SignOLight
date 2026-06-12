@@ -1,0 +1,28 @@
+{
+  "gloss": "WHY",
+  "duration": 1.15,
+  "frames": [
+    {
+      "time": 0,
+      "bones": {
+        "head": [0.02, 0, 0],
+        "rightUpperArm": [-0.52, -0.18, -0.75],
+        "rightLowerArm": [-1.22, 0.05, 0.25],
+        "rightHand": [-0.18, 0.06, -0.14]
+      },
+      "fingers": { "right": "flat", "left": "relaxed" },
+      "expression": "question"
+    },
+    {
+      "time": 0.58,
+      "bones": {
+        "head": [0.02, 0.02, 0],
+        "rightUpperArm": [-0.32, -0.18, -0.72],
+        "rightLowerArm": [-0.82, 0.04, 0.2],
+        "rightHand": [-0.2, 0.08, -0.12]
+      },
+      "fingers": { "right": "y", "left": "relaxed" },
+      "expression": "question"
+    }
+  ]
+}

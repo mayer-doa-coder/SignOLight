@@ -1,0 +1,36 @@
+# render.yaml - Render.com deployment config
+# Deploy both backend and frontend from one repo
+
+services:
+  # ── Backend (Express API on Render) ──────────────────────────────
+  - type: web
+    name: signlearn-api
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: node server.js
+    plan: free
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ANTHROPIC_API_KEY
+        sync: false          # Set this manually in Render dashboard
+      - key: FRONTEND_URL
+        sync: false          # Set to your Vercel frontend URL
+
+  # ── Frontend (Static React on Render) ────────────────────────────
+  - type: web
+    name: signlearn-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: build
+    plan: free
+    envVars:
+      - key: REACT_APP_API_URL
+        sync: false          # Set to your Render backend URL
+
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

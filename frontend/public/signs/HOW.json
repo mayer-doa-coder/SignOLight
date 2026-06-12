@@ -1,0 +1,32 @@
+{
+  "gloss": "HOW",
+  "duration": 1.15,
+  "frames": [
+    {
+      "time": 0,
+      "bones": {
+        "leftUpperArm": [-0.15, 0.12, 0.7],
+        "leftLowerArm": [-0.82, 0.08, -0.04],
+        "leftHand": [-0.2, 0.08, 0.08],
+        "rightUpperArm": [-0.15, -0.12, -0.7],
+        "rightLowerArm": [-0.82, -0.08, 0.04],
+        "rightHand": [-0.2, -0.08, -0.08]
+      },
+      "fingers": { "left": "fist", "right": "fist" },
+      "expression": "question"
+    },
+    {
+      "time": 0.55,
+      "bones": {
+        "leftUpperArm": [-0.15, 0.12, 0.7],
+        "leftLowerArm": [-0.9, -0.05, -0.04],
+        "leftHand": [-0.2, -0.12, 0.08],
+        "rightUpperArm": [-0.15, -0.12, -0.7],
+        "rightLowerArm": [-0.9, 0.05, 0.04],
+        "rightHand": [-0.2, 0.12, -0.08]
+      },
+      "fingers": { "left": "fist", "right": "fist" },
+      "expression": "question"
+    }
+  ]
+}
