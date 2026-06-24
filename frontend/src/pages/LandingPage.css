@@ -16,9 +16,10 @@
 .orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(80px);
+  filter: blur(60px);
   opacity: 0.15;
   animation: float 8s ease-in-out infinite;
+  will-change: transform;
 }
 
 .orb-1 {
