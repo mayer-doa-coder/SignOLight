@@ -143,7 +143,41 @@
   color: var(--text-secondary);
   line-height: 1.7;
   max-width: 600px;
-  margin: 0 auto 40px;
+  margin: 0 auto 24px;
+}
+
+/* Value chain — captions → language → signs */
+.hero-value-chain {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 0 auto 36px;
+  padding: 14px 24px;
+  background: rgba(0, 212, 255, 0.04);
+  border: 1px solid rgba(0, 212, 255, 0.14);
+  border-radius: 100px;
+  max-width: 580px;
+}
+
+.value-step {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.value-step.accent {
+  color: var(--accent-cyan);
+}
+
+.value-arrow {
+  font-size: 16px;
+  color: rgba(0, 212, 255, 0.4);
+  font-weight: 400;
 }
 
 /* Input area */
@@ -362,6 +396,17 @@
   color: var(--text-muted);
   font-size: 14px;
   border-top: 1px solid var(--border);
+}
+
+.landing-disclaimer {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+  opacity: 0.65;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.5;
 }
 
 /* Responsive */

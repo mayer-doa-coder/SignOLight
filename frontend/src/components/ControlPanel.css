@@ -77,7 +77,64 @@
   box-shadow: 0 0 6px var(--accent-cyan);
 }
 
+/* Speed selector */
+.speed-btns {
+  display: flex;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.speed-btn {
+  padding: 6px 10px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  border-right: 1px solid var(--border);
+}
+
+.speed-btn:last-child { border-right: none; }
+.speed-btn:hover { color: var(--text-primary); background: rgba(255,255,255,0.04); }
+.speed-btn.active {
+  color: #a78bfa;
+  background: rgba(139, 92, 246, 0.12);
+}
+
+/* Generic mode toggle */
+.mode-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--text-muted);
+}
+
+.mode-toggle.on {
+  border-color: #a78bfa;
+  color: #a78bfa;
+  background: rgba(139, 92, 246, 0.08);
+}
+
+.mode-toggle:hover {
+  background: rgba(139, 92, 246, 0.06);
+}
+
 @media (max-width: 700px) {
   .control-panel { gap: 6px; }
   .toggle-label { display: none; }
+  .speed-btns { display: none; }
 }

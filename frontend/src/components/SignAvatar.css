@@ -45,6 +45,79 @@
   z-index: 2;
 }
 
+/* Concept card — shown when no established BdSL sign exists for a word */
+.concept-card {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+}
+
+.concept-card-word {
+  font-family: "Space Mono", monospace;
+  font-size: clamp(1.4rem, 4vw, 2.2rem);
+  font-weight: 700;
+  color: var(--color-accent-cyan, #22d3ee);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.concept-card-subtitle {
+  font-size: 0.78rem;
+  color: rgba(148, 163, 184, 0.85);
+  font-family: "Nunito", sans-serif;
+}
+
+.fingerspell-ticker {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+}
+
+.fingerspell-label {
+  font-family: "Space Mono", monospace;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: rgba(6, 182, 212, 0.65);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.fingerspell-letters {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.fingerspell-letter {
+  font-family: "Space Mono", monospace;
+  font-size: clamp(1.6rem, 5vw, 2.6rem);
+  font-weight: 700;
+  color: rgba(6, 182, 212, 0.35);
+  letter-spacing: 0.05em;
+  transition: color 0.12s, transform 0.12s;
+}
+
+.fingerspell-letter.active {
+  color: #06b6d4;
+  transform: scale(1.25);
+}
+
 .avatar-depth-grid {
   position: absolute;
   left: 12%;
@@ -154,6 +227,21 @@
   color: var(--text-muted);
   opacity: 0.5;
   text-decoration: line-through;
+}
+
+/* NMM grammar badge in word-indicator */
+.nmm-badge {
+  font-family: var(--font-display);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(139, 92, 246, 0.15);
+  border: 1px solid rgba(139, 92, 246, 0.35);
+  color: #a78bfa;
+  flex-shrink: 0;
+  cursor: help;
 }
 
 @media (max-width: 900px) {

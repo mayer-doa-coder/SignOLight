@@ -54,8 +54,8 @@ export default function SignDemoPage({ onBack }) {
           Back
         </button>
         <div>
-          <h1>Accurate Sign Clip Demo</h1>
-          <p>Only uses local sign motion files that exist in /public/signs.</p>
+          <h1>BdSL Sign Motion Demo</h1>
+          <p>Plays local sign motion files from /public/signs — procedural motion for words without clips.</p>
         </div>
       </header>
 
@@ -94,6 +94,10 @@ export default function SignDemoPage({ onBack }) {
           </div>
         </aside>
       </main>
+      <footer className="sign-demo-disclaimer">
+        Educational prototype. Sign representations are not validated by the BdSL Deaf community.
+        Comprehension score range for synthetic avatars: 2.5–3.5/5 (Quandt et al. 2022).
+      </footer>
     </div>
   );
 }

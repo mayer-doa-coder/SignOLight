@@ -79,19 +79,27 @@ export default function LandingPage({ onVideoSubmit, onOpenSignDemo }) {
       {/* Hero */}
       <main className="landing-hero">
         <div className="hero-tag">
-          <span>✦</span> AI-Powered Sign Language Translation
+          <span>✦</span> Accessible Education for Deaf and Hard-of-Hearing Students
         </div>
 
         <h1 className="hero-title">
-          <span className="hero-title-line">Learning Has</span>
-          <span className="hero-title-line accent">No Barriers.</span>
+          <span className="hero-title-line">Never Miss</span>
+          <span className="hero-title-line accent">What Was Said.</span>
         </h1>
 
         <p className="hero-subtitle">
-          Paste any YouTube educational video link and watch it side-by-side
-          with a real-time AI sign language avatar — built for deaf and
-          hard-of-hearing students.
+          Accurate captions → simplified language → synchronized BdSL signs.
+          Paste any YouTube lecture and follow every concept — built for
+          deaf and hard-of-hearing students in Bangladesh.
         </p>
+
+        <div className="hero-value-chain">
+          <span className="value-step">Accurate Captions</span>
+          <span className="value-arrow">→</span>
+          <span className="value-step">Simplified Language</span>
+          <span className="value-arrow">→</span>
+          <span className="value-step accent">BdSL Signs</span>
+        </div>
 
         {/* URL Input */}
         <div className="hero-input-wrapper">
@@ -163,24 +171,24 @@ export default function LandingPage({ onVideoSubmit, onOpenSignDemo }) {
       <section className="features">
         {[
           {
+            icon: "📝",
+            title: "Accurate Captions First",
+            desc: "Multi-source caption extraction with 4 fallback methods — even if signs are unavailable, captions always work",
+          },
+          {
             icon: "🤖",
-            title: "AI Sign Translation",
-            desc: "Groq AI converts subtitles to ASL gloss notation in real-time",
+            title: "BdSL Gloss Translation",
+            desc: "Groq AI converts captions to BdSL gloss with topic-comment SOV grammar — based on Bangla-SGP research",
           },
           {
             icon: "⚡",
-            title: "Synchronized",
-            desc: "Avatar signs perfectly sync with video playback time",
+            title: "Timeline-Locked Sync",
+            desc: "Binary search keeps avatar aligned with video — pause, seek, and resume all handled correctly",
           },
           {
-            icon: "🎯",
-            title: "Any YouTube Video",
-            desc: "Works with any educational video that has subtitles/CC",
-          },
-          {
-            icon: "📱",
-            title: "Works Everywhere",
-            desc: "Responsive design for desktop, tablet, and mobile",
+            icon: "🙌",
+            title: "Honest Fallbacks",
+            desc: "For words without established BdSL signs, a concept card explains the term — no misleading gestures",
           },
         ].map((f, i) => (
           <div className="feature-card" key={i} style={{ animationDelay: `${i * 0.1}s` }}>
@@ -193,6 +201,10 @@ export default function LandingPage({ onVideoSubmit, onOpenSignDemo }) {
 
       <footer className="landing-footer">
         <p>Built with ❤️ for inclusive education · SignLearn 2025</p>
+        <p className="landing-disclaimer">
+          Educational prototype. Sign representations are not validated by the BdSL Deaf community.
+          Comprehension score range for synthetic avatars: 2.5–3.5/5 (Quandt et al. 2022).
+        </p>
       </footer>
     </div>
   );

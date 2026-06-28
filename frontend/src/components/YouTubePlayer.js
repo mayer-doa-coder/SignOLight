@@ -3,7 +3,7 @@ import "./YouTubePlayer.css";
 
 let ytApiLoaded = false;
 
-const YouTubePlayer = forwardRef(({ videoId, onTimeUpdate }, ref) => {
+const YouTubePlayer = forwardRef(({ videoId, onTimeUpdate, onStateChange }, ref) => {
   const containerRef = useRef(null);
   const playerRef = useRef(null);
   const intervalRef = useRef(null);
@@ -58,16 +58,17 @@ const YouTubePlayer = forwardRef(({ videoId, onTimeUpdate }, ref) => {
       },
       events: {
         onReady: () => {
-          // Poll time every 250ms
+          // Poll time every 100ms — reduces max avatar lag from 250ms to 100ms
           intervalRef.current = setInterval(() => {
             if (playerRef.current?.getCurrentTime) {
               const t = playerRef.current.getCurrentTime();
               if (onTimeUpdate) onTimeUpdate(t);
             }
-          }, 250);
+          }, 100);
         },
         onStateChange: (e) => {
-          // YT.PlayerState.ENDED = 0, PLAYING = 1, PAUSED = 2
+          // YT.PlayerState: ENDED=0, PLAYING=1, PAUSED=2, BUFFERING=3, CUED=5
+          if (onStateChange) onStateChange(e.data);
         },
       },
     });

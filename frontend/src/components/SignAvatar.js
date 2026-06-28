@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { VRMLoaderPlugin, VRMUtils } from "@pixiv/three-vrm";
+import { effectiveNMM, computeWordTimings, applySlowPlayback } from "../services/timelineScheduler";
 import "./SignAvatar.css";
 
 const VRM_MODEL_URL = "/models/sign.vrm";
@@ -29,25 +30,87 @@ const SIGN_MOTIONS = {
   WHY: { label: "Why", motion: "y-hand", color: "#f59e0b", expression: "question" },
   BECAUSE: { label: "Because", motion: "index-temple", color: "#00d4ff", expression: "focus" },
   SIGN: { label: "Sign", motion: "sign", color: "#00d4ff", expression: "smile" },
-  ASL: { label: "ASL", motion: "fingerspell", color: "#00d4ff", expression: "focus" },
+  BDSL: { label: "BdSL", motion: "sign", color: "#00d4ff", expression: "focus" },
+
+  // === Academic / CS / Neural Networks domain vocabulary ===
+  // These are educational gesture representations — not yet validated by a BdSL community reviewer.
+  NETWORK:     { label: "Network",     motion: "spread-hands",  color: "#6366f1", expression: "focus" },
+  NEURON:      { label: "Neuron",      motion: "point-out",     color: "#22d3ee", expression: "focus" },
+  LAYER:       { label: "Layer",       motion: "flat-hand",     color: "#a78bfa", expression: "focus" },
+  TRAIN:       { label: "Train",       motion: "tap-head",      color: "#10b981", expression: "focus" },
+  MODEL:       { label: "Model",       motion: "circle-chest",  color: "#6366f1", expression: "focus" },
+  WEIGHT:      { label: "Weight",      motion: "thumbs",        color: "#f59e0b", expression: "focus" },
+  GRADIENT:    { label: "Gradient",    motion: "wave",          color: "#22d3ee", expression: "focus" },
+  LOSS:        { label: "Loss",        motion: "thumbs-down",   color: "#ef4444", expression: "sad"   },
+  FUNCTION:    { label: "Function",    motion: "knuckles",      color: "#a78bfa", expression: "focus" },
+  ACTIVATE:    { label: "Activate",    motion: "snap",          color: "#22d3ee", expression: "smile" },
+  DATA:        { label: "Data",        motion: "point-self",    color: "#7c3aed", expression: "focus" },
+  INPUT:       { label: "Input",       motion: "point-out",     color: "#22d3ee", expression: "focus" },
+  OUTPUT:      { label: "Output",      motion: "chin-forward",  color: "#10b981", expression: "focus" },
+  ERROR:       { label: "Error",       motion: "shake",         color: "#ef4444", expression: "firm"  },
+  PREDICT:     { label: "Predict",     motion: "y-hand",        color: "#f59e0b", expression: "focus" },
+  CALCULATE:   { label: "Calculate",   motion: "knuckles",      color: "#a78bfa", expression: "focus" },
+  MATRIX:      { label: "Matrix",      motion: "spread-hands",  color: "#6366f1", expression: "focus" },
+  VECTOR:      { label: "Vector",      motion: "point-out",     color: "#22d3ee", expression: "focus" },
+  PATTERN:     { label: "Pattern",     motion: "circle-chest",  color: "#7c3aed", expression: "focus" },
+  IMAGE:       { label: "Image",       motion: "flat-hand",     color: "#f59e0b", expression: "focus" },
+  CLASSIFY:    { label: "Classify",    motion: "waggle",        color: "#6366f1", expression: "focus" },
+  ACCURACY:    { label: "Accuracy",    motion: "thumbs",        color: "#10b981", expression: "smile" },
+  PROBABILITY: { label: "Probability", motion: "shrug",         color: "#f59e0b", expression: "focus" },
+  DEEP:        { label: "Deep",        motion: "tap-head",      color: "#a78bfa", expression: "focus" },
+  CONNECT:     { label: "Connect",     motion: "lift",          color: "#22d3ee", expression: "focus" },
+  NODE:        { label: "Node",        motion: "point-self",    color: "#6366f1", expression: "focus" },
+  SIGNAL:      { label: "Signal",      motion: "wave",          color: "#22d3ee", expression: "focus" },
+  PIXEL:       { label: "Pixel",       motion: "snap",          color: "#a78bfa", expression: "focus" },
+  EXAMPLE:     { label: "Example",     motion: "point-out",     color: "#7c3aed", expression: "focus" },
+  PROCESS:     { label: "Process",     motion: "circle-chest",  color: "#22d3ee", expression: "focus" },
+  STEP:        { label: "Step",        motion: "index-temple",  color: "#f59e0b", expression: "focus" },
+  RESULT:      { label: "Result",      motion: "chin-forward",  color: "#10b981", expression: "smile" },
+  PROBLEM:     { label: "Problem",     motion: "shake",         color: "#ef4444", expression: "firm"  },
+  SOLUTION:    { label: "Solution",    motion: "thumbs",        color: "#10b981", expression: "smile" },
+  COMPUTER:    { label: "Computer",    motion: "knuckles",      color: "#a78bfa", expression: "focus" },
+  PROGRAM:     { label: "Program",     motion: "tap-head",      color: "#6366f1", expression: "focus" },
 };
 
 const FINGER_NAMES = ["thumb", "index", "middle", "ring", "pinky"];
 
 function getSignInfo(word) {
-  const upper = word?.toUpperCase().replace(/[^A-Z]/g, "") || "";
-  return (
-    SIGN_MOTIONS[upper] || {
-      label: upper || "Ready",
-      motion: "fingerspell",
-      color: "#94a3b8",
-      expression: "neutral",
-    }
-  );
+  const s = String(word || "").trim().toUpperCase();
+  const fsMatch = s.match(/^\[FINGERSPELL:([A-Z0-9]+)\]$/);
+  if (fsMatch) {
+    return { label: fsMatch[1], motion: "fingerspell", color: "#06b6d4", expression: "neutral", letters: fsMatch[1] };
+  }
+  const conceptMatch = s.match(/^\[CONCEPT:(.+)\]$/);
+  if (conceptMatch) {
+    const cw = conceptMatch[1].replace(/[^A-Za-z\s]/g, "").toUpperCase().trim();
+    return { label: cw, motion: "concept-card", color: "#64748b", expression: "neutral" };
+  }
+  const numMatch = s.match(/^\[NUMBER:(\d+)\]$/);
+  if (numMatch) {
+    return { label: "#" + numMatch[1], motion: "concept-card", color: "#64748b", expression: "neutral" };
+  }
+  const upper = s.replace(/[^A-Z]/g, "") || "";
+  // Fallback hierarchy: SIGN_MOTIONS → concept card (not generic fingerspell)
+  return SIGN_MOTIONS[upper] || { label: upper || "Ready", motion: "concept-card", color: "#64748b", expression: "neutral" };
 }
 
+// Returns "" for bracket-tagged words so loadSignClip skips the network fetch.
 function normalizeGlossWord(word) {
-  return word?.toUpperCase().replace(/[^A-Z]/g, "") || "";
+  const s = String(word || "").trim().toUpperCase();
+  if (s.startsWith("[")) return "";
+  return s.replace(/[^A-Z]/g, "");
+}
+
+// Human-readable display form of a gloss word for the UI.
+function displayGlossWord(word) {
+  const s = String(word || "").trim().toUpperCase();
+  const fsMatch = s.match(/^\[FINGERSPELL:([A-Z0-9]+)\]$/);
+  if (fsMatch) return "~" + fsMatch[1];
+  const conceptMatch = s.match(/^\[CONCEPT:(.+)\]$/);
+  if (conceptMatch) return "?" + conceptMatch[1].replace(/[^A-Z]/g, "").slice(0, 12);
+  const numMatch = s.match(/^\[NUMBER:(\d+)\]$/);
+  if (numMatch) return "#" + numMatch[1];
+  return s.replace(/[^A-Z]/g, "");
 }
 
 async function loadSignClip(word) {
@@ -57,6 +120,16 @@ async function loadSignClip(word) {
 
   const promise = fetch(`/signs/${key}.json`)
     .then((response) => (response.ok ? response.json() : null))
+    .then((clip) => {
+      if (!clip) return null;
+      if (!Array.isArray(clip.frames) || clip.frames.length < 2 || !clip.duration) {
+        if (process.env.NODE_ENV !== "production") {
+          console.warn(`[SignAvatar] Clip "${key}" failed validation — must have duration and ≥2 frames`);
+        }
+        return null;
+      }
+      return clip;
+    })
     .catch(() => null);
 
   signClipCache.set(key, promise);
@@ -263,6 +336,38 @@ function applyExpression(parts, expression, time) {
   parts.mouth.rotation.z = sad ? 0.05 : 0;
 }
 
+// Simplified handshape descriptors for fingerspelling.
+// Each letter maps to an existing finger pose + wrist rotation for visual distinction.
+// These are NOT validated BdSL manual alphabet shapes — the letter ticker carries the meaning.
+const FINGERSPELL_HANDSHAPES = {
+  A: { pose: "fist",  wristX: -0.10, wristY:  0.00, wristZ: -0.10 },
+  B: { pose: "flat",  wristX:  0.00, wristY:  0.00, wristZ:  0.10 },
+  C: { pose: "spell", wristX:  0.20, wristY:  0.10, wristZ:  0.10 },
+  D: { pose: "point", wristX: -0.15, wristY:  0.00, wristZ: -0.10 },
+  E: { pose: "fist",  wristX:  0.15, wristY:  0.00, wristZ: -0.10 },
+  F: { pose: "spell", wristX: -0.10, wristY: -0.10, wristZ:  0.00 },
+  G: { pose: "point", wristX:  0.00, wristY: -0.30, wristZ: -0.20 },
+  H: { pose: "flat",  wristX:  0.00, wristY: -0.25, wristZ:  0.20 },
+  I: { pose: "y",     wristX: -0.10, wristY:  0.00, wristZ: -0.15 },
+  J: { pose: "y",     wristX: -0.10, wristY:  0.20, wristZ: -0.10 },
+  K: { pose: "point", wristX: -0.20, wristY:  0.10, wristZ:  0.00 },
+  L: { pose: "thumb", wristX:  0.00, wristY:  0.00, wristZ:  0.10 },
+  M: { pose: "fist",  wristX:  0.10, wristY:  0.15, wristZ: -0.05 },
+  N: { pose: "fist",  wristX:  0.10, wristY: -0.10, wristZ: -0.05 },
+  O: { pose: "spell", wristX:  0.25, wristY:  0.00, wristZ:  0.00 },
+  P: { pose: "point", wristX:  0.30, wristY: -0.10, wristZ: -0.20 },
+  Q: { pose: "point", wristX:  0.30, wristY:  0.10, wristZ: -0.20 },
+  R: { pose: "spell", wristX:  0.00, wristY:  0.00, wristZ: -0.20 },
+  S: { pose: "fist",  wristX:  0.00, wristY:  0.00, wristZ: -0.15 },
+  T: { pose: "fist",  wristX:  0.00, wristY:  0.00, wristZ:  0.15 },
+  U: { pose: "flat",  wristX: -0.10, wristY:  0.00, wristZ: -0.15 },
+  V: { pose: "flat",  wristX: -0.10, wristY:  0.00, wristZ: -0.25 },
+  W: { pose: "flat",  wristX:  0.00, wristY:  0.00, wristZ: -0.10 },
+  X: { pose: "point", wristX:  0.20, wristY:  0.00, wristZ: -0.10 },
+  Y: { pose: "y",     wristX:  0.00, wristY:  0.00, wristZ: -0.10 },
+  Z: { pose: "point", wristX: -0.20, wristY:  0.00, wristZ:  0.00 },
+};
+
 function applyMotion(parts, signInfo, time) {
   const motion = signInfo.motion;
   const wave = Math.sin(time * 7);
@@ -408,6 +513,36 @@ function applyMotion(parts, signInfo, time) {
       parts.right.hand.position.x = -Math.sin(time * 4) * 0.12;
       setFingerPose(parts.left.hand, "point");
       setFingerPose(parts.right.hand, "point");
+      break;
+    case "spread-hands":
+      setEuler(parts.left.shoulder, -0.18, 0.08, 0.85);
+      setEuler(parts.right.shoulder, -0.18, -0.08, -0.85);
+      setEuler(parts.left.elbow, -0.52, 0.04, -0.06);
+      setEuler(parts.right.elbow, -0.52, -0.04, 0.06);
+      parts.left.hand.rotation.set(0.08, 0, 0.18 + wave * 0.08);
+      parts.right.hand.rotation.set(0.08, 0, -0.18 - wave * 0.08);
+      setFingerPose(parts.left.hand, "flat");
+      setFingerPose(parts.right.hand, "flat");
+      break;
+    case "flat-hand":
+      setEuler(parts.right.shoulder, -0.12, -0.12, -0.75);
+      setEuler(parts.right.elbow, -0.85, 0.04, 0.12);
+      parts.right.hand.rotation.set(0.05, 0, -0.12 + wave * 0.06);
+      setFingerPose(parts.right.hand, "flat");
+      break;
+    case "fingerspell": {
+      const letters = (signInfo.letters || "A").toUpperCase().split("").filter((l) => /[A-Z]/.test(l));
+      const letterIndex = letters.length ? Math.floor(time * 3) % letters.length : 0;
+      const shape = FINGERSPELL_HANDSHAPES[letters[letterIndex]] || FINGERSPELL_HANDSHAPES.A;
+      setEuler(parts.right.shoulder, -0.95, -0.08, -0.55);
+      setEuler(parts.right.elbow, -0.82, 0.0, 0.12);
+      parts.right.hand.rotation.set(shape.wristX, shape.wristY, shape.wristZ);
+      setFingerPose(parts.right.hand, shape.pose);
+      setFingerPose(parts.left.hand, "open");
+      break;
+    }
+    case "concept-card":
+      // Avatar idles naturally; the concept card overlay in React carries all the meaning.
       break;
     default:
       setEuler(parts.left.shoulder, -0.75, 0.12, 0.58);
@@ -807,6 +942,36 @@ function applyVrmMotion(parts, signInfo, time) {
       setVrmFingerPose(bones, "left", "point");
       setVrmFingerPose(bones, "right", "point");
       break;
+    case "spread-hands":
+      setBone(bones, "leftUpperArm", -0.18, 0.08, 0.85);
+      setBone(bones, "rightUpperArm", -0.18, -0.08, -0.85);
+      setBone(bones, "leftLowerArm", -0.52, 0.04, -0.06);
+      setBone(bones, "rightLowerArm", -0.52, -0.04, 0.06);
+      setBone(bones, "leftHand", 0.08, 0, 0.18 + wave * 0.08);
+      setBone(bones, "rightHand", 0.08, 0, -0.18 - wave * 0.08);
+      setVrmFingerPose(bones, "left", "flat");
+      setVrmFingerPose(bones, "right", "flat");
+      break;
+    case "flat-hand":
+      setBone(bones, "rightUpperArm", -0.12, -0.12, -0.75);
+      setBone(bones, "rightLowerArm", -0.85, 0.04, 0.12);
+      setBone(bones, "rightHand", 0.05, 0, -0.12 + wave * 0.06);
+      setVrmFingerPose(bones, "right", "flat");
+      break;
+    case "fingerspell": {
+      const letters = (signInfo.letters || "A").toUpperCase().split("").filter((l) => /[A-Z]/.test(l));
+      const letterIndex = letters.length ? Math.floor(time * 3) % letters.length : 0;
+      const shape = FINGERSPELL_HANDSHAPES[letters[letterIndex]] || FINGERSPELL_HANDSHAPES.A;
+      setBone(bones, "rightUpperArm", -0.55, -0.18, -0.68);
+      setBone(bones, "rightLowerArm", -0.88, 0.0, 0.12);
+      setBone(bones, "rightHand", shape.wristX, shape.wristY, shape.wristZ);
+      setVrmFingerPose(bones, "right", shape.pose);
+      setVrmFingerPose(bones, "left", "relaxed");
+      break;
+    }
+    case "concept-card":
+      // Avatar idles naturally; the concept card overlay in React carries all the meaning.
+      break;
     default:
       setBone(bones, "rightUpperArm", -0.08, -0.2, -0.48);
       setBone(bones, "rightLowerArm", -0.72, Math.cos(time * 8) * 0.08, 0.12);
@@ -815,6 +980,21 @@ function applyVrmMotion(parts, signInfo, time) {
       setVrmFingerPose(bones, "right", "spell");
       break;
   }
+}
+
+// Development-time invariant: all motion strings declared in SIGN_MOTIONS must be implemented.
+if (process.env.NODE_ENV !== "production") {
+  const IMPLEMENTED_MOTIONS = new Set([
+    "idle", "wave", "chin-forward", "point-out", "point-self", "nod", "shake",
+    "learn", "tap-head", "index-temple", "snap", "thumbs", "thumbs-down", "lift",
+    "circle-chest", "fist-circle", "shrug", "waggle", "circle-wrist", "knuckles",
+    "y-hand", "sign", "spread-hands", "flat-hand", "concept-card", "fingerspell",
+  ]);
+  Object.entries(SIGN_MOTIONS).forEach(([word, info]) => {
+    if (!IMPLEMENTED_MOTIONS.has(info.motion)) {
+      console.warn(`[SignAvatar] Unimplemented motion "${info.motion}" for word "${word}"`);
+    }
+  });
 }
 
 function fitVrmToScene(vrm) {
@@ -830,7 +1010,9 @@ function fitVrmToScene(vrm) {
   vrm.scene.position.set(-center.x * scale, -box.min.y * scale - 1.18, -center.z * scale);
 }
 
-function SignAvatar3D({ signInfo, signClip, wordProgress, active }) {
+// sentenceNMM is a structured object { type, wordIndex, headY } from computeNMM.
+// effectiveNMM is already pre-filtered for word onset by the parent SignAvatar component.
+function SignAvatar3D({ signInfo, signClip, wordProgress, active, activeNMM }) {
   const canvasRef = useRef(null);
   const vrmPartsRef = useRef(null);
   const fallbackPartsRef = useRef(null);
@@ -838,13 +1020,15 @@ function SignAvatar3D({ signInfo, signClip, wordProgress, active }) {
   const signClipRef = useRef(signClip);
   const wordProgressRef = useRef(wordProgress);
   const activeRef = useRef(active);
+  const activeNMMRef = useRef(activeNMM);
 
   useEffect(() => {
     signInfoRef.current = signInfo;
     signClipRef.current = signClip;
     wordProgressRef.current = wordProgress;
     activeRef.current = active;
-  }, [signInfo, signClip, wordProgress, active]);
+    activeNMMRef.current = activeNMM;
+  }, [signInfo, signClip, wordProgress, active, activeNMM]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -926,6 +1110,21 @@ function SignAvatar3D({ signInfo, signClip, wordProgress, active }) {
     const clock = new THREE.Clock();
     let frameId = 0;
 
+    // Cross-sign transition state — closure vars, not refs, to avoid React overhead.
+    // Transition lerps bone rotations from the previous sign's end pose to the new sign's
+    // target pose over TRANSITION_DURATION seconds, eliminating hard-cut teleports.
+    let prevAnimTime = 0;
+    let transitionActive = false;
+    let transitionElapsed = 0;
+    const TRANSITION_DURATION = 0.1; // 100 ms
+    const TRANSITION_BONES = [
+      "leftUpperArm", "leftLowerArm", "leftHand",
+      "rightUpperArm", "rightLowerArm", "rightHand",
+      "head",
+    ];
+    let prevBoneSnapshot = {};
+    let prevMotionKey = null;
+
     function resize() {
       const { clientWidth, clientHeight } = canvas;
       const width = Math.max(1, clientWidth);
@@ -940,6 +1139,11 @@ function SignAvatar3D({ signInfo, signClip, wordProgress, active }) {
       resize();
 
       const time = clock.getElapsedTime();
+      // Compute true frame delta from elapsed time — clock.getDelta() after
+      // clock.getElapsedTime() returns ~0 because getElapsedTime calls getDelta internally.
+      const frameDelta = Math.min(0.1, prevAnimTime === 0 ? 0.016 : time - prevAnimTime);
+      prevAnimTime = time;
+
       const info = activeRef.current ? signInfoRef.current : {
         motion: "idle",
         color: "#64748b",
@@ -949,21 +1153,95 @@ function SignAvatar3D({ signInfo, signClip, wordProgress, active }) {
       const progress = wordProgressRef.current || 0;
 
       rim.color.set(info.color);
-      const delta = clock.getDelta();
       const vrmParts = vrmPartsRef.current;
       const fallbackParts = fallbackPartsRef.current;
 
       if (vrmParts) {
+        // Detect sign change by tracking motion + clip presence as a compound key.
+        // On change: snapshot current bone state (= end of previous sign) so the
+        // transition lerp knows where to blend from.
+        const motionKey = info.motion + (clip ? ":clip" : "");
+        if (activeRef.current && prevMotionKey !== null && motionKey !== prevMotionKey) {
+          const snapshot = {};
+          TRANSITION_BONES.forEach((name) => {
+            const boneArr = Array.isArray(vrmParts.bones[name])
+              ? vrmParts.bones[name]
+              : [vrmParts.bones[name]];
+            const bone = boneArr.find((b) => b);
+            if (bone) snapshot[name] = [bone.rotation.x, bone.rotation.y, bone.rotation.z];
+          });
+          prevBoneSnapshot = snapshot;
+          transitionActive = true;
+          transitionElapsed = 0;
+        }
+        prevMotionKey = motionKey;
+
+        // Apply current sign motion — this sets bones to the target pose.
         if (!clip || !applyVrmClip(vrmParts, clip, progress, time)) {
           applyVrmMotion(vrmParts, info, time);
         }
+
+        // Cross-sign transition: lerp from the snapshotted previous pose toward the
+        // target pose computed above. smoothstep(t) gives ease-in/out feel.
+        if (transitionActive) {
+          transitionElapsed += frameDelta;
+          const t = Math.min(1, transitionElapsed / TRANSITION_DURATION);
+          const smoothT = t * t * (3 - 2 * t);
+          if (t >= 1) {
+            transitionActive = false;
+          } else {
+            TRANSITION_BONES.forEach((name) => {
+              const prev = prevBoneSnapshot[name];
+              if (!prev) return;
+              const boneArr = Array.isArray(vrmParts.bones[name])
+                ? vrmParts.bones[name]
+                : [vrmParts.bones[name]];
+              boneArr.forEach((bone) => {
+                if (!bone) return;
+                bone.rotation.x = prev[0] + (bone.rotation.x - prev[0]) * smoothT;
+                bone.rotation.y = prev[1] + (bone.rotation.y - prev[1]) * smoothT;
+                bone.rotation.z = prev[2] + (bone.rotation.z - prev[2]) * smoothT;
+              });
+            });
+          }
+        }
+
+        // NMM (Non-Manual Markers): grammar-driven overrides applied AFTER per-sign motion.
+        // Uses pre-filtered activeNMM (word-onset already applied by parent component).
+        // WH-questions: furrow brows ("angry" blendshape approximation)
+        // YN-questions: raise brows ("surprised" blendshape approximation)
+        // Negation: firm expression + head-shake (head.rotation.y oscillation)
+        const nmm = activeNMMRef.current;
+        const nmmType = nmm?.type ?? "neutral";
+        if (nmmType === "wh-question") {
+          applyVrmExpression(vrmParts.vrm, "angry", time);
+        } else if (nmmType === "yn-question") {
+          applyVrmExpression(vrmParts.vrm, "surprised", time);
+        } else if (nmmType === "negation") {
+          applyVrmExpression(vrmParts.vrm, "firm", time);
+          setBone(vrmParts.bones, "head", 0, Math.sin(time * 9) * (nmm.headY ?? 0.22), 0);
+        }
+
         if (!activeRef.current) {
           setBone(vrmParts.bones, "head", 0, Math.sin(time * 0.9) * 0.08, 0);
         }
-        vrmParts.vrm.update(delta);
+        vrmParts.vrm.update(frameDelta);
       } else if (fallbackParts) {
-        applyExpression(fallbackParts, info.expression, time);
+        // NMM for fallback avatar — same grammar rules, using expression + head rotation
+        const nmm = activeNMMRef.current;
+        const nmmType = nmm?.type ?? "neutral";
+        const nmmExpression =
+          nmmType === "wh-question" ? "firm"
+          : nmmType === "yn-question" ? "question"
+          : nmmType === "negation" ? "firm"
+          : info.expression;
+
+        applyExpression(fallbackParts, nmmExpression, time);
         applyMotion(fallbackParts, info, time);
+
+        if (nmmType === "negation") {
+          fallbackParts.head.rotation.y = Math.sin(time * 9) * (nmm?.headY ?? 0.22);
+        }
 
         if (!activeRef.current) {
           fallbackParts.group.rotation.y = Math.sin(time * 0.8) * 0.08;
@@ -995,28 +1273,61 @@ function SignAvatar3D({ signInfo, signClip, wordProgress, active }) {
   return <canvas ref={canvasRef} className="avatar-canvas" aria-label="3D signing avatar" />;
 }
 
-export default function SignAvatar({ caption, isActive, currentTime = 0 }) {
+const NEUTRAL_NMM = { type: "neutral", wordIndex: -1, headY: 0 };
+
+// playbackSpeed < 1 activates learning mode: word timing windows are stretched so the
+// avatar signs slower than the video — driven by applySlowPlayback from timelineScheduler.
+export default function SignAvatar({ caption, isActive, currentTime = 0, sentenceNMM = NEUTRAL_NMM, playbackSpeed = 1.0 }) {
   const [signClip, setSignClip] = useState(null);
-  const words = useMemo(() => caption?.words || [], [caption]);
-  const wordIndex = useMemo(() => {
-    if (!caption || !isActive || words.length === 0) return 0;
 
-    const localMs = currentTime * 1000 - caption.start;
-    const duration = Math.max(1, caption.end - caption.start);
-    const progress = Math.max(0, Math.min(0.999, localMs / duration));
-    return Math.min(words.length - 1, Math.floor(progress * words.length));
-  }, [caption, currentTime, isActive, words.length]);
-  const wordProgress = useMemo(() => {
-    if (!caption || !isActive || words.length === 0) return 0;
+  // Single combined word-timing computation using timelineScheduler utilities.
+  // Phase A: character-weighted timing via computeWordTimings.
+  // Learning mode: applySlowPlayback stretches windows by 1/speedFactor.
+  // Phase B: replace computeWordTimings with WhisperX per-word timestamps.
+  const { wordIndex, wordProgress } = useMemo(() => {
+    const words = caption?.words ?? [];
+    if (!caption || !isActive || words.length === 0) return { wordIndex: 0, wordProgress: 0 };
 
-    const localMs = currentTime * 1000 - caption.start;
-    const duration = Math.max(1, caption.end - caption.start);
-    const wordDuration = duration / words.length;
-    const wordStart = wordIndex * wordDuration;
-    return Math.max(0, Math.min(1, (localMs - wordStart) / wordDuration));
-  }, [caption, currentTime, isActive, wordIndex, words.length]);
+    const currentTimeMs = currentTime * 1000;
+    let timings = computeWordTimings(caption);
+    if (playbackSpeed > 0 && playbackSpeed < 1) {
+      timings = applySlowPlayback(timings, playbackSpeed);
+    }
+
+    for (let i = 0; i < timings.length; i++) {
+      const t = timings[i];
+      if (currentTimeMs >= t.startMs && currentTimeMs <= t.endMs) {
+        const progress = Math.max(
+          0,
+          Math.min(1, (currentTimeMs - t.startMs) / Math.max(1, t.durationMs))
+        );
+        return { wordIndex: i, wordProgress: progress };
+      }
+    }
+    // Past last word in caption — hold on last word.
+    return { wordIndex: timings.length - 1, wordProgress: 1 };
+  }, [caption, currentTime, isActive, playbackSpeed]);
+
+  const words = caption?.words ?? [];
+
   const currentWord = words[wordIndex] || "";
   const signInfo = getSignInfo(currentWord);
+  const isConceptCard = signInfo.motion === "concept-card" && !!currentWord && isActive;
+  const isFingerspell = signInfo.motion === "fingerspell" && !!currentWord && isActive;
+  const fsLetters = isFingerspell
+    ? (signInfo.letters || "").split("").filter((l) => /[A-Z0-9]/.test(l))
+    : [];
+  const fsLetterIdx =
+    fsLetters.length > 0
+      ? Math.min(fsLetters.length - 1, Math.floor(wordProgress * fsLetters.length))
+      : 0;
+
+  // Resolve word-onset NMM: only activate once avatar reaches the triggering word.
+  // effectiveNMM neutralizes the NMM until currentWordIndex >= nmm.wordIndex.
+  const activeNMM = useMemo(
+    () => effectiveNMM(sentenceNMM, wordIndex),
+    [sentenceNMM, wordIndex]
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -1033,15 +1344,48 @@ export default function SignAvatar({ caption, isActive, currentTime = 0 }) {
     };
   }, [currentWord, isActive]);
 
+  // Preload all clips for the incoming caption so word transitions are instant.
+  // loadSignClip is cache-first — duplicate calls are no-ops once cached.
+  useEffect(() => {
+    if (!caption?.words?.length) return;
+    caption.words.forEach((word) => {
+      if (word) loadSignClip(word);
+    });
+  }, [caption]);
+
   return (
     <div className="sign-avatar">
       <div className={`avatar-stage ${isActive ? "active" : "idle"}`}>
         <SignAvatar3D
           signInfo={signInfo}
-          signClip={signClip}
+          signClip={isConceptCard ? null : signClip}
           wordProgress={wordProgress}
           active={!!isActive}
+          activeNMM={activeNMM}
         />
+        {isConceptCard && (
+          <div className="concept-card glass fade-in-up">
+            <span className="concept-card-word">{displayGlossWord(currentWord)}</span>
+            <span className="concept-card-subtitle">
+              {caption?.conceptExplanations?.[signInfo.label] || "No established BdSL sign"}
+            </span>
+          </div>
+        )}
+        {isFingerspell && (
+          <div className="fingerspell-ticker glass fade-in-up">
+            <span className="fingerspell-label">Fingerspelling</span>
+            <div className="fingerspell-letters">
+              {fsLetters.map((letter, i) => (
+                <span
+                  key={i}
+                  className={`fingerspell-letter ${i === fsLetterIdx ? "active" : ""}`}
+                >
+                  {letter}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="avatar-depth-grid" />
       </div>
 
@@ -1051,9 +1395,14 @@ export default function SignAvatar({ caption, isActive, currentTime = 0 }) {
         <>
           <div className="word-indicator" style={{ borderColor: signInfo.color }}>
             <span className="word-text" style={{ color: signInfo.color }}>
-              {currentWord || "..."}
+              {displayGlossWord(currentWord) || "..."}
             </span>
             <span className="motion-text">{signInfo.label}</span>
+            {activeNMM.type !== "neutral" && (
+              <span className="nmm-badge" title={`NMM: ${activeNMM.type}`}>
+                {activeNMM.type === "wh-question" ? "WH" : activeNMM.type === "yn-question" ? "YN" : "NEG"}
+              </span>
+            )}
           </div>
 
           {words.length > 1 && (
@@ -1064,7 +1413,7 @@ export default function SignAvatar({ caption, isActive, currentTime = 0 }) {
                   className={`word-dot ${index === wordIndex ? "active" : ""} ${
                     index < wordIndex ? "done" : ""
                   }`}
-                  title={word}
+                  title={displayGlossWord(word)}
                 />
               ))}
             </div>
@@ -1078,7 +1427,7 @@ export default function SignAvatar({ caption, isActive, currentTime = 0 }) {
                   index < wordIndex ? "done" : ""
                 }`}
               >
-                {word}
+                {displayGlossWord(word)}
               </span>
             ))}
           </div>
