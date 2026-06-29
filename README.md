@@ -172,7 +172,7 @@ npm run dev
 1. Push your code to GitHub
 2. Go to [render.com](https://render.com) → New → Blueprint
 3. Connect your GitHub repo
-4. Render reads `render.yaml` automatically and creates both services
+4. Render reads `render.yaml` automatically and creates both services (API + frontend)
 5. In the **Render dashboard**, add environment variables:
    - Backend service → Environment → Add:
      - `GROQ_API_KEY` = your key
@@ -184,6 +184,11 @@ npm run dev
 
 6. Trigger a redeploy on both services
 7. Your app is live! 🎉
+
+**Optional — Enable WhisperX (free, Phase B2):**
+Deploy `backend_nlp/` to [Hugging Face Spaces](https://huggingface.co/spaces) (free, 16 GB RAM).
+Then set `NLP_SERVICE_URL` on the Render backend to your Space URL.
+See [`docs/WHISPERX_DEPLOYMENT.md`](docs/WHISPERX_DEPLOYMENT.md) for step-by-step instructions.
 
 ---
 

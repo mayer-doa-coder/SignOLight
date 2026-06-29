@@ -1,5 +1,5 @@
 # CURRENT_STATE.md
-*Last updated: 2026-06-29 — post Week 1 + Week 2 + sync-fix sprint + NLP pipeline sprint*
+*Last updated: 2026-06-29 — post Week 1 + Week 2 + sync-fix sprint + NLP pipeline sprint + PART F Bangla sprint*
 
 ---
 
@@ -7,7 +7,7 @@
 
 ### Architecture Summary
 
-A YouTube → captions → LLM simplification → LLM gloss → VRM avatar pipeline with timeline-locked sync. English-only Phase A. Includes a Python NLP microservice scaffold for Phase B. No WhisperX. No Bangla ASR.
+A YouTube → captions → LLM simplification → LLM gloss → VRM avatar pipeline with timeline-locked sync. Phase A (English) complete. Phase B1 Bangla code-switching implemented (prompt engineering). Python NLP microservice includes WhisperX (auto-detects Bengali audio) and Bengali NLP fallback. WhisperX code complete; deployment on HF Space needed.
 
 ```
 YouTube URL
@@ -68,12 +68,15 @@ Language preference: en (manual) > en (ASR) > en-* > translatable.
 1. `simplifyBatch(captions)`: academic English → secondary-school reading level via Groq JSON call; result stored as `caption.simplified`
 2. `batchTextToSignGloss(captions)`: simplified text → BdSL gloss via `buildGlossPrompt()`
 
+**`detectBangla(text)`:** Detects Bangla/Bengali script (Unicode block U+0980–U+09FF). Used for Phase B1 code-switching — returns `true` if caption contains any Bengali characters.
+
 **`buildGlossPrompt(text)`:**
 - BdSL grammar rules (SOV, topic-comment, remove articles/aux/prepositions)
 - `SIGN_VOCAB` constant (58 SIGN_MOTIONS words) — LLM instructed to prefer these
 - Rule: proper nouns, names, abbreviations → `[FINGERSPELL:WORD]`
 - Rule: concepts with no available sign → `[CONCEPT:word]`
 - 8 Bangla-SGP grounded example pairs (arXiv:2511.08507)
+- **Phase B1 code-switching section** (appended when `detectBangla(text)` is true): instructs LLM to translate Bengali words to English conceptual equivalents, use `[FINGERSPELL:X]` for Bengali proper nouns, use `[CONCEPT:X]` for Bengali concepts with no SIGN_VOCAB match; includes 3 mixed Bangla-English example pairs
 - No "ASL" string anywhere
 
 **`enrichConceptCards(results)`:**
@@ -81,7 +84,7 @@ Language preference: en (manual) > en (ASR) > en-* > translatable.
 - Makes one Groq call per batch to get brief 5–10 word definitions for all concept words
 - Returns `{ WORD: "definition" }` map; attached as `result.conceptExplanations`
 
-**`simpleGloss(text)`:** stop-word stripping fallback with SOV heuristic reorder (35-verb set); `confidence: 0.5`
+**`simpleGloss(text)`:** stop-word stripping fallback with SOV heuristic reorder (35-verb set); `confidence: 0.5`. Bangla-aware: punctuation-strip regex is `[^\w\sঀ-৿]` (preserves Bengali Unicode block); token filter keeps Bangla tokens regardless of stop-word list.
 
 **`recordVocabularyGaps`:** called before enrichment; persists gap counts via `app.locals.recordVocabularyGaps`
 
@@ -99,11 +102,12 @@ Batch size: `GROQ_BATCH_SIZE` env var (default 10). `module.exports._test` expor
 
 | File | Purpose |
 |------|---------|
-| `main.py` | FastAPI app with lifespan hook; loads `en_core_web_md` at startup; `GET /health`, `POST /nlp/gloss`, `POST /nlp/gloss/batch` |
-| `pipeline.py` | Full NLP pipeline: POS → lemma → NER → dependency parse → SOV reorder. `route_token(token)` decision tree: exact match → fingerspell NER → semantic similarity → concept. `gloss_caption(nlp, text)` returns `{ gloss, words, wordMeta, sovOrder }` |
+| `main.py` | FastAPI app; `GET /health`, `POST /nlp/gloss`, `POST /nlp/gloss/batch`, `POST /nlp/timestamps`. Startup: loads `en_core_web_md` + attempts `bn_core_news_sm` (optional; logs graceful failure). `/nlp/timestamps` response now includes `language` field (e.g. `"bn"` or `"en"`). |
+| `pipeline.py` | Full NLP pipeline: POS → lemma → NER → dependency parse → SOV reorder. `gloss_caption(nlp, text)` returns `{ gloss, words, wordMeta, sovOrder }`. **Bengali path**: `_has_bangla(text)` detected via `_BANGLA_RE = re.compile(r"[ঀ-৿]")`; routes to `_gloss_mixed_bangla(nlp, text)` — Bengali tokens → concept card, ASCII tokens → `route_token()`. Prevents English spaCy from mangling Bengali script. |
 | `semantic_map.py` | Pre-computes spaCy vectors for all 58 SIGN_VOCAB words at startup. `nearest_sign(word)` returns `(key, cosine_score)`. APPROX_THRESHOLD=0.82, LOW_THRESHOLD=0.62 |
-| `requirements.txt` | fastapi, uvicorn, spacy, numpy |
-| `Dockerfile` | Python 3.11-slim; installs deps + `en_core_web_md` model download |
+| `timestamps.py` | **Phase B2 — code complete, deployment pending.** `extract_word_timestamps(videoId)` downloads audio via `yt-dlp`, runs WhisperX, **auto-detects language** via `result.get("language","en")` — Bengali audio automatically uses `language_code="bn"` forced alignment. Returns `{"words": [{word, startMs, endMs, score}], "language": "en"/"bn"}`. Lazy-imports whisperx. Falls back to `{"words": [], "language": "en"}` on any error. Configurable via `WHISPER_MODEL` env var (default `tiny`). |
+| `requirements.txt` | fastapi, uvicorn, spacy, numpy, whisperx, faster-whisper, yt-dlp |
+| `Dockerfile` | Python 3.11-slim + ffmpeg + yt-dlp binary + torch CPU wheel + spaCy `en_core_web_md` (required) + `bn_core_news_sm` (optional — non-fatal if unavailable) |
 | `tests/test_pipeline.py` | 7 unit tests covering routing decisions (exact match, SOV, NER fingerspell, concept card, empty text, 8-word cap) |
 
 ---
@@ -118,9 +122,9 @@ Batch size: `GROQ_BATCH_SIZE` env var (default 10). `module.exports._test` expor
   - `headY`: head rotation amplitude (0.22 for negation, 0 otherwise)
 
 ### `services/timelineScheduler.js`
-Pure-function deterministic scheduling service. No React state.
-- `computeWordTimings(caption)` — syllable-weighted word timing windows `{ startMs, endMs, durationMs }` (vowel-group count proxy; WhisperX replaces in Phase B2)
-- `resolveSignState(caption, currentTimeMs)` — seek-safe word index resolver
+Pure-function deterministic scheduling service. No React state. Single source of truth for all word timing.
+- `computeWordTimings(caption)` — **Phase B2 active when `caption.spokenTimings` is set**: uses WhisperX speech boundaries (`spokenTimings[0].startMs` → `spokenTimings[last].endMs`) as the actual speech span, then distributes gloss words by syllable weight within that span. Eliminates up to 400ms of leading/trailing silence from YouTube caption metadata. **Phase A fallback** (no `spokenTimings`): syllable-weighted over raw caption start/end (unchanged behavior).
+- `resolveSignState(caption, currentTimeMs, speedFactor?)` — seek-safe word index resolver. Returns `{ wordIndex, wordProgress, wordTiming, isActive, isCatchingUp }`. `isCatchingUp = wordProgress ≥ 0.65`: arrived in last 35% of word window → avatar snaps rather than blends
 - `buildSignQueue(caption)` — sign queue entries
 - `shouldAvatarAnimate(playerState, caption)`
 - `effectiveNMM(nmm, currentWordIndex)` — gates NMM until avatar reaches triggering word
@@ -180,11 +184,19 @@ Articulatory parameter space (lightweight HamNoSys-inspired):
 
 **Cross-sign transition blending:** 100ms smoothstep bone lerp on sign change via closure snapshot vars.
 
-**NMM overrides** (in animation loop, AFTER per-sign motion):
-- WH-question: `applyVrmExpression(vrm, "angry", time)` — furrow brows
-- YN-question: `applyVrmExpression(vrm, "surprised", time)` — raise brows
-- Negation: `applyVrmExpression(vrm, "firm", time)` + `Math.sin(time * 9) * headY` head-shake
-- All three also applied to fallback avatar path
+**NMM overrides** (in animation loop, AFTER per-sign motion, with 200ms fade-in ramp):
+- WH-question: `applyVrmExpression(vrm, "firm", time, nmmIntensity, "ou", customBrow)` → angry=0.55 + ou=0.30 (pursed lips) + thinking gaze (down-right)
+- YN-question: `applyVrmExpression(vrm, "question", time, nmmIntensity, "aa", customBrow)` → surprised=0.55 + aa=0.20 (open mouth) + engaging gaze (at camera)
+- Negation: `applyVrmExpression(vrm, "sad", time, nmmIntensity, "ih", customBrow)` → sad=0.50 + ih=0.25 (tight lips) + head-shake + assertive gaze (left)
+- Three channels of differentiation per NMM: brow preset + mouth shape + gaze direction
+- `customBrow` probed at model load — auto-wires isolated `browDownLeft/Right` or `browOuterUpLeft/Right` if present in model
+- `nmmActiveSince` closure var → `nmmIntensity = Math.min(1, elapsed / NMM_FADE_DURATION)` (200ms ramp)
+
+**Eye gaze (vrm.lookAt):** `gazeTarget` Object3D set as `vrm.lookAt.target` at VRM load. Position lerped (α=0.05) each frame:
+- YN-question → (0, 0.62, 4.3): camera — direct viewer engagement
+- WH-question → (0.18, 0.28, 3.0): down-right — thinking/searching
+- Negation → (−0.3, 0.50, 3.5): left — assertive away-gaze
+- Idle → slow sin-wave drift; signing → audience position (0, 0.50, 3.5)
 
 **Word-onset NMM gating:** `effectiveNMM(sentenceNMM, wordIndex)` from timelineScheduler
 
@@ -231,25 +243,26 @@ Articulatory parameter space (lightweight HamNoSys-inspired):
 
 | File | Count | Status | Notes |
 |------|-------|--------|-------|
-| `backend/__tests__/sign.test.js` | 19 cases | ✅ All passing | Unit: simpleGloss, buildGlossPrompt, normalizeGloss |
-| `backend/__tests__/integration.test.js` | 20 cases | ✅ All passing | HTTP: /health, /api/cache, /api/sign/batch + file cache round-trip |
-| `backend/__tests__/comprehension.test.js` | 27 cases | ✅ All passing | Automated proxy: SOV order, domain coverage, NMM grammar, vocabulary-constrained prompt, NEURAL example |
-| `frontend/src/__tests__/sync.test.js` | 19 cases | ✅ All passing | findCaption binary search, computeNMM all 3 types |
+| `backend/__tests__/sign.test.js` | 30 cases | ✅ All passing | Unit: simpleGloss (8), verb lemmatization (5), buildGlossPrompt (6), normalizeGloss (5), Bangla code-switching/detectBangla (6) |
+| `backend/__tests__/integration.test.js` | 13 cases | ✅ All passing | HTTP: /health, /api/cache (4 variants), /api/sign/batch (8 variants incl. cache round-trip) |
+| `backend/__tests__/comprehension.test.js` | 29 cases | ✅ All passing | Automated proxy: SOV order, domain coverage, NMM grammar, vocabulary-constrained prompt, NEURAL example |
+| `frontend/src/__tests__/sync.test.js` | 23 cases | ✅ All passing | findCaption binary search (7), computeNMM all 3 types + WHEN/WHY/CANT/NOTHING edge cases (16) |
+| `frontend/src/__tests__/timelineScheduler.test.js` | 32 cases | ✅ All passing | computeWordTimings (Phase A + Phase B spokenTimings), resolveSignState (incl. isCatchingUp + pre-first-word guard), effectiveNMM, shouldAvatarAnimate, applySlowPlayback |
 | `backend_nlp/tests/test_pipeline.py` | 7 cases | Python only | Requires spaCy; run `cd backend_nlp && python -m pytest` |
 | Human participant test | ⏳ Pending | — | Protocol defined in `docs/testing_log.md` |
 
-**Total automated (JS):** 85 tests passing (66 backend + 19 frontend)
+**Total automated (JS):** 127 tests passing (72 backend + 55 frontend)
 
 ---
 
 ## Deployment
 
-- `render.yaml`: **three services** on Render.com free tier
+- `render.yaml`: **two services** on Render.com free tier
   - `signlearn-api` — Node.js Express backend
-  - `signlearn-nlp` — Python FastAPI + spaCy (Docker); Phase B; ~30s cold-start on free tier
   - `signlearn-frontend` — Static React build with SPA rewrite (`/*` → `/index.html`)
+- **NLP microservice** (`backend_nlp/`) — deployed separately on **Hugging Face Spaces** (free, 16 GB RAM). See `docs/WHISPERX_DEPLOYMENT.md` for step-by-step setup.
 - `GROQ_API_KEY` set manually in Render dashboard
-- `NLP_SERVICE_URL` set to signlearn-nlp Render URL when Phase B is active (leave blank for Phase A)
+- `NLP_SERVICE_URL` set to HF Space URL (e.g. `https://username-signlight-nlp.hf.space`) when Phase B is active; leave blank for Phase A syllable timing.
 - `FRONTEND_URL` set to frontend URL for CORS
 
 ---
@@ -261,4 +274,5 @@ Per PDF/CTO guidance, these are correctly absent:
 - Neural sign generation
 - Photorealistic avatar
 - Multi-language simultaneous support
-- Bangla WhisperX (Phase B — `backend_nlp/` microservice scaffold exists; WhisperX not yet integrated)
+- Live microphone mode (destabilises demo; wait until recorded-video Phase A is solid)
+- Full Bengali NLP pipeline (Phase B2 — `bn_core_news_sm` has limited vocabulary; Bengali tokens currently route to concept cards via `_gloss_mixed_bangla()`. WhisperX Bengali ASR IS code-complete — deployment on HF Space + real-audio validation still needed)

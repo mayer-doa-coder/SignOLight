@@ -21,22 +21,42 @@
 // ---------------------------------------------------------------------------
 
 /**
- * Compute syllable-weighted word timing windows for a caption.
+ * Compute word timing windows for a caption.
  *
- * Phase A (current): estimates word boundaries from vowel-group syllable count —
- *   a better proxy for signing duration than raw character count.
- * Phase B (WhisperX): replace with actual per-word ASR timestamps.
+ * Phase B (active when caption.spokenTimings is set):
+ *   Uses WhisperX spoken-word timestamps to derive the actual speech boundaries
+ *   (first-word start → last-word end). YouTube captions include up to 400ms of
+ *   leading/trailing silence; WhisperX removes it. Gloss words are then distributed
+ *   by syllable weight within the real speech span — more accurate than using the
+ *   raw caption start/end.
  *
- * @param {object} caption - { start, end, words: string[] }
+ * Phase A (fallback — when spokenTimings is absent):
+ *   Estimates word boundaries from vowel-group syllable count over the full caption
+ *   duration. This remains the fallback when NLP_SERVICE_URL is unset.
+ *
+ * @param {object} caption - { start, end, words: string[], spokenTimings?: Array }
  * @returns {Array<{ word, index, startMs, endMs, durationMs }>}
  */
 export function computeWordTimings(caption) {
   const words = caption?.words ?? [];
+  if (words.length === 0) return [];
+
   const captionStart = caption?.start ?? 0;
   const captionEnd = caption?.end ?? 0;
-  const duration = Math.max(1, captionEnd - captionStart);
 
-  if (words.length === 0) return [];
+  // Phase B: use actual speech boundaries from WhisperX.
+  // spokenTimings is [ { word, startMs, endMs, score }, ... ] for this caption's
+  // spoken English words. We take the first word's start and last word's end as
+  // the true speech span, then distribute gloss words by syllable weight within it.
+  const spokenTimings = caption?.spokenTimings;
+  let effectiveStart = captionStart;
+  let effectiveEnd = captionEnd;
+  if (spokenTimings?.length >= 2) {
+    effectiveStart = spokenTimings[0].startMs;
+    effectiveEnd = spokenTimings[spokenTimings.length - 1].endMs;
+  }
+
+  const duration = Math.max(1, effectiveEnd - effectiveStart);
 
   const charCounts = words.map((w) => {
     const clean = String(w).replace(/[^A-Za-z]/g, "").toUpperCase();
@@ -47,9 +67,9 @@ export function computeWordTimings(caption) {
 
   let cumulative = 0;
   return words.map((word, i) => {
-    const wordStart = captionStart + (cumulative / totalChars) * duration;
+    const wordStart = effectiveStart + (cumulative / totalChars) * duration;
     cumulative += charCounts[i];
-    const wordEnd = captionStart + (cumulative / totalChars) * duration;
+    const wordEnd = effectiveStart + (cumulative / totalChars) * duration;
     return {
       word: String(word).toUpperCase().replace(/[^A-Z[\]:]/g, ""),
       index: i,
@@ -64,29 +84,43 @@ export function computeWordTimings(caption) {
 // Sign state resolution
 // ---------------------------------------------------------------------------
 
+// Fraction of a word's window past which the avatar snaps rather than blends.
+// If we arrive this late into a word (e.g. after a seek or buffer stall), it is
+// not worth spending 100ms blending to a sign that is almost over.
+const SNAP_THRESHOLD = 0.65;
+
 /**
  * Resolve active sign state at currentTimeMs.
  *
  * Called on every 100ms time poll from YouTubePlayer.
- * This is the core scheduling function — always computes from current time,
- * never from accumulated state (seek-safe by construction).
+ * Seek-safe by construction: always computes from current time, never from history.
  *
- * @param {object|null} caption - current active caption (from findCaption)
- * @param {number} currentTimeMs - current video time in milliseconds
- * @returns {{ wordIndex, wordProgress, wordTiming, isActive }}
+ * @param {object|null} caption   - current active caption (from findCaption)
+ * @param {number} currentTimeMs  - current video time in milliseconds
+ * @param {number} [speedFactor]  - playback speed (1.0 = normal, <1 = slow / learning mode)
+ * @returns {{ wordIndex, wordProgress, wordTiming, isActive, isCatchingUp }}
  */
-export function resolveSignState(caption, currentTimeMs) {
+export function resolveSignState(caption, currentTimeMs, speedFactor = 1.0) {
   if (!caption) {
-    return { wordIndex: 0, wordProgress: 0, wordTiming: null, isActive: false };
+    return { wordIndex: 0, wordProgress: 0, wordTiming: null, isActive: false, isCatchingUp: false };
   }
 
-  const timings = computeWordTimings(caption);
+  let timings = computeWordTimings(caption);
+  if (speedFactor > 0 && speedFactor < 1) {
+    timings = applySlowPlayback(timings, speedFactor);
+  }
 
   if (timings.length === 0) {
-    return { wordIndex: 0, wordProgress: 0, wordTiming: null, isActive: true };
+    return { wordIndex: 0, wordProgress: 0, wordTiming: null, isActive: true, isCatchingUp: false };
   }
 
-  // Find which word's time window contains currentTimeMs
+  // Before speech starts — can occur when spokenTimings push effectiveStart past captionStart.
+  // Without this guard the for-loop finds no match and falls to the "Past last word" handler,
+  // incorrectly showing the LAST word at the very START of a caption's silence window.
+  if (currentTimeMs < timings[0].startMs) {
+    return { wordIndex: 0, wordProgress: 0, wordTiming: timings[0], isActive: true, isCatchingUp: false };
+  }
+
   for (let i = 0; i < timings.length; i++) {
     const t = timings[i];
     if (currentTimeMs >= t.startMs && currentTimeMs <= t.endMs) {
@@ -94,13 +128,20 @@ export function resolveSignState(caption, currentTimeMs) {
         0,
         Math.min(1, (currentTimeMs - t.startMs) / Math.max(1, t.durationMs))
       );
-      return { wordIndex: i, wordProgress: progress, wordTiming: t, isActive: true };
+      return {
+        wordIndex: i,
+        wordProgress: progress,
+        wordTiming: t,
+        isActive: true,
+        // Arrived in the last 35% of the word window — skip blend, snap directly.
+        isCatchingUp: progress >= SNAP_THRESHOLD,
+      };
     }
   }
 
-  // Past last word in caption — stay on last word
+  // Past last word — hold on last word (natural end, not a catch-up).
   const last = timings[timings.length - 1];
-  return { wordIndex: timings.length - 1, wordProgress: 1, wordTiming: last, isActive: true };
+  return { wordIndex: timings.length - 1, wordProgress: 1, wordTiming: last, isActive: true, isCatchingUp: false };
 }
 
 // ---------------------------------------------------------------------------

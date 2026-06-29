@@ -239,6 +239,32 @@ SignLearn backend running on http://0.0.0.0:PORT
 
 ---
 
+## Step 5 — (Optional) Deploy WhisperX on Hugging Face Spaces
+
+This activates Phase B2 word-level timestamps — ~30% more accurate avatar sync.
+It is **free** (HF Spaces free CPU tier: 16 GB RAM).
+
+Skip this step if you want to stay on Phase A (syllable timing) — the app works fine without it.
+
+```bash
+# 1. Create a free Space at huggingface.co → New Space → SDK: Docker
+# 2. Clone the Space repo and push backend_nlp/ into it
+git clone https://huggingface.co/spaces/YOUR_USERNAME/signlight-nlp hf-nlp-space
+cp -r backend_nlp/. hf-nlp-space/   # Windows: xcopy /E /I /Y backend_nlp hf-nlp-space
+cd hf-nlp-space && git add . && git commit -m "deploy" && git push
+
+# 3. Set env var on the Space (HF Space Settings → Repository secrets):
+#    WHISPER_MODEL = base
+#    WHISPER_DEVICE = cpu
+
+# 4. Copy the Space URL (format: https://YOUR_USERNAME-signlight-nlp.hf.space)
+# 5. Add it to Render backend: signlearn-api → Environment → NLP_SERVICE_URL = <Space URL>
+```
+
+Full details: [`docs/WHISPERX_DEPLOYMENT.md`](docs/WHISPERX_DEPLOYMENT.md)
+
+---
+
 ## Verification Checklist
 
 Run through this after any local or production setup:

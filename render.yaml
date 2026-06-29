@@ -1,5 +1,6 @@
 # render.yaml - Render.com deployment config
-# Three services: Express API + Python NLP + React frontend
+# Two services: Express API + React frontend
+# NLP microservice (WhisperX) is deployed separately on Hugging Face Spaces — see docs/WHISPERX_DEPLOYMENT.md
 
 services:
   # ── Backend (Express API on Render) ──────────────────────────────
@@ -16,22 +17,10 @@ services:
       - key: GROQ_API_KEY
         sync: false          # Set this manually in Render dashboard
       - key: FRONTEND_URL
-        sync: false          # Set to your Vercel frontend URL
+        sync: false          # Set to your Vercel/Render frontend URL
       - key: NLP_SERVICE_URL
-        sync: false          # Set to signlearn-nlp Render URL (e.g. https://signlearn-nlp.onrender.com)
-
-  # ── NLP Microservice (Python FastAPI + spaCy, Phase B) ───────────
-  # Note: free tier cold-starts take ~30s. The Node backend falls back gracefully
-  # to Groq gloss while the Python service warms up.
-  - type: web
-    name: signlearn-nlp
-    runtime: docker
-    rootDir: backend_nlp
-    dockerfilePath: ./Dockerfile
-    plan: free
-    envVars:
-      - key: PORT
-        value: "8000"
+        sync: false          # Set to your Hugging Face Space URL (e.g. https://username-signlight-nlp.hf.space)
+                             # Leave blank to run Phase A only (syllable-weighted timing, no WhisperX)
 
   # ── Frontend (Static React on Render) ────────────────────────────
   - type: web

@@ -17,6 +17,36 @@ from semantic_map import nearest_sign, APPROX_THRESHOLD, LOW_THRESHOLD, SIGN_VOC
 
 SIGN_VOCAB_UPPER = {w.upper() for w in SIGN_VOCAB}
 
+# Detects Bangla/Bengali script (Unicode block U+0980–U+09FF).
+_BANGLA_RE = re.compile(r"[ঀ-৿]")
+
+
+def _has_bangla(text: str) -> bool:
+    return bool(_BANGLA_RE.search(text))
+
+
+def _gloss_mixed_bangla(nlp: spacy.language.Language, text: str) -> dict:
+    """
+    Fallback pipeline for Bengali or mixed Bangla-English text.
+    English spaCy en_core_web_md cannot POS-tag Bengali script — so we route
+    each whitespace-split token individually instead of running the full doc pipeline.
+    Bengali-script tokens → concept card (honest unknown).
+    ASCII tokens → normal route_token path via single-token spaCy doc.
+    """
+    tokens = text.split()[:8]
+    words, word_meta = [], []
+    for raw in tokens:
+        if _BANGLA_RE.search(raw):
+            entry = {"type": "concept", "word": raw, "confidence": 0.0, "nearest": None, "nearestScore": 0.0}
+        else:
+            doc = nlp(raw.lower())
+            tok = doc[0] if doc else None
+            entry = route_token(tok) if tok else {"type": "concept", "word": raw, "confidence": 0.0}
+        words.append(entry.get("word", raw))
+        word_meta.append(entry)
+    gloss = " ".join(str(w).upper() for w in words if w)
+    return {"gloss": gloss, "words": words, "wordMeta": word_meta, "sovOrder": words}
+
 # POS tags to keep as content words
 CONTENT_POS = {"NOUN", "VERB", "ADJ", "ADV", "PROPN", "NUM"}
 
@@ -82,7 +112,13 @@ def gloss_caption(nlp: spacy.language.Language, text: str) -> dict:
         wordMeta: [{type, word, confidence, ...}, ...],
         sovOrder: [...]
       }
+    Bengali or mixed Bangla-English text is routed to _gloss_mixed_bangla()
+    because en_core_web_md cannot POS-tag Bengali script correctly.
     """
+    if not text or not text.strip():
+        return {"gloss": "", "words": [], "wordMeta": [], "sovOrder": []}
+    if _has_bangla(text):
+        return _gloss_mixed_bangla(nlp, text)
     doc = nlp(text)
 
     subjects, objects, verbs, others = [], [], [], []

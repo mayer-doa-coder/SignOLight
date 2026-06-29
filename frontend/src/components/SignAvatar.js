@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { VRMLoaderPlugin, VRMUtils } from "@pixiv/three-vrm";
-import { effectiveNMM, computeWordTimings, applySlowPlayback } from "../services/timelineScheduler";
+import { effectiveNMM, resolveSignState } from "../services/timelineScheduler";
 import "./SignAvatar.css";
 
 const VRM_MODEL_URL = "/models/sign.vrm";
@@ -676,7 +676,28 @@ function createVrmParts(vrm) {
     rightLittleDistal: getBone(vrm, "rightLittleDistal"),
   };
 
-  return { vrm, bones };
+  // Probe for model-specific isolated brow blendshapes beyond the VRM standard preset set.
+  // Standard VRM only has: happy/sad/angry/surprised/relaxed/aa/ih/ou.
+  // Custom models may expose browDownLeft, browOuterUpLeft, etc. for isolated brow control.
+  // getExpression returns undefined for unknown names — no side effects from probing.
+  const manager = vrm.expressionManager;
+  const customBrow = { down: [], up: [] };
+  if (manager?.getExpression) {
+    const probe = (name) => manager.getExpression(name) != null;
+    ["browDownLeft", "browDownRight", "brow_down_left", "brow_down_right"].forEach((n) => {
+      if (probe(n)) customBrow.down.push(n);
+    });
+    ["browOuterUpLeft", "browOuterUpRight", "browInnerUp", "brow_outer_up_left", "browRaiserLeft", "browRaiserRight"].forEach((n) => {
+      if (probe(n)) customBrow.up.push(n);
+    });
+    if (customBrow.down.length || customBrow.up.length) {
+      console.log("[SignAvatar] Custom brow blendshapes found — isolated brow NMM active:", customBrow);
+    } else {
+      console.log("[SignAvatar] No custom brow blendshapes in model — using full-face presets for NMM (WH=angry, YN=surprised)");
+    }
+  }
+
+  return { vrm, bones, customBrow };
 }
 
 function setBone(bones, name, x = 0, y = 0, z = 0) {
@@ -728,20 +749,48 @@ function setVrmFingerPose(bones, side, pose) {
   });
 }
 
-function applyVrmExpression(vrm, expression, time) {
+// mouthShape: "ou" | "aa" | "ih" | null  — NMM mouth morpheme approximation using VRM vowel presets
+// customBrow: { down: string[], up: string[] } | null  — model-specific isolated brow blendshapes if detected
+function applyVrmExpression(vrm, expression, time, intensity = 1, mouthShape = null, customBrow = null) {
   const manager = vrm.expressionManager;
   if (!manager) return;
 
-  ["happy", "sad", "angry", "surprised", "relaxed", "aa", "ih", "ou", "blink"].forEach((name) => {
+  // "blink" is not a VRM1 preset — VRM1 uses "blinkLeft"/"blinkRight". Omit to avoid silent errors.
+  ["happy", "sad", "angry", "surprised", "relaxed", "aa", "ih", "ou"].forEach((name) => {
     manager.setValue(name, 0);
   });
+  // Also reset any custom brow blendshapes found in the model
+  customBrow?.down?.forEach((n) => manager.setValue(n, 0));
+  customBrow?.up?.forEach((n) => manager.setValue(n, 0));
 
-  if (expression === "smile") manager.setValue("happy", 0.65);
-  if (expression === "soft") manager.setValue("relaxed", 0.45);
-  if (expression === "sad") manager.setValue("sad", 0.65);
-  if (expression === "firm") manager.setValue("angry", 0.35);
-  if (expression === "question") manager.setValue("surprised", 0.38);
-  if (expression === "focus") manager.setValue("aa", 0.08 + Math.max(0, Math.sin(time * 5)) * 0.08);
+  if (expression === "smile") manager.setValue("happy", 0.65 * intensity);
+  if (expression === "soft") manager.setValue("relaxed", 0.45 * intensity);
+  if (expression === "sad") manager.setValue("sad", 0.50 * intensity);   // negation NMM
+
+  if (expression === "firm") {
+    // WH-question: prefer isolated brow-down if model exposes it; fall back to full-face angry
+    if (customBrow?.down?.length) {
+      customBrow.down.forEach((n) => manager.setValue(n, 0.80 * intensity));
+    } else {
+      manager.setValue("angry", 0.55 * intensity);
+    }
+  }
+  if (expression === "question") {
+    // YN-question: prefer isolated brow-up if model exposes it; fall back to full-face surprised
+    if (customBrow?.up?.length) {
+      customBrow.up.forEach((n) => manager.setValue(n, 0.80 * intensity));
+    } else {
+      manager.setValue("surprised", 0.55 * intensity);
+    }
+  }
+
+  if (expression === "focus") manager.setValue("aa", (0.08 + Math.max(0, Math.sin(time * 5)) * 0.08) * intensity);
+
+  // NMM mouth morpheme approximation — BdSL has mouth-shape components that accompany each NMM type.
+  // "ou" (pursed) for WH-questions, "aa" (open) for YN-questions, "ih" (tight) for negation.
+  if (mouthShape === "ou") manager.setValue("ou", 0.30 * intensity);
+  else if (mouthShape === "aa") manager.setValue("aa", 0.20 * intensity);
+  else if (mouthShape === "ih") manager.setValue("ih", 0.25 * intensity);
 
   manager.update();
 }
@@ -1012,7 +1061,7 @@ function fitVrmToScene(vrm) {
 
 // sentenceNMM is a structured object { type, wordIndex, headY } from computeNMM.
 // effectiveNMM is already pre-filtered for word onset by the parent SignAvatar component.
-function SignAvatar3D({ signInfo, signClip, wordProgress, active, activeNMM }) {
+function SignAvatar3D({ signInfo, signClip, wordProgress, active, activeNMM, snapToSign }) {
   const canvasRef = useRef(null);
   const vrmPartsRef = useRef(null);
   const fallbackPartsRef = useRef(null);
@@ -1021,6 +1070,7 @@ function SignAvatar3D({ signInfo, signClip, wordProgress, active, activeNMM }) {
   const wordProgressRef = useRef(wordProgress);
   const activeRef = useRef(active);
   const activeNMMRef = useRef(activeNMM);
+  const snapRef = useRef(snapToSign);
 
   useEffect(() => {
     signInfoRef.current = signInfo;
@@ -1028,7 +1078,8 @@ function SignAvatar3D({ signInfo, signClip, wordProgress, active, activeNMM }) {
     wordProgressRef.current = wordProgress;
     activeRef.current = active;
     activeNMMRef.current = activeNMM;
-  }, [signInfo, signClip, wordProgress, active, activeNMM]);
+    snapRef.current = snapToSign;
+  }, [signInfo, signClip, wordProgress, active, activeNMM, snapToSign]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -1063,6 +1114,14 @@ function SignAvatar3D({ signInfo, signClip, wordProgress, active, activeNMM }) {
     rim.position.set(-2, 1.8, 1.5);
     scene.add(rim);
 
+    // Gaze target — the avatar's eyes track this Object3D via vrm.lookAt.
+    // Repositioned each frame based on NMM context to signal grammatical meaning through gaze.
+    const gazeTarget = new THREE.Object3D();
+    gazeTarget.position.set(0, 0.55, 3.5);
+    scene.add(gazeTarget);
+    // Persistent Vector3 reused each frame to avoid per-frame allocation.
+    const gazeCurrentPos = new THREE.Vector3(0, 0.55, 3.5);
+
     function createFallbackAvatar() {
       if (fallbackPartsRef.current) return;
       const fallback = createAvatar();
@@ -1095,6 +1154,11 @@ function SignAvatar3D({ signInfo, signClip, wordProgress, active, activeNMM }) {
 
           scene.add(vrm.scene);
           vrmPartsRef.current = createVrmParts(vrm);
+          // Wire eye gaze: set gazeTarget as the lookAt target so vrm.update() tracks it each frame.
+          // vrm.lookAt is null if the model has no lookAt section — guard required.
+          if (vrm.lookAt) {
+            vrm.lookAt.target = gazeTarget;
+          }
         } catch (error) {
           console.error("VRM setup failed:", error);
           createFallbackAvatar();
@@ -1122,6 +1186,10 @@ function SignAvatar3D({ signInfo, signClip, wordProgress, active, activeNMM }) {
       "rightUpperArm", "rightLowerArm", "rightHand",
       "head",
     ];
+    // NMM fade-in: ramp expression 0→full over 200ms instead of snapping instantly.
+    let nmmActiveSince = null;  // clock.getElapsedTime() when current NMM type began
+    let prevNMMType = "neutral";
+    const NMM_FADE_DURATION = 0.2; // seconds
     let prevBoneSnapshot = {};
     let prevMotionKey = null;
 
@@ -1156,23 +1224,55 @@ function SignAvatar3D({ signInfo, signClip, wordProgress, active, activeNMM }) {
       const vrmParts = vrmPartsRef.current;
       const fallbackParts = fallbackPartsRef.current;
 
+      // Hoist NMM state — used by both VRM path and gaze update below.
+      const nmm = activeNMMRef.current;
+      const nmmType = nmm?.type ?? "neutral";
+
+      // Eye gaze: reposition gazeTarget each frame so vrm.lookAt tracks meaningful positions.
+      // WH → slight down-right (thinking), YN → direct at camera (engaging),
+      // negation → slight left (assertive), idle → slow drift, neutral signing → audience position.
+      if (vrmParts?.vrm?.lookAt) {
+        const isActive = activeRef.current;
+        let tx, ty, tz;
+        if (!isActive) {
+          tx = Math.sin(time * 0.4) * 0.25;
+          ty = 0.62 + Math.sin(time * 0.3) * 0.08;
+          tz = 4.0;
+        } else if (nmmType === "yn-question") {
+          tx = 0; ty = 0.62; tz = 4.3;         // direct at camera — engaging the viewer
+        } else if (nmmType === "wh-question") {
+          tx = 0.18; ty = 0.28; tz = 3.0;      // down-right — thinking/searching
+        } else if (nmmType === "negation") {
+          tx = -0.3; ty = 0.50; tz = 3.5;      // slight left — assertive away-gaze
+        } else {
+          tx = 0; ty = 0.50; tz = 3.5;         // neutral signing — audience position
+        }
+        gazeCurrentPos.lerp({ x: tx, y: ty, z: tz }, 0.05);
+        gazeTarget.position.copy(gazeCurrentPos);
+      }
+
       if (vrmParts) {
         // Detect sign change by tracking motion + clip presence as a compound key.
         // On change: snapshot current bone state (= end of previous sign) so the
         // transition lerp knows where to blend from.
         const motionKey = info.motion + (clip ? ":clip" : "");
         if (activeRef.current && prevMotionKey !== null && motionKey !== prevMotionKey) {
-          const snapshot = {};
-          TRANSITION_BONES.forEach((name) => {
-            const boneArr = Array.isArray(vrmParts.bones[name])
-              ? vrmParts.bones[name]
-              : [vrmParts.bones[name]];
-            const bone = boneArr.find((b) => b);
-            if (bone) snapshot[name] = [bone.rotation.x, bone.rotation.y, bone.rotation.z];
-          });
-          prevBoneSnapshot = snapshot;
-          transitionActive = true;
-          transitionElapsed = 0;
+          if (snapRef.current) {
+            // Arrived late into a word window — skip blend and snap directly to target pose.
+            transitionActive = false;
+          } else {
+            const snapshot = {};
+            TRANSITION_BONES.forEach((name) => {
+              const boneArr = Array.isArray(vrmParts.bones[name])
+                ? vrmParts.bones[name]
+                : [vrmParts.bones[name]];
+              const bone = boneArr.find((b) => b);
+              if (bone) snapshot[name] = [bone.rotation.x, bone.rotation.y, bone.rotation.z];
+            });
+            prevBoneSnapshot = snapshot;
+            transitionActive = true;
+            transitionElapsed = 0;
+          }
         }
         prevMotionKey = motionKey;
 
@@ -1208,17 +1308,27 @@ function SignAvatar3D({ signInfo, signClip, wordProgress, active, activeNMM }) {
 
         // NMM (Non-Manual Markers): grammar-driven overrides applied AFTER per-sign motion.
         // Uses pre-filtered activeNMM (word-onset already applied by parent component).
-        // WH-questions: furrow brows ("angry" blendshape approximation)
-        // YN-questions: raise brows ("surprised" blendshape approximation)
-        // Negation: firm expression + head-shake (head.rotation.y oscillation)
-        const nmm = activeNMMRef.current;
-        const nmmType = nmm?.type ?? "neutral";
+        // WH: furrow brows ("firm") + pursed mouth ("ou") + thinking gaze (down-right)
+        // YN: raise brows ("question") + open mouth ("aa") + engaging gaze (at camera)
+        // Negation: sad + tight mouth ("ih") + assertive gaze (left) + head-shake
+        // Expression ramps 0→full over NMM_FADE_DURATION (200ms) — natural onset.
+        // nmmType hoisted above (shared with gaze update).
+
+        if (nmmType !== prevNMMType) {
+          nmmActiveSince = nmmType !== "neutral" ? time : null;
+          prevNMMType = nmmType;
+        }
+        const nmmIntensity = nmmType !== "neutral" && nmmActiveSince !== null
+          ? Math.min(1, (time - nmmActiveSince) / NMM_FADE_DURATION)
+          : 0;
+
+        const cb = vrmParts.customBrow;
         if (nmmType === "wh-question") {
-          applyVrmExpression(vrmParts.vrm, "angry", time);
+          applyVrmExpression(vrmParts.vrm, "firm", time, nmmIntensity, "ou", cb);
         } else if (nmmType === "yn-question") {
-          applyVrmExpression(vrmParts.vrm, "surprised", time);
+          applyVrmExpression(vrmParts.vrm, "question", time, nmmIntensity, "aa", cb);
         } else if (nmmType === "negation") {
-          applyVrmExpression(vrmParts.vrm, "firm", time);
+          applyVrmExpression(vrmParts.vrm, "sad", time, nmmIntensity, "ih", cb);
           setBone(vrmParts.bones, "head", 0, Math.sin(time * 9) * (nmm.headY ?? 0.22), 0);
         }
 
@@ -1228,12 +1338,11 @@ function SignAvatar3D({ signInfo, signClip, wordProgress, active, activeNMM }) {
         vrmParts.vrm.update(frameDelta);
       } else if (fallbackParts) {
         // NMM for fallback avatar — same grammar rules, using expression + head rotation
-        const nmm = activeNMMRef.current;
-        const nmmType = nmm?.type ?? "neutral";
+        // nmmType hoisted above (shared with gaze update).
         const nmmExpression =
-          nmmType === "wh-question" ? "firm"
-          : nmmType === "yn-question" ? "question"
-          : nmmType === "negation" ? "firm"
+          nmmType === "wh-question" ? "firm"     // brow-down furrow (angry)
+          : nmmType === "yn-question" ? "question" // brow-up raise (surprised)
+          : nmmType === "negation" ? "sad"         // droop — visually distinct from WH
           : info.expression;
 
         applyExpression(fallbackParts, nmmExpression, time);
@@ -1280,32 +1389,20 @@ const NEUTRAL_NMM = { type: "neutral", wordIndex: -1, headY: 0 };
 export default function SignAvatar({ caption, isActive, currentTime = 0, sentenceNMM = NEUTRAL_NMM, playbackSpeed = 1.0 }) {
   const [signClip, setSignClip] = useState(null);
 
-  // Single combined word-timing computation using timelineScheduler utilities.
-  // Phase A: character-weighted timing via computeWordTimings.
-  // Learning mode: applySlowPlayback stretches windows by 1/speedFactor.
-  // Phase B: replace computeWordTimings with WhisperX per-word timestamps.
-  const { wordIndex, wordProgress } = useMemo(() => {
-    const words = caption?.words ?? [];
-    if (!caption || !isActive || words.length === 0) return { wordIndex: 0, wordProgress: 0 };
-
-    const currentTimeMs = currentTime * 1000;
-    let timings = computeWordTimings(caption);
-    if (playbackSpeed > 0 && playbackSpeed < 1) {
-      timings = applySlowPlayback(timings, playbackSpeed);
+  // Word timing via resolveSignState (single source of truth in timelineScheduler).
+  // Phase A: syllable-weighted approximation. Phase B: WhisperX timestamps.
+  // isCatchingUp is true when we arrive in the last 35% of a word's window —
+  // SignAvatar3D will snap instead of blend, so the avatar never lags visibly.
+  const { wordIndex, wordProgress, isCatchingUp } = useMemo(() => {
+    if (!caption || !isActive || (caption?.words ?? []).length === 0) {
+      return { wordIndex: 0, wordProgress: 0, isCatchingUp: false };
     }
-
-    for (let i = 0; i < timings.length; i++) {
-      const t = timings[i];
-      if (currentTimeMs >= t.startMs && currentTimeMs <= t.endMs) {
-        const progress = Math.max(
-          0,
-          Math.min(1, (currentTimeMs - t.startMs) / Math.max(1, t.durationMs))
-        );
-        return { wordIndex: i, wordProgress: progress };
-      }
-    }
-    // Past last word in caption — hold on last word.
-    return { wordIndex: timings.length - 1, wordProgress: 1 };
+    const { wordIndex, wordProgress, isCatchingUp } = resolveSignState(
+      caption,
+      currentTime * 1000,
+      playbackSpeed
+    );
+    return { wordIndex, wordProgress, isCatchingUp };
   }, [caption, currentTime, isActive, playbackSpeed]);
 
   const words = caption?.words ?? [];
@@ -1362,6 +1459,7 @@ export default function SignAvatar({ caption, isActive, currentTime = 0, sentenc
           wordProgress={wordProgress}
           active={!!isActive}
           activeNMM={activeNMM}
+          snapToSign={isCatchingUp}
         />
         {isConceptCard && (
           <div className="concept-card glass fade-in-up">

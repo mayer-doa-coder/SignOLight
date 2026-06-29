@@ -118,6 +118,33 @@ describe("computeNMM", () => {
     expect(nmm.headY).toBe(0.22);
   });
 
+  it("detects WH-question from WHEN in gloss with correct wordIndex", () => {
+    const nmm = computeNMM("CLASS WHEN START", "When does the class start?");
+    expect(nmm.type).toBe("wh-question");
+    expect(nmm.wordIndex).toBe(1); // WHEN is at index 1
+    expect(nmm.headY).toBe(0);
+  });
+
+  it("detects WH-question from WHY in gloss — not at position 0", () => {
+    const nmm = computeNMM("NETWORK SLOW WHY", "Why is the network slow?");
+    expect(nmm.type).toBe("wh-question");
+    expect(nmm.wordIndex).toBe(2); // WHY is at index 2
+  });
+
+  it("detects negation from CANT with headY 0.22", () => {
+    const nmm = computeNMM("STUDENT EXAM CANT PASS", "The student cannot pass the exam.");
+    expect(nmm.type).toBe("negation");
+    expect(nmm.wordIndex).toBe(2); // CANT is at index 2
+    expect(nmm.headY).toBe(0.22);
+  });
+
+  it("detects negation from NOTHING with headY 0.22", () => {
+    const nmm = computeNMM("ERROR NOTHING SHOW", "There is nothing to show.");
+    expect(nmm.type).toBe("negation");
+    expect(nmm.wordIndex).toBe(1); // NOTHING is at index 1
+    expect(nmm.headY).toBe(0.22);
+  });
+
   it("handles null/undefined gloss gracefully", () => {
     expect(computeNMM(null, "Is this correct?").type).toBe("yn-question");
     expect(computeNMM(undefined, "A plain statement.").type).toBe("neutral");

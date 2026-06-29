@@ -1,32 +1,34 @@
 # Testing Log — SignLearn / SignOLight
-*Last updated: 2026-06-29*
+*Last updated: 2026-06-29 (PART H audit — all counts corrected to match actual Jest output)*
 
 ---
 
 ## Automated Test Results
 
-### Backend unit tests — `backend/__tests__/sign.test.js` (19 tests)
-All 19 passing. Covers `simpleGloss`, `buildGlossPrompt`, `normalizeGloss`.
+### Backend unit tests — `backend/__tests__/sign.test.js` (30 tests)
+All 30 passing. Covers `simpleGloss`, `buildGlossPrompt`, `normalizeGloss`, verb lemmatization, and Bangla code-switching (Phase B1).
 
 | Suite | Tests | Status |
 |-------|-------|--------|
 | simpleGloss | 8 | ✅ All passing |
+| simpleGloss verb lemmatization | 5 | ✅ All passing — inflected → base-form, SOV end-position |
 | buildGlossPrompt | 6 | ✅ All passing |
 | normalizeGloss | 5 | ✅ All passing |
+| Bangla code-switching | 6 | ✅ All passing — `detectBangla`, mixed prompt section, Bangla token preservation |
 
 ---
 
-### Backend integration tests — `backend/__tests__/integration.test.js` (20 tests)
+### Backend integration tests — `backend/__tests__/integration.test.js` (13 tests)
 
 | Suite | Tests | Status |
 |-------|-------|--------|
 | GET /health | 1 | ✅ Passing |
-| GET /api/cache/:videoId | 4 | ✅ Passing — 404 on miss, file cache hit, promotion to hot layer, path sanitization |
-| POST /api/sign/batch | 7 | ✅ Passing — result structure, cache write with videoId, round-trip, no-videoId guard, empty array |
+| GET /api/cache/:videoId | 4 | ✅ Passing — 404 on miss, file cache hit, different-videoId 404, path sanitization |
+| POST /api/sign/batch | 8 | ✅ Passing — 400 missing array, 400 non-array, result length, field shape, cache write, cache hit round-trip, no-videoId guard, empty array |
 
 ---
 
-### Comprehension verification tests — `backend/__tests__/comprehension.test.js` (22 tests)
+### Comprehension verification tests — `backend/__tests__/comprehension.test.js` (29 tests)
 
 These are automated proxies for the CTO success metrics, tested without human participants.
 
@@ -46,14 +48,29 @@ These are automated proxies for the CTO success metrics, tested without human pa
 
 ---
 
-### Frontend utility tests — `frontend/src/__tests__/sync.test.js` (16 tests)
+### Frontend utility tests — `frontend/src/__tests__/sync.test.js` (23 tests)
 
-All 16 passing. Covers `findCaption` (binary search) and `computeNMM` (NMM grammar rules).
+All 23 passing. Covers `findCaption` (binary search) and `computeNMM` (NMM grammar rules).
 
 | Suite | Tests | Status |
 |-------|-------|--------|
 | findCaption | 7 | ✅ Passing — null on empty, boundary hits, gap detection, 20-min seek |
-| computeNMM | 9 | ✅ Passing — WH/YN/NEG/neutral types, wordIndex precision, headY values |
+| computeNMM | 16 | ✅ Passing — WH/YN/NEG/neutral types, wordIndex precision, headY values, edge cases |
+
+---
+
+### Frontend scheduler tests — `frontend/src/__tests__/timelineScheduler.test.js` (32 tests)
+
+All 32 passing. Covers the deterministic sign scheduling service.
+
+| Suite | Tests | Status |
+|-------|-------|--------|
+| computeWordTimings | 5 | ✅ Passing — per-word entries, continuous windows, null/empty |
+| resolveSignState | 8 | ✅ Passing — null caption, correct word index, isCatchingUp flag, past-end hold, pre-first-word guard |
+| effectiveNMM | 5 | ✅ Passing — NMM gating by word index |
+| shouldAvatarAnimate | 5 | ✅ Passing — playing/paused/idle/seeking/null caption |
+| computeWordTimings with spokenTimings (Phase B) | 6 | ✅ Passing — speech-span boundaries, fallback to caption bounds |
+| applySlowPlayback | 3 | ✅ Passing — doubled duration, contiguous windows |
 
 ---
 
@@ -121,4 +138,3 @@ Per CLAUDE.md CTO Axiom 2: synthetic avatars score 2.5–3.5/5 comprehension (Qu
 - Sign representations are **not validated** by the BdSL Deaf community
 - Dictionary covers ~28% of domain words with clip files; remainder uses procedural motion
 - Word-level timestamps are character-weighted approximations (WhisperX needed for Phase B)
-- Bangla code-switching not yet supported (Phase B1)

@@ -24,7 +24,27 @@ const SIGN_VOCAB = [
   "PROCESS", "STEP", "RESULT", "PROBLEM", "SOLUTION", "COMPUTER", "PROGRAM",
 ].join(" ");
 
+// Detects Bangla/Bengali script (Unicode block U+0980–U+09FF).
+// Used for Phase B1 code-switching: mixed Bangla-English lecture captions.
+function detectBangla(text) {
+  return /[ঀ-৿]/.test(text ?? "");
+}
+
 function buildGlossPrompt(text) {
+  const banglaSection = detectBangla(text) ? `
+
+IMPORTANT — MIXED BANGLA-ENGLISH TEXT DETECTED:
+- Translate Bengali words to their English conceptual equivalent first, then apply BdSL rules.
+- Bengali nouns: map to nearest SIGN_VOCAB word if a concept match exists.
+- Bengali proper nouns (person names, places, organisations): use [FINGERSPELL:X] with romanised transliteration.
+- Bengali concepts with no SIGN_VOCAB equivalent: use [CONCEPT:bengali_word].
+- Apply SOV order after translation, as always.
+Mixed examples:
+"শিক্ষক বললেন that neural networks learn patterns" → TEACHER NEURAL NETWORK PATTERN LEARN
+"আমার নাম Riya এবং I study computer science"       → [FINGERSPELL:RIYA] COMPUTER STUDY
+"এই algorithm টা কি কাজ করে?"                       → ALGORITHM WHAT DO
+` : "";
+
   return `Convert this English caption to BdSL (Bangla Sign Language) gloss notation.
 
 AVAILABLE BdSL SIGNS — prefer words from this list when meaning is preserved:
@@ -60,7 +80,7 @@ BdSL EXAMPLES — source: Bangla-SGP dataset (arXiv:2511.08507):
 
 Input: "${text}"
 
-Reply ONLY with the gloss — no explanation, no punctuation.`;
+Reply ONLY with the gloss — no explanation, no punctuation.` + banglaSection;
 }
 
 function normalizeGloss(gloss) {
@@ -273,9 +293,9 @@ function simpleGloss(text) {
   }
 
   const words = text
-    .replace(/[^\w\s]/g, "")
+    .replace(/[^\w\sঀ-৿]/g, "")  // preserve Bangla Unicode block
     .split(/\s+/)
-    .filter((w) => w && !stopWords.has(w.toLowerCase()))
+    .filter((w) => w && (/[ঀ-৿]/.test(w) || !stopWords.has(w.toLowerCase())))
     .map((w) => w.toUpperCase())
     .slice(0, 10);
 
@@ -338,6 +358,66 @@ async function enrichConceptCards(results) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// WhisperX word-level timestamps (Phase B2)
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch word-level timestamps from the NLP microservice.
+ * Runs in parallel with the Groq gloss pipeline during batch processing.
+ *
+ * Returns an array of { word, startMs, endMs, score } sorted by startMs,
+ * or null if the NLP service is unavailable or the request fails.
+ * Null return is safe — the frontend falls back to syllable timing.
+ *
+ * @param {string} videoId
+ * @returns {Promise<Array|null>}
+ */
+async function fetchWordTimestamps(videoId) {
+  const NLP_URL = process.env.NLP_SERVICE_URL;
+  if (!NLP_URL) return null;
+
+  try {
+    const controller = new AbortController();
+    // WhisperX can take up to 2 minutes on CPU for a 10-minute video.
+    const timeout = setTimeout(() => controller.abort(), 180_000);
+    const res = await fetch(`${NLP_URL}/nlp/timestamps`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ videoId }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    if (!res.ok) {
+      console.warn(`[timestamps] NLP service returned ${res.status} for ${videoId}`);
+      return null;
+    }
+    const data = await res.json();
+    return Array.isArray(data.words) && data.words.length > 0 ? data.words : null;
+  } catch (err) {
+    if (err.name !== "AbortError") {
+      console.warn(`[timestamps] fetch failed for ${videoId}: ${err.message}`);
+    }
+    return null;
+  }
+}
+
+/**
+ * Slice all spoken words that fall within a single caption's time window.
+ * Returns null when there are fewer than 2 words (not enough for meaningful improvement).
+ *
+ * @param {Array} allWords  - full video word list from WhisperX
+ * @param {{ start: number, end: number }} caption  - start/end in ms
+ * @returns {Array|null}
+ */
+function alignTimestampsToCaption(allWords, caption) {
+  if (!allWords?.length) return null;
+  const words = allWords.filter(
+    (w) => w.startMs >= caption.start && w.startMs < caption.end
+  );
+  return words.length >= 2 ? words : null;
+}
+
 // POST /api/sign/translate — single caption
 router.post("/translate", async (req, res) => {
   try {
@@ -365,6 +445,13 @@ router.post("/batch", async (req, res) => {
     const batchSize = Number(process.env.GROQ_BATCH_SIZE || 10);
     const results = [];
 
+    // Kick off WhisperX timestamp extraction in parallel with Groq processing.
+    // This runs concurrently — on a 10-minute video it takes ~60-90s (CPU),
+    // which overlaps with the 30-60s Groq simplify + gloss pipeline.
+    // If NLP_SERVICE_URL is unset or the call fails, timestampsPromise resolves null
+    // and the frontend gracefully falls back to syllable-weighted timing.
+    const timestampsPromise = videoId ? fetchWordTimestamps(videoId) : Promise.resolve(null);
+
     // Step 1: Simplify all captions (educational scaffolding layer).
     // Run simplification in batches to match gloss batch size.
     const simplifiedTexts = [];
@@ -391,6 +478,17 @@ router.post("/batch", async (req, res) => {
         ...signs[index],
       }));
       results.push(...translated);
+    }
+
+    // Attach WhisperX word-level timestamps to each caption (Phase B2).
+    // spokenTimings gives the frontend accurate speech boundaries so word windows
+    // are distributed over actual speech time, not caption metadata time.
+    const allSpokenWords = await timestampsPromise;
+    if (allSpokenWords) {
+      for (const result of results) {
+        const spoken = alignTimestampsToCaption(allSpokenWords, result);
+        if (spoken) result.spokenTimings = spoken;
+      }
     }
 
     // Record vocabulary gaps for Phase C gap tracking.
@@ -436,4 +534,4 @@ router.post("/batch", async (req, res) => {
 
 module.exports = router;
 // Exported for unit tests only
-module.exports._test = { simpleGloss, buildGlossPrompt, normalizeGloss, glossResult };
+module.exports._test = { simpleGloss, buildGlossPrompt, normalizeGloss, glossResult, detectBangla };

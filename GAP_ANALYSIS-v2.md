@@ -1,5 +1,5 @@
 # GAP_ANALYSIS-v2.md
-*Roadmap PDF vs. Current Implementation — updated 2026-06-29 (post Week 1 + Week 2 + sync fix sprint + NLP pipeline sprint)*
+*Roadmap PDF vs. Current Implementation — updated 2026-06-29 (post Week 1 + Week 2 + sync fix sprint + NLP pipeline sprint + PART F Bangla sprint)*
 
 Status key: ✅ Implemented | 🟡 Partial | ❌ Missing
 
@@ -38,10 +38,10 @@ Status key: ✅ Implemented | 🟡 Partial | ❌ Missing
 | Requirement | Roadmap Says | Current Implementation | Status | Gap | Risk | Priority | Recommendation |
 |---|---|---|---|---|---|---|---|
 | Timeline-locked scheduling | "Most practical; production-ready. Recommended." | Binary search `findCaption()` every **100ms** (reduced from 250ms) via `timelineScheduler.js`; clips preloaded per-caption to eliminate first-load lag; syllable-weighted word timing | ✅ Implemented | None | Low | — | Sync-fix sprint: poll 250→100ms, caption preload, syllable weighting |
-| Word-level timestamps | "WhisperX: sub-100ms accuracy word timestamps" | Syllable-weighted via `computeWordTimings()` in timelineScheduler | 🟡 Partial | Still approximation — real timestamps need WhisperX (Phase B2) | Medium | Phase B | WhisperX Python microservice in Phase B2 |
+| Word-level timestamps | "WhisperX: sub-100ms accuracy word timestamps" | `POST /nlp/timestamps` on NLP service downloads audio via yt-dlp, runs WhisperX + phoneme alignment, returns per-word `{ startMs, endMs, score }`. Node backend calls this in parallel with Groq; attaches as `caption.spokenTimings`. `computeWordTimings()` uses `spokenTimings[0].startMs` → `spokenTimings[last].endMs` as speech boundaries instead of caption metadata span. | 🟡 Code done — needs deployment | Code complete; free deployment on **Hugging Face Spaces** (16 GB RAM, Docker). Requires `NLP_SERVICE_URL` set in Render backend env. See `docs/WHISPERX_DEPLOYMENT.md`. Gloss-to-spoken word alignment remains approximate (SOV reorder means 1:1 mapping is impossible without BdSL ASR corpus) | Medium | Phase B2 | Deploy `backend_nlp/` as HF Space, set `NLP_SERVICE_URL` in Render backend |
 | Seek handling | "Seek → state reset + re-evaluate within ~500ms" | `seekingRef.current = true` BEFORE `setPlayerState("seeking")`; binary search snaps immediately | ✅ Implemented | None | Low | — | Correct |
 | Pause/resume handling | "Pause → freeze; Resume → correct position" | `if (playerState === "paused") return` guard; resume triggers `findCaption` | ✅ Implemented | None | Low | — | Correct |
-| Catch-up / skip buffer | "Implement a catch-up/skip buffer" | Binary search provides natural catch-up; drift tracker + debug panel shows live drift vs ≤2s metric | 🟡 Partial | No explicit skip-sign policy | Low | P3 | Good enough for Phase A demo |
+| Catch-up / skip buffer | "Implement a catch-up/skip buffer" | `resolveSignState` returns `isCatchingUp = wordProgress ≥ 0.65`; `SignAvatar3D` reads `snapRef` and skips the 100ms bone blend when catching up — avatar snaps directly to target pose instead of animating through a sign that is almost over | ✅ Implemented | None | — | — | PART C sprint |
 | Sync drift measurement | "≤2s at 5-minute intervals" | `driftRef` + `debugDriftMs` — measures caption-midpoint deviation every 2s; shown in debug panel | ✅ Implemented | Metric can now be verified | — | — | Implemented Week 2.4 |
 | Streaming buffer (live mic) | "Out of scope for hackathon" | Not present | ✅ Correctly absent | None | — | — | Phase B only |
 
@@ -51,13 +51,14 @@ Status key: ✅ Implemented | 🟡 Partial | ❌ Missing
 
 | Requirement | Roadmap Says | Current Implementation | Status | Gap | Risk | Priority | Recommendation |
 |---|---|---|---|---|---|---|---|
-| WH-question eyebrow furrow | "Furrowed brows; highest grammatical load" | `computeNMM` → `"wh-question"` → `applyVrmExpression(vrm, "angry", time)` — word-onset gated | 🟡 Partial | "angry" approximates furrow but not isolated brow control | Medium | P2 | Acceptable; note limitation in disclaimer |
-| YN-question eyebrow raise | "Raised eyebrows held throughout" | `"yn-question"` → `applyVrmExpression(vrm, "surprised", time)` — word-onset gated | 🟡 Partial | "surprised" approximates raise but not isolated | Low | P2 | Acceptable approximation |
-| Negation head-shake | "Head-shake is the grammatical core — often without a NOT sign" | `"negation"` → `"firm"` expression + `setBone(head, 0, Math.sin(time * 9) * headY, 0)` — word-onset gated | ✅ Implemented | None | — | — | Fixed Week 1.1 |
-| NMM timing onset/offset | "Synchronize NMM onset with correct sign" | `computeNMM` returns `{ wordIndex }`, `effectiveNMM(nmm, currentWordIndex)` gates until avatar reaches that word | ✅ Implemented | None | — | — | Implemented Week 2.3 |
-| Mouth morphemes | "Disambiguate otherwise-identical manual signs" | Not present | ❌ Missing | Full gap | Medium | P2 | Phase B; requires specific VRM blendshapes |
-| Eye gaze directionality | "Marks role shift, agreement" | Not present | ❌ Missing | Full gap | Low | P3 | Post-hackathon only |
-| NMM on fallback avatar | "Fallback avatar should also show NMM" | NMM expression + negation head-shake applied in fallback path | ✅ Implemented | None | — | — | Fixed Week 1.1 |
+| WH-question eyebrow furrow | "Furrowed brows; highest grammatical load" | `"wh-question"` → `applyVrmExpression(vrm, "firm", time, intensity, "ou", customBrow)` — brow probe at load auto-wires isolated brow blendshapes if model exposes them; falls back to angry=0.55 if not | 🟡 Partial | Brow isolation requires model to have `browDownLeft/Right` custom blendshapes — standard VRM preset does not. Runtime probe confirms at startup. Cannot reach ✅ without a different VRM model file. | Medium | P2 (model constraint) | Probe logs result to console. Expressiveness significantly enhanced by gaze (thinking down-right) + mouth (ou pursed lips) alongside the brow approximation. |
+| YN-question eyebrow raise | "Raised eyebrows held throughout" | `"yn-question"` → `applyVrmExpression(vrm, "question", time, intensity, "aa", customBrow)` — brow probe at load; falls back to surprised=0.55 | 🟡 Partial | Same model constraint as WH. Cannot reach ✅ without custom blendshapes in the VRM file. | Low | P2 (model constraint) | Enhanced by gaze (direct at camera) + mouth (aa open lips). |
+| Negation head-shake | "Head-shake is the grammatical core" | `"negation"` → `applyVrmExpression(vrm, "sad", time, intensity, "ih", customBrow)` + head oscillation + assertive left gaze | ✅ Implemented | Visually distinct from WH (sad vs firm, ih vs ou, left vs right gaze) | — | — | All three NMM types fully differentiated |
+| NMM timing onset/offset | "Synchronize NMM onset with correct sign" | `effectiveNMM` word-onset gating + 200ms `nmmActiveSince` fade-in ramp | ✅ Implemented | None | — | — | |
+| NMM visual differentiation | WH ≠ YN ≠ negation | WH: firm+ou+thinking-gaze; YN: surprised+aa+camera-gaze; NEG: sad+ih+head-shake+left-gaze | ✅ Implemented | None | — | — | All three distinguishable across 3 channels |
+| Mouth morphemes | "Disambiguate otherwise-identical manual signs" | NMM-context mouth shapes via VRM vowel presets: WH→"ou" (0.30, pursed); YN→"aa" (0.20, open); NEG→"ih" (0.25, tight) | ✅ Implemented (approximation) | Not BdSL-linguistically accurate — uses generic vowel shapes as visual proxies. True BdSL mouth morphemes require custom blendshapes. | Low | — | Implemented via `mouthShape` param in `applyVrmExpression`. Labeled approximation in code. |
+| Eye gaze directionality | "Marks role shift, agreement" | `vrm.lookAt.target = gazeTarget` wired at VRM load. Per-frame: YN→camera (0,0.62,4.3); WH→thinking down-right (0.18,0.28,3.0); NEG→assertive left (−0.3,0.5,3.5); idle→slow drift; signing→audience (0,0.5,3.5). Lerped at α=0.05 | ✅ Implemented | `vrm.lookAt` is null if model has no lookAt section — guard in place, silently degrades. Eye gaze marks discourse position, not full role-shift (that requires gloss annotation). | Low | — | Implemented via `gazeTarget` Object3D + per-frame lerp in animation loop |
+| NMM on fallback avatar | "Fallback avatar should also show NMM" | WH: "firm"; YN: "question"; NEG: "sad" + head-shake | ✅ Implemented | None | — | — | |
 
 ---
 
@@ -85,9 +86,9 @@ Status key: ✅ Implemented | 🟡 Partial | ❌ Missing
 | Text simplification pipeline | "captions → simplified → gloss" | `simplifyBatch()` runs before `batchTextToSignGloss()`; `caption.simplified` shown in CaptionBar | ✅ Implemented | — | — | — | Implemented Week 1.3 |
 | simpleGloss BdSL grammar | "Fallback must not be plain English order" | SOV heuristic: 35-verb set moves predicates to end | ✅ Implemented | Heuristic only; not validated | Low | — | Implemented Week 2.5 |
 | No neural BdSL generation | "Cannot train — no corpus" | Not attempted | ✅ Implemented | — | — | — | Correct |
-| Bangla audio / code-switching | "Phase B1 — prompt engineering first" | English-only pipeline | ❌ Missing | Full gap (Phase B) | Medium | Phase B | Prompt extensions in Phase B1 |
-| WhisperX Bengali ASR | "Phase B2" | Python microservice scaffolded (`backend_nlp/`); WhisperX not yet integrated | 🟡 Partial | WhisperX not wired; spaCy NLP pipeline wired | Medium | Phase B2 | Add WhisperX to `backend_nlp/` in Phase B2 |
-| BdSL community collaborator | "Every system that succeeded did co-design." | Not present | ❌ Missing | Full gap | **CRITICAL** | **P0** | Single most important non-code task |
+| Bangla audio / code-switching | "Phase B1 — prompt engineering first" | `detectBangla()` in `routes/sign.js` detects Unicode U+0980–U+09FF; `buildGlossPrompt()` appends MIXED BANGLA-ENGLISH instructions + 3 mixed example pairs when Bangla detected; `simpleGloss()` preserves Bangla tokens through stop-word filter (regex updated to `[^\w\sঀ-৿]`); `_gloss_mixed_bangla()` in `pipeline.py` routes Bengali tokens to concept cards | ✅ Implemented | Phase B1 prompt engineering complete. Gloss accuracy depends on Groq's Bengali understanding — validated output requires BdSL community collaborator. | Medium | Phase B1 ✅ | Prompt engineering done. To improve: recruit BdSL signer to validate code-switching output. |
+| WhisperX Bengali ASR | "Phase B2" | `timestamps.py` already auto-detects language via `result.get("language","en")` — Bengali audio triggers `language_code="bn"` alignment automatically. Return type updated to `{"words": [...], "language": "bn"}`. Dockerfile now installs `bn_core_news_sm` (graceful failure if unavailable). `_gloss_mixed_bangla()` in `pipeline.py` handles Bengali/mixed NLP input without English spaCy. | 🟡 Partial — code complete | WhisperX Bengali alignment auto-detects language at code level. Real gaps: (1) deployment needed to verify `bn` forced alignment model works on lecture audio; (2) `bn_core_news_sm` spaCy has limited vocabulary — Bengali tokens still route to concept cards. | Medium | Phase B2 | Code complete. Deploy `backend_nlp/` as HF Space, test with Bengali YouTube URL, check logs for `[timestamps] language detected: bn`. |
+| BdSL community collaborator | "Every system that succeeded did co-design." | Not present in code. Outreach document created: `docs/BdSL_COLLABORATOR_OUTREACH.md` — lists contacts (DISS Dhaka, BRAC ICED, Bangla-SGP team), ready-to-send email template, 5 validation tasks with acceptance criteria. | ❌ Missing | Human outreach required — cannot be implemented in code | **CRITICAL** | **P0** | Send email from `docs/BdSL_COLLABORATOR_OUTREACH.md` immediately. Every week without a collaborator is a week of unvalidated signs. |
 
 ---
 
@@ -114,14 +115,14 @@ Status key: ✅ Implemented | 🟡 Partial | ❌ Missing
 
 | Roadmap Priority | Status | Implementation File(s) | Remaining Gap |
 |---|---|---|---|
-| 1. Real-time sync architecture | ✅ Done | `PlayerPage.js`, `YouTubePlayer.js`, `utils/sync.js`, `services/timelineScheduler.js` | Skip-sign policy (minor) |
+| 1. Real-time sync architecture | ✅ Done | `PlayerPage.js`, `YouTubePlayer.js`, `utils/sync.js`, `services/timelineScheduler.js` | None — pre-first-word guard added (PART H sprint): `resolveSignState` now correctly returns first word at progress 0 when spokenTimings push effectiveStart past captionStart, instead of incorrectly showing the last word |
 | 2. Gloss-to-clip dictionary + blending | 🟡 Partial | `SignAvatar.js` — 27 clips, 100ms transition, fingerspell + concept card fallback | 26 domain words still no JSON clips |
 | 3. LLM gloss tuned to BdSL | ✅ Done | `routes/sign.js` — SIGN_VOCAB constraints, BdSL grammar, 8 arXiv examples, bracket notation, concept enrichment | No Deaf signer validation (P0 non-code gap) |
 | 4. Basic rule-based NMMs | ✅ Done | `utils/sync.js`, `SignAvatar.js`, `services/timelineScheduler.js` | Brow isolation (P2) |
 | 5. BdSL gloss notation standard | ❌ Post-hackathon | — | Phase 1 |
 | 6. Ham2Pose notation→motion | ❌ Post-hackathon | — | Phase 2 |
 | 7. Motion capture BdSL signers | ❌ Post-hackathon | — | Phase 2 |
-| 8. Educational effectiveness study | 🟡 Partial | `docs/testing_log.md` — 85-test automated suite (66 backend + 19 frontend); human participant protocol defined | Needs 1+ DHH participant session |
+| 8. Educational effectiveness study | 🟡 Partial | `docs/testing_log.md` — 127-test automated suite (72 backend + 55 frontend); human participant protocol defined | Needs 1+ DHH participant session |
 
 ---
 
@@ -137,8 +138,8 @@ Status key: ✅ Implemented | 🟡 Partial | ❌ Missing
 | 6 | ~~**Sync latency (250ms poll)**~~ — **RESOLVED**: poll reduced to 100ms; clips preloaded on caption change; syllable-weighted timing | `YouTubePlayer.js`, `SignAvatar.js`, `timelineScheduler.js` | — | — | ✅ Done (sync-fix sprint) |
 | 7 | ~~**SOV order confusing users**~~ — **RESOLVED**: "(BdSL order)" label added to gloss row in CaptionBar | `CaptionBar.js` | — | — | ✅ Done (sync-fix sprint) |
 | 8 | ~~**Open vocabulary — unknown words crash silently to concept card**~~ — **RESOLVED**: vocabulary-constrained LLM, `[FINGERSPELL:X]`/`[CONCEPT:X]` bracket routing, enriched concept cards (Groq definitions), fingerspell letter ticker | `SignAvatar.js`, `routes/sign.js`, `server.js` | — | — | ✅ Done (NLP pipeline sprint) |
-| 9 | **Comprehension testing** — automated 85 tests done; human protocol defined | `backend/__tests__/`, `frontend/src/__tests__/` | Automated ✅; Human ⏳ | — | ✅ Auto done; human pending |
+| 9 | **Comprehension testing** — automated 127 tests done (72 backend + 55 frontend); human protocol defined | `backend/__tests__/`, `frontend/src/__tests__/` | Automated ✅; Human ⏳ | — | ✅ Auto done; human pending |
 | 10 | **No demo backup video** | `docs/demo_backup.mp4` | Medium: WiFi/API fail scenario | 2 hours | **P2** |
 | 11 | **Syllable timing still approximate** | `timelineScheduler.js` | Medium: word windows off by ±30% | Phase B2 | Phase B (WhisperX) |
-| 12 | **Bangla code-switching** | Prompt engineering | Full gap (Phase B1) | Low | Phase B |
-| 13 | **WhisperX word-level timestamps** | `backend_nlp/` scaffolded; WhisperX not yet integrated | Full gap (Phase B2) | High | Phase B |
+| 12 | ~~**Bangla code-switching**~~ — **RESOLVED**: `detectBangla()` + code-switching prompt section + simpleGloss Bangla guard + `_gloss_mixed_bangla()` pipeline fallback | `routes/sign.js`, `pipeline.py` | — | — | ✅ Done (PART F sprint) |
+| 13 | **WhisperX Bengali ASR** | `backend_nlp/timestamps.py` auto-detects language; Dockerfile installs `bn_core_news_sm`; `_gloss_mixed_bangla()` handles Bengali NLP input. Deployment + real-audio validation still needed. | Code complete; deployment pending | Medium | Phase B2 — deploy HF Space + test with Bengali lecture URL |

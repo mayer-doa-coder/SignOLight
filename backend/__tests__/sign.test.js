@@ -159,3 +159,39 @@ describe("normalizeGloss", () => {
     expect(normalizeGloss(undefined)).toBe("");
   });
 });
+
+// ---------------------------------------------------------------------------
+// Bangla code-switching — Phase B1
+// ---------------------------------------------------------------------------
+
+const { detectBangla } = require("../routes/sign")._test;
+
+describe("Bangla code-switching", () => {
+  it("detectBangla returns true for pure Bangla text", () => {
+    expect(detectBangla("শিক্ষক বললেন")).toBe(true);
+  });
+
+  it("detectBangla returns true for mixed Bangla-English text", () => {
+    expect(detectBangla("neural network টা শিখছে")).toBe(true);
+  });
+
+  it("detectBangla returns false for English-only text", () => {
+    expect(detectBangla("The network learns patterns")).toBe(false);
+  });
+
+  it("detectBangla returns false for empty or null input", () => {
+    expect(detectBangla("")).toBe(false);
+    expect(detectBangla(null)).toBe(false);
+  });
+
+  it("buildGlossPrompt includes code-switching instructions when Bangla is detected", () => {
+    const prompt = buildGlossPrompt("শিক্ষক বললেন neural network");
+    expect(prompt).toMatch(/MIXED BANGLA-ENGLISH/i);
+    expect(prompt).toMatch(/SIGN_VOCAB/i);
+  });
+
+  it("simpleGloss preserves Bangla tokens instead of stripping them as stop words", () => {
+    const result = simpleGloss("শিক্ষক neural network শিখছে");
+    expect(result.gloss).toContain("শিক্ষক");
+  });
+});
