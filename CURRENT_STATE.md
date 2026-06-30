@@ -1,5 +1,5 @@
 # CURRENT_STATE.md
-*Last updated: 2026-06-29 — post Week 1 + Week 2 + sync-fix sprint + NLP pipeline sprint + PART F Bangla sprint*
+*Last updated: 2026-06-30 — post Week 1 + Week 2 + sync-fix sprint + NLP pipeline sprint + PART F Bangla sprint + accuracy audit*
 
 ---
 
@@ -75,7 +75,7 @@ Language preference: en (manual) > en (ASR) > en-* > translatable.
 - `SIGN_VOCAB` constant (58 SIGN_MOTIONS words) — LLM instructed to prefer these
 - Rule: proper nouns, names, abbreviations → `[FINGERSPELL:WORD]`
 - Rule: concepts with no available sign → `[CONCEPT:word]`
-- 8 Bangla-SGP grounded example pairs (arXiv:2511.08507)
+- 10 Bangla-SGP grounded example pairs (arXiv:2511.08507)
 - **Phase B1 code-switching section** (appended when `detectBangla(text)` is true): instructs LLM to translate Bengali words to English conceptual equivalents, use `[FINGERSPELL:X]` for Bengali proper nouns, use `[CONCEPT:X]` for Bengali concepts with no SIGN_VOCAB match; includes 3 mixed Bangla-English example pairs
 - No "ASL" string anywhere
 
@@ -245,13 +245,13 @@ Articulatory parameter space (lightweight HamNoSys-inspired):
 |------|-------|--------|-------|
 | `backend/__tests__/sign.test.js` | 30 cases | ✅ All passing | Unit: simpleGloss (8), verb lemmatization (5), buildGlossPrompt (6), normalizeGloss (5), Bangla code-switching/detectBangla (6) |
 | `backend/__tests__/integration.test.js` | 13 cases | ✅ All passing | HTTP: /health, /api/cache (4 variants), /api/sign/batch (8 variants incl. cache round-trip) |
-| `backend/__tests__/comprehension.test.js` | 29 cases | ✅ All passing | Automated proxy: SOV order, domain coverage, NMM grammar, vocabulary-constrained prompt, NEURAL example |
+| `backend/__tests__/comprehension.test.js` | 31 cases | ✅ All passing | Automated proxy: SOV order, domain coverage, NMM grammar, vocabulary-constrained prompt, NEURAL example |
 | `frontend/src/__tests__/sync.test.js` | 23 cases | ✅ All passing | findCaption binary search (7), computeNMM all 3 types + WHEN/WHY/CANT/NOTHING edge cases (16) |
 | `frontend/src/__tests__/timelineScheduler.test.js` | 32 cases | ✅ All passing | computeWordTimings (Phase A + Phase B spokenTimings), resolveSignState (incl. isCatchingUp + pre-first-word guard), effectiveNMM, shouldAvatarAnimate, applySlowPlayback |
 | `backend_nlp/tests/test_pipeline.py` | 7 cases | Python only | Requires spaCy; run `cd backend_nlp && python -m pytest` |
 | Human participant test | ⏳ Pending | — | Protocol defined in `docs/testing_log.md` |
 
-**Total automated (JS):** 127 tests passing (72 backend + 55 frontend)
+**Total automated (JS):** 129 tests passing (74 backend + 55 frontend)
 
 ---
 

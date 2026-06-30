@@ -1,5 +1,5 @@
 # GAP_ANALYSIS-v2.md
-*Roadmap PDF vs. Current Implementation — updated 2026-06-29 (post Week 1 + Week 2 + sync fix sprint + NLP pipeline sprint + PART F Bangla sprint)*
+*Roadmap PDF vs. Current Implementation — updated 2026-06-30 (post Week 1 + Week 2 + sync fix sprint + NLP pipeline sprint + PART F Bangla sprint + accuracy audit)*
 
 Status key: ✅ Implemented | 🟡 Partial | ❌ Missing
 
@@ -80,7 +80,7 @@ Status key: ✅ Implemented | 🟡 Partial | ❌ Missing
 
 | Requirement | Roadmap Says | Current Implementation | Status | Gap | Risk | Priority | Recommendation |
 |---|---|---|---|---|---|---|---|
-| Bangla-SGP dataset usage | "The most relevant resource for your gloss step" | 8 grounded example pairs from arXiv:2511.08507 in `buildGlossPrompt()` | ✅ Implemented | None | — | — | Week 3.2 |
+| Bangla-SGP dataset usage | "The most relevant resource for your gloss step" | 10 grounded example pairs from arXiv:2511.08507 in `buildGlossPrompt()` | ✅ Implemented | None | — | — | Week 3.2 |
 | BdSL grammar in gloss prompt | "SOV, topic-comment — mandatory" | Full BdSL grammar rules in both single and batch prompts; SIGN_VOCAB list (58 words) instructs LLM to prefer known signs; `[FINGERSPELL:X]` and `[CONCEPT:X]` bracket syntax for unknowns; no "ASL" string | ✅ Implemented | — | — | — | NLP pipeline sprint: vocabulary-constrained prompt |
 | Honest dictionary framing | "Curated dictionary covers N signs — be honest" | `computeDictionaryCoverage` displayed in CaptionBar as "BdSL coverage: X%" | ✅ Implemented | — | — | — | Implemented Week 2.6 |
 | Text simplification pipeline | "captions → simplified → gloss" | `simplifyBatch()` runs before `batchTextToSignGloss()`; `caption.simplified` shown in CaptionBar | ✅ Implemented | — | — | — | Implemented Week 1.3 |
@@ -122,7 +122,7 @@ Status key: ✅ Implemented | 🟡 Partial | ❌ Missing
 | 5. BdSL gloss notation standard | ❌ Post-hackathon | — | Phase 1 |
 | 6. Ham2Pose notation→motion | ❌ Post-hackathon | — | Phase 2 |
 | 7. Motion capture BdSL signers | ❌ Post-hackathon | — | Phase 2 |
-| 8. Educational effectiveness study | 🟡 Partial | `docs/testing_log.md` — 127-test automated suite (72 backend + 55 frontend); human participant protocol defined | Needs 1+ DHH participant session |
+| 8. Educational effectiveness study | 🟡 Partial | `docs/testing_log.md` — 129-test automated suite (74 backend + 55 frontend); human participant protocol defined | Needs 1+ DHH participant session |
 
 ---
 
@@ -138,7 +138,7 @@ Status key: ✅ Implemented | 🟡 Partial | ❌ Missing
 | 6 | ~~**Sync latency (250ms poll)**~~ — **RESOLVED**: poll reduced to 100ms; clips preloaded on caption change; syllable-weighted timing | `YouTubePlayer.js`, `SignAvatar.js`, `timelineScheduler.js` | — | — | ✅ Done (sync-fix sprint) |
 | 7 | ~~**SOV order confusing users**~~ — **RESOLVED**: "(BdSL order)" label added to gloss row in CaptionBar | `CaptionBar.js` | — | — | ✅ Done (sync-fix sprint) |
 | 8 | ~~**Open vocabulary — unknown words crash silently to concept card**~~ — **RESOLVED**: vocabulary-constrained LLM, `[FINGERSPELL:X]`/`[CONCEPT:X]` bracket routing, enriched concept cards (Groq definitions), fingerspell letter ticker | `SignAvatar.js`, `routes/sign.js`, `server.js` | — | — | ✅ Done (NLP pipeline sprint) |
-| 9 | **Comprehension testing** — automated 127 tests done (72 backend + 55 frontend); human protocol defined | `backend/__tests__/`, `frontend/src/__tests__/` | Automated ✅; Human ⏳ | — | ✅ Auto done; human pending |
+| 9 | **Comprehension testing** — automated 129 tests done (74 backend + 55 frontend); human protocol defined | `backend/__tests__/`, `frontend/src/__tests__/` | Automated ✅; Human ⏳ | — | ✅ Auto done; human pending |
 | 10 | **No demo backup video** | `docs/demo_backup.mp4` | Medium: WiFi/API fail scenario | 2 hours | **P2** |
 | 11 | **Syllable timing still approximate** | `timelineScheduler.js` | Medium: word windows off by ±30% | Phase B2 | Phase B (WhisperX) |
 | 12 | ~~**Bangla code-switching**~~ — **RESOLVED**: `detectBangla()` + code-switching prompt section + simpleGloss Bangla guard + `_gloss_mixed_bangla()` pipeline fallback | `routes/sign.js`, `pipeline.py` | — | — | ✅ Done (PART F sprint) |
