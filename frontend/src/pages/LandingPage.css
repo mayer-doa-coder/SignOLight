@@ -8,18 +8,49 @@
   --lp-text-muted: rgba(255, 255, 255, 0.4);
   --lp-error: #ff6b6b;
 
+  position: relative;
   min-height: 100vh;
   background: var(--lp-bg);
   color: var(--lp-text);
+  overflow: hidden;
+}
+
+/* Background field of drifting ASL handshape silhouettes */
+.hand-field {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.hand-glyph {
+  position: absolute;
+  color: rgba(255, 255, 255, 0.055);
+  animation-name: hand-drift;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+@keyframes hand-drift {
+  0%, 100% { transform: rotate(var(--rot, 0deg)) translateY(0); opacity: 0.55; }
+  50% { transform: rotate(var(--rot, 0deg)) translateY(-18px); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hand-glyph { animation: none; }
 }
 
 /* Nav */
 .landing-nav {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 24px 48px;
   border-bottom: 1px solid var(--lp-border);
+  background: var(--lp-bg);
 }
 
 .nav-logo {
@@ -50,6 +81,8 @@
 
 /* Hero */
 .landing-hero {
+  position: relative;
+  z-index: 1;
   max-width: 720px;
   margin: 0 auto;
   padding: 88px 24px 64px;

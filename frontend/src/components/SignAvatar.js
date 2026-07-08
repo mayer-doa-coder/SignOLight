@@ -432,19 +432,22 @@ function lemmatizeForDictionary(word) {
 
 function getSignInfo(word) {
   const s = String(word || "").trim().toUpperCase();
+  if (!s) {
+    return { label: "Ready", motion: "idle", color: "#64748b", expression: "neutral" };
+  }
+
   const fsMatch = s.match(/^\[FINGERSPELL:([A-Z0-9]+)\]$/);
-  if (fsMatch) {
-    return { label: fsMatch[1], motion: "fingerspell", color: "#06b6d4", expression: "neutral", letters: fsMatch[1] };
-  }
   const conceptMatch = s.match(/^\[CONCEPT:(.+)\]$/);
-  if (conceptMatch) {
-    const cw = conceptMatch[1].replace(/[^A-Za-z\s]/g, "").toUpperCase().trim();
-    const letters = cw.replace(/[^A-Z0-9]/g, "");
-    return { label: cw, motion: "fingerspell", color: "#64748b", expression: "neutral", letters, isConcept: true };
-  }
   const numMatch = s.match(/^\[NUMBER:(\d+)\]$/);
-  if (numMatch) {
-    return { label: "#" + numMatch[1], motion: "fingerspell", color: "#64748b", expression: "neutral", letters: numMatch[1] };
+  if (fsMatch || conceptMatch || numMatch) {
+    // Proper noun / no-sign concept / raw number — no dictionary sign exists for these.
+    // The avatar pauses rather than fingerspelling or overlaying explanatory text on screen.
+    const label = fsMatch
+      ? fsMatch[1]
+      : conceptMatch
+        ? conceptMatch[1].replace(/[^A-Za-z\s]/g, "").toUpperCase().trim()
+        : "#" + numMatch[1];
+    return { label, motion: "idle", color: "#64748b", expression: "neutral" };
   }
 
   const upper = s.replace(/[^A-Z]/g, "");
@@ -452,23 +455,9 @@ function getSignInfo(word) {
   const lemma = lemmatizeForDictionary(upper);
   if (lemma) return lemma;
 
-  // Fallback hierarchy: JSON clip (checked by caller) → SIGN_MOTIONS procedural sign →
-  // inflected form of a dictionary sign → fingerspell. Every gloss word must be signed — no word is ever shown as plain text only.
-  // Includes digits so untagged numeric/mixed tokens (e.g. "3D", "2024") still get signed
-  // instead of leaving the avatar idle with nothing to spell.
-  const spellable = s.replace(/[^A-Z0-9]/g, "");
-  if (spellable) {
-    return { label: upper || spellable, motion: "fingerspell", color: "#06b6d4", expression: "neutral", letters: spellable };
-  }
-  if (!s) {
-    // No word at all (e.g. before captions load) — this is the only legitimate "nothing to sign" case.
-    return { label: "Ready", motion: "idle", color: "#64748b", expression: "neutral" };
-  }
-  // Word has real content but none of it is in our Latin alphabet/digits (untranslated
-  // non-English text, symbols, etc.) — there's nothing to fingerspell, but the avatar must
-  // still visibly gesture rather than stand still, so it holds a neutral handshape while
-  // the original text is shown via the fingerspell ticker's subtitle.
-  return { label: s.slice(0, 20), motion: "fingerspell", color: "#64748b", expression: "neutral", letters: "", isConcept: true };
+  // No dictionary sign available for this word (and no inflected form matched one either).
+  // The avatar pauses rather than fingerspelling or showing any text overlay.
+  return { label: upper || s.slice(0, 20), motion: "idle", color: "#64748b", expression: "neutral" };
 }
 
 // Returns "" for bracket-tagged words so loadSignClip skips the network fetch.
@@ -2201,20 +2190,6 @@ export default function SignAvatar({ caption, isActive, currentTime = 0, sentenc
 
   const currentWord = words[wordIndex] || "";
   const signInfo = getSignInfo(currentWord);
-  const isFingerspell = signInfo.motion === "fingerspell" && !!currentWord && isActive;
-  const conceptDefinition = signInfo.isConcept
-    ? caption?.conceptExplanations?.[signInfo.label] ||
-      (signInfo.letters
-        ? "No established ASL sign — spelled letter by letter"
-        : "No ASL sign or spelling available for this text")
-    : null;
-  const fsLetters = isFingerspell
-    ? (signInfo.letters || "").split("").filter((l) => /[A-Z0-9]/.test(l))
-    : [];
-  const fsLetterIdx =
-    fsLetters.length > 0
-      ? Math.min(fsLetters.length - 1, Math.floor(wordProgress * fsLetters.length))
-      : 0;
 
   // Resolve word-onset NMM: only activate once avatar reaches the triggering word.
   // effectiveNMM neutralizes the NMM until currentWordIndex >= nmm.wordIndex.
@@ -2258,24 +2233,6 @@ export default function SignAvatar({ caption, isActive, currentTime = 0, sentenc
           activeNMM={activeNMM}
           snapToSign={isCatchingUp}
         />
-        {isFingerspell && (
-          <div className="fingerspell-ticker glass fade-in-up">
-            <span className="fingerspell-label">Fingerspelling</span>
-            <div className="fingerspell-letters">
-              {fsLetters.map((letter, i) => (
-                <span
-                  key={i}
-                  className={`fingerspell-letter ${i === fsLetterIdx ? "active" : ""}`}
-                >
-                  {letter}
-                </span>
-              ))}
-            </div>
-            {conceptDefinition && (
-              <span className="concept-card-subtitle">{conceptDefinition}</span>
-            )}
-          </div>
-        )}
         <div className="avatar-depth-grid" />
       </div>
 
@@ -2283,18 +2240,6 @@ export default function SignAvatar({ caption, isActive, currentTime = 0, sentenc
         <p className="idle-label">Waiting for processed captions...</p>
       ) : (
         <>
-          <div className="word-indicator" style={{ borderColor: signInfo.color }}>
-            <span className="word-text" style={{ color: signInfo.color }}>
-              {displayGlossWord(currentWord) || "..."}
-            </span>
-            <span className="motion-text">{signInfo.label}</span>
-            {activeNMM.type !== "neutral" && (
-              <span className="nmm-badge" title={`NMM: ${activeNMM.type}`}>
-                {activeNMM.type === "wh-question" ? "WH" : activeNMM.type === "yn-question" ? "YN" : "NEG"}
-              </span>
-            )}
-          </div>
-
           {words.length > 1 && (
             <div className="word-progress">
               {words.map((word, index) => (

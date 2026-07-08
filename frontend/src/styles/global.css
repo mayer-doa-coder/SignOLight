@@ -1,36 +1,40 @@
 /* ========================
-   SignLearn Design System
+   SignOLight Design System
+   Monochrome black & white theme. Historical variable names (--accent-cyan etc.) are kept
+   so existing component CSS doesn't need touching everywhere, but their values now resolve
+   to grayscale — only --accent-pink still carries color, repurposed as the single semantic
+   "error/danger" red used across the app.
    ======================== */
 
 :root {
-  --bg-primary: #0a0e1a;
-  --bg-secondary: #111827;
-  --bg-card: #1a2235;
-  --bg-glass: rgba(26, 34, 53, 0.85);
-  
-  --accent-cyan: #00d4ff;
-  --accent-purple: #7c3aed;
-  --accent-green: #10b981;
-  --accent-amber: #f59e0b;
-  --accent-pink: #ec4899;
-  
-  --text-primary: #f0f4ff;
-  --text-secondary: #94a3b8;
-  --text-muted: #475569;
-  
-  --border: rgba(255, 255, 255, 0.08);
-  --border-accent: rgba(0, 212, 255, 0.3);
-  
+  --bg-primary: #000000;
+  --bg-secondary: #0a0a0a;
+  --bg-card: #131313;
+  --bg-glass: rgba(19, 19, 19, 0.9);
+
+  --accent-cyan: #ffffff;
+  --accent-purple: #ffffff;
+  --accent-green: #ffffff;
+  --accent-amber: #ffffff;
+  --accent-pink: #ff6b6b;
+
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.66);
+  --text-muted: rgba(255, 255, 255, 0.42);
+
+  --border: rgba(255, 255, 255, 0.14);
+  --border-accent: rgba(255, 255, 255, 0.32);
+
   --radius-sm: 8px;
-  --radius-md: 16px;
-  --radius-lg: 24px;
-  --radius-xl: 32px;
-  
-  --shadow-glow-cyan: 0 0 30px rgba(0, 212, 255, 0.2);
-  --shadow-glow-purple: 0 0 30px rgba(124, 58, 237, 0.3);
-  --shadow-card: 0 20px 60px rgba(0, 0, 0, 0.4);
-  
-  --font-display: 'Space Mono', monospace;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 26px;
+
+  --shadow-glow-cyan: 0 0 24px rgba(255, 255, 255, 0.1);
+  --shadow-glow-purple: 0 0 24px rgba(255, 255, 255, 0.1);
+  --shadow-card: 0 20px 60px rgba(0, 0, 0, 0.6);
+
+  --font-display: 'Nunito', sans-serif;
   --font-body: 'Nunito', sans-serif;
 }
 

@@ -2,9 +2,9 @@ import React from "react";
 import "./ControlPanel.css";
 
 const LAYOUTS = [
-  { id: "side-by-side", icon: "⬛⬛", label: "Side by Side" },
-  { id: "picture-in-picture", icon: "⬛◻", label: "Picture in Picture" },
-  { id: "fullscreen-sign", icon: "◻⬛", label: "Focus Sign" },
+  { id: "side-by-side", short: "Split", label: "Side by Side" },
+  { id: "picture-in-picture", short: "PiP", label: "Picture in Picture" },
+  { id: "fullscreen-sign", short: "Focus", label: "Focus Sign" },
 ];
 
 const SPEEDS = [
@@ -22,8 +22,6 @@ export default function ControlPanel({
   onSpeedChange,
   learningMode = false,
   onToggleLearning,
-  showDebug = false,
-  onToggleDebug,
 }) {
   return (
     <div className="control-panel">
@@ -36,7 +34,7 @@ export default function ControlPanel({
             onClick={() => onLayoutChange(l.id)}
             title={l.label}
           >
-            {l.icon}
+            {l.short}
           </button>
         ))}
       </div>
@@ -64,7 +62,6 @@ export default function ControlPanel({
           onClick={onToggleLearning}
           title={learningMode ? "Exit learning mode" : "Learning mode: signs repeat at current speed"}
         >
-          <span className="toggle-icon">{learningMode ? "📖" : "📖"}</span>
           <span className="toggle-label">{learningMode ? "Learning" : "Learn"}</span>
           <span className={`toggle-dot ${learningMode ? "active" : ""}`} />
         </button>
@@ -74,25 +71,13 @@ export default function ControlPanel({
       <button
         className={`sign-toggle ${signEnabled ? "on" : "off"}`}
         onClick={onToggleSign}
-        title={signEnabled ? "Switch to caption-only (discreet) mode" : "Enable ASL sign avatar"}
+        title={signEnabled ? "Switch to caption-only (discreet) mode" : "Enable sign avatar"}
       >
-        <span className="toggle-icon">{signEnabled ? "🤟" : "📝"}</span>
         <span className="toggle-label">
           {signEnabled ? "Sign + Caption" : "Caption Only (Discreet)"}
         </span>
         <span className={`toggle-dot ${signEnabled ? "active" : ""}`} />
       </button>
-
-      {/* Gloss debug toggle */}
-      {onToggleDebug && (
-        <button
-          className={`mode-toggle ${showDebug ? "on" : ""}`}
-          onClick={onToggleDebug}
-          title="Toggle gloss debug view"
-        >
-          <span className="toggle-label">{showDebug ? "Debug ▲" : "Debug"}</span>
-        </button>
-      )}
     </div>
   );
 }

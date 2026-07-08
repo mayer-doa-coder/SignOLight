@@ -32,8 +32,8 @@
 }
 
 .back-btn:hover {
-  color: var(--accent-cyan);
-  border-color: var(--accent-cyan);
+  color: var(--text-primary);
+  border-color: var(--border-accent);
 }
 
 .player-title {
@@ -45,7 +45,14 @@
 }
 
 .title-icon {
-  font-size: 24px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
   flex-shrink: 0;
 }
 
@@ -76,34 +83,28 @@
 }
 
 .status-bar.ready {
-  background: rgba(124, 58, 237, 0.06);
-  border-bottom: 1px solid rgba(124, 58, 237, 0.14);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
   color: var(--text-secondary);
   justify-content: space-between;
 }
 
 .status-bar.loading {
-  background: rgba(0, 212, 255, 0.05);
-  border-bottom: 1px solid rgba(0, 212, 255, 0.1);
-  color: var(--accent-cyan);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
 }
 
 .status-bar.error {
-  background: rgba(248, 113, 113, 0.05);
-  border-bottom: 1px solid rgba(248, 113, 113, 0.1);
-  color: #f87171;
-}
-
-.status-bar.success {
-  background: rgba(16, 185, 129, 0.05);
-  border-bottom: 1px solid rgba(16, 185, 129, 0.1);
-  color: var(--accent-green);
+  background: rgba(255, 107, 107, 0.06);
+  border-bottom: 1px solid rgba(255, 107, 107, 0.16);
+  color: var(--accent-pink);
 }
 
 .status-spinner {
   width: 14px; height: 14px;
-  border: 2px solid rgba(0, 212, 255, 0.2);
-  border-top-color: var(--accent-cyan);
+  border: 2px solid var(--border);
+  border-top-color: var(--text-primary);
   border-radius: 50%;
   animation: spin-slow 0.7s linear infinite;
   flex-shrink: 0;
@@ -112,26 +113,25 @@
 .process-btn {
   min-height: 34px;
   padding: 0 14px;
-  border: 1px solid rgba(0, 212, 255, 0.45);
+  border: 1px solid var(--border-accent);
   border-radius: var(--radius-sm);
-  background: rgba(0, 212, 255, 0.12);
-  color: var(--accent-cyan);
+  background: var(--text-primary);
+  color: #000000;
   font-family: var(--font-body);
   font-size: 13px;
   font-weight: 800;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: opacity 0.2s;
 }
 
 .process-btn:hover {
-  background: rgba(0, 212, 255, 0.2);
-  border-color: var(--accent-cyan);
+  opacity: 0.85;
 }
 
 .process-btn.error-retry {
-  border-color: rgba(248, 113, 113, 0.55);
-  background: rgba(248, 113, 113, 0.12);
-  color: #fecaca;
+  border-color: rgba(255, 107, 107, 0.5);
+  background: transparent;
+  color: var(--accent-pink);
 }
 
 /* Main content */
@@ -181,8 +181,8 @@
   width: 300px;
   height: 340px;
   border-radius: var(--radius-lg);
-  border: 2px solid var(--accent-cyan);
-  box-shadow: var(--shadow-glow-cyan), var(--shadow-card);
+  border: 1px solid var(--border-accent);
+  box-shadow: var(--shadow-card);
   z-index: 100;
   overflow: hidden;
 }
@@ -199,53 +199,8 @@
 .sign-badge {
   font-size: 13px;
   font-weight: 700;
-  color: var(--accent-cyan);
+  color: var(--text-secondary);
   font-family: var(--font-display);
-}
-
-.live-badge {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--accent-green);
-  background: rgba(16, 185, 129, 0.1);
-  padding: 2px 10px;
-  border-radius: 100px;
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  animation: pulse-glow 2s infinite;
-}
-
-.learning-badge {
-  font-family: var(--font-display);
-  font-size: 11px;
-  font-weight: 700;
-  color: #a78bfa;
-  background: rgba(139, 92, 246, 0.1);
-  padding: 2px 10px;
-  border-radius: 100px;
-  border: 1px solid rgba(139, 92, 246, 0.3);
-}
-
-.nmm-live-badge {
-  font-family: var(--font-display);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-  color: #a78bfa;
-  background: rgba(139, 92, 246, 0.12);
-  padding: 2px 8px;
-  border-radius: 4px;
-  border: 1px solid rgba(139, 92, 246, 0.3);
-  cursor: help;
-}
-
-.player-avatar-disclaimer {
-  font-size: 11px;
-  opacity: 0.6;
-  text-align: center;
-  margin: 2px 0 4px;
-  padding: 0 12px;
-  line-height: 1.4;
-  color: var(--text-muted, #94a3b8);
 }
 
 /* Responsive */

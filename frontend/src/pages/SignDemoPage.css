@@ -17,11 +17,7 @@
 .sign-demo-header h1 {
   font-family: var(--font-display);
   font-size: 18px;
-}
-
-.sign-demo-header p {
-  color: var(--text-secondary);
-  font-size: 13px;
+  font-weight: 800;
 }
 
 .sign-demo-main {
@@ -62,7 +58,7 @@
 }
 
 .demo-status strong {
-  color: var(--accent-cyan);
+  color: var(--text-primary);
   font-family: var(--font-display);
   font-size: 28px;
 }
@@ -76,7 +72,7 @@
 .demo-word {
   padding: 6px 10px;
   border-radius: var(--radius-sm);
-  background: rgba(15, 23, 42, 0.8);
+  background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border);
   color: var(--text-secondary);
   font-size: 12px;
@@ -84,9 +80,9 @@
 }
 
 .demo-word.active {
-  color: var(--accent-cyan);
-  border-color: rgba(0, 212, 255, 0.5);
-  background: rgba(0, 212, 255, 0.12);
+  color: #000000;
+  border-color: var(--border-accent);
+  background: var(--text-primary);
 }
 
 .demo-buttons {
@@ -106,20 +102,9 @@
 
 .demo-select-btn.active,
 .demo-select-btn:hover {
-  color: var(--accent-cyan);
-  border-color: rgba(0, 212, 255, 0.45);
-  background: rgba(0, 212, 255, 0.1);
-}
-
-.sign-demo-disclaimer {
-  padding: 12px 24px;
-  text-align: center;
-  font-size: 12px;
-  color: var(--text-muted);
-  opacity: 0.65;
-  border-top: 1px solid var(--border);
-  line-height: 1.5;
-  margin-top: auto;
+  color: var(--text-primary);
+  border-color: var(--border-accent);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 @media (max-width: 900px) {
