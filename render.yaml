@@ -30,7 +30,6 @@ services:
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: build
-    plan: free
     envVars:
       - key: REACT_APP_API_URL
         sync: false          # Set to your Render backend URL
