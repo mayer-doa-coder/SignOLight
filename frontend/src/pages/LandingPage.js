@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
-import GalaxyBackground from "../components/GalaxyBackground";
+import SignalNetworkBackground from "../components/SignalNetworkBackground";
 import "./LandingPage.css";
 
 const API = process.env.REACT_APP_API_URL || "http://localhost:5000";
@@ -57,7 +57,7 @@ export default function LandingPage({ onVideoSubmit, onOpenSignDemo }) {
 
   return (
     <div className="landing">
-      <GalaxyBackground />
+      <SignalNetworkBackground />
 
       <nav className="landing-nav">
         <span className="nav-logo">SignOLight</span>
