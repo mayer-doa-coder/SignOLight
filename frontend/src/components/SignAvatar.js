@@ -378,7 +378,15 @@ function displayGlossWord(word) {
   return s.replace(/[^A-Z]/g, "");
 }
 
+// JSON clips (public/signs/*.json) were authored against an incorrect rest-pose assumption
+// (arms out in a T-pose) and render broken on this VRM rig. Until they are re-authored to the
+// corrected signing-space convention, they are disabled and every word uses the procedural
+// gesture system in applyVrmMotion, which keeps the avatar consistent. Files are kept intact;
+// flip this flag to re-enable clip playback once the clips are fixed.
+const SIGN_CLIPS_ENABLED = false;
+
 async function loadSignClip(word) {
+  if (!SIGN_CLIPS_ENABLED) return null;
   const key = normalizeGlossWord(word);
   if (!key) return null;
   if (signClipCache.has(key)) return signClipCache.get(key);
@@ -1448,431 +1456,158 @@ function applyVrmClip(parts, clip, progress, time) {
   return true;
 }
 
+// === Verified signing-space arm anchors ===
+// Each is [upperX, upperY, upperZ, lowerX, lowerY, lowerZ] for the RIGHT arm; the left arm
+// mirrors by negating Y and Z. Calibrated visually against the rendered VRM so the hand
+// sits in natural signing space in front of the torso (see resetVrmPose for the rest pose).
+// The strong negative lowerArm-Z (last value) rolls the forearm inward so the hand crosses
+// in front of the torso rather than hanging beside the hip.
+const ARM_RAISE = [0.6, -0.1, 0.75, -1.85, -0.2, -1.0]; // hand in front of chest, mid height
+const ARM_HIGH = [0.5, -0.2, 0.6, -2.05, -0.3, -1.1];   // hand up near upper chest / chin
+const ARM_FORWARD = [0.65, 0.0, 0.85, -1.5, -0.1, -0.7]; // hand in front, extended lower
+
+function setArmAnchor(bones, side, a, dLowerX = 0) {
+  const s = side === "left" ? -1 : 1;
+  setBone(bones, side === "left" ? "leftUpperArm" : "rightUpperArm", a[0], a[1] * s, a[2] * s);
+  setBone(bones, side === "left" ? "leftLowerArm" : "rightLowerArm", a[3] + dLowerX, a[4] * s, a[5] * s);
+}
+
+// Gesture families: gentle animated variations around the anchors. These are NOT literal
+// ASL signs — no procedural rig can render readable ASL without motion-capture data. They
+// keep the avatar visibly signing in natural space rather than freezing or T-posing, and
+// are paired with distinct handshapes/expressions per word for variety.
+function applyGestureFamily(bones, family, time, fingerR, fingerL) {
+  // Continuous, clearly-visible signing movement. Amplitudes are large on purpose so the
+  // hands are always obviously moving (the previous ±0.08 wiggle read as frozen). `stroke`
+  // is the main up/down travel of the forearm; `swing` moves the elbow forward/back; `wrist`
+  // articulates the hand so it never looks locked.
+  const stroke = Math.sin(time * 3.4) * 0.32;
+  const stroke2 = Math.sin(time * 3.4 + Math.PI) * 0.32; // opposite phase for two-hand alternation
+  const swing = Math.sin(time * 2.6) * 0.22;
+  const wrist = Math.sin(time * 4.2) * 0.35;
+  switch (family) {
+    case "highR":
+      setArmAnchor(bones, "right", ARM_HIGH, stroke);
+      setBone(bones, "rightHand", wrist * 0.4, 0, ARM_HIGH[5] * 0 + wrist);
+      break;
+    case "fwdR":
+      setArmAnchor(bones, "right", ARM_FORWARD, -Math.abs(stroke));
+      setBone(bones, "rightUpperArm", ARM_FORWARD[0], ARM_FORWARD[1], ARM_FORWARD[2] - swing * 0.5);
+      setBone(bones, "rightHand", 0, 0, wrist);
+      break;
+    case "together": {
+      const conv = (Math.sin(time * 2.8) + 1) / 2; // hands open and close in front of chest
+      setArmAnchor(bones, "right", ARM_RAISE, stroke * 0.4);
+      setArmAnchor(bones, "left", ARM_RAISE, stroke * 0.4);
+      setBone(bones, "rightLowerArm", ARM_RAISE[3] + stroke * 0.4, 0, -0.55 - conv * 0.6);
+      setBone(bones, "leftLowerArm", ARM_RAISE[3] + stroke * 0.4, 0, 0.55 + conv * 0.6);
+      break;
+    }
+    case "apart": {
+      const sp = (Math.sin(time * 2.8) + 1) / 2; // hands spread wide then back
+      setBone(bones, "rightUpperArm", ARM_RAISE[0], -0.15 - sp * 0.4, ARM_RAISE[2] + 0.1);
+      setBone(bones, "rightLowerArm", ARM_RAISE[3] + stroke * 0.3, 0, ARM_RAISE[5] + sp * 0.4);
+      setBone(bones, "leftUpperArm", ARM_RAISE[0], 0.15 + sp * 0.4, -ARM_RAISE[2] - 0.1);
+      setBone(bones, "leftLowerArm", ARM_RAISE[3] + stroke * 0.3, 0, -ARM_RAISE[5] - sp * 0.4);
+      break;
+    }
+    case "alt": // hands move up/down in opposition
+      setArmAnchor(bones, "right", ARM_RAISE, stroke);
+      setArmAnchor(bones, "left", ARM_RAISE, stroke2);
+      setBone(bones, "rightHand", 0, 0, wrist);
+      break;
+    case "highBoth":
+      setArmAnchor(bones, "right", ARM_HIGH, stroke);
+      setArmAnchor(bones, "left", ARM_HIGH, stroke);
+      break;
+    case "raiseR":
+    default:
+      setArmAnchor(bones, "right", ARM_RAISE, stroke);
+      setBone(bones, "rightUpperArm", ARM_RAISE[0], ARM_RAISE[1] + swing * 0.3, ARM_RAISE[2]);
+      setBone(bones, "rightHand", 0, 0, wrist);
+  }
+  setVrmFingerPose(bones, "right", fingerR || "open");
+  if (fingerL) setVrmFingerPose(bones, "left", fingerL);
+}
+
+// Maps every motion name to a gesture family + right/left handshape.
+const MOTION_FAMILY = {
+  wave: ["raiseR", "flat"],
+  "chin-forward": ["fwdR", "flat"],
+  "point-out": ["raiseR", "point"],
+  "point-self": ["fwdR", "point"],
+  learn: ["highR", "spell"],
+  "tap-head": ["highR", "point"],
+  "index-temple": ["highR", "point"],
+  snap: ["raiseR", "spell"],
+  thumbs: ["raiseR", "thumb"],
+  "thumbs-down": ["raiseR", "thumb"],
+  lift: ["together", "fist", "flat"],
+  "circle-chest": ["fwdR", "flat"],
+  "fist-circle": ["fwdR", "fist"],
+  shrug: ["apart", "open", "open"],
+  waggle: ["apart", "open", "open"],
+  "circle-wrist": ["raiseR", "point"],
+  knuckles: ["together", "fist", "fist"],
+  "y-hand": ["raiseR", "y"],
+  sign: ["alt", "point", "point"],
+  "spread-hands": ["apart", "flat", "flat"],
+  "flat-hand": ["fwdR", "flat"],
+  computer: ["fwdR", "spell"],
+  connect: ["together", "point", "point"],
+  problem: ["together", "fist", "fist"],
+  picture: ["fwdR", "flat"],
+  teach: ["highBoth", "spell", "spell"],
+  one: ["raiseR", "point"],
+  all: ["apart", "flat", "flat"],
+  some: ["fwdR", "flat"],
+  each: ["raiseR", "point"],
+  between: ["apart", "open", "open"],
+  not: ["highR", "thumb"],
+  other: ["raiseR", "thumb"],
+  any: ["raiseR", "thumb"],
+  up: ["highR", "point"],
+  down: ["fwdR", "point"],
+  for: ["highR", "point"],
+  into: ["together", "point", "point"],
+  out: ["highR", "spell"],
+  back: ["raiseR", "thumb"],
+  combine: ["together", "spell", "spell"],
+  mean: ["fwdR", "point"],
+  positive: ["together", "point", "point"],
+  negative: ["fwdR", "point"],
+  can: ["together", "fist", "fist"],
+  about: ["fwdR", "point"],
+  first: ["raiseR", "point"],
+  represent: ["fwdR", "point"],
+};
+
 function applyVrmMotion(parts, signInfo, time) {
   const { bones, vrm } = parts;
   const motion = signInfo.motion;
-  const wave = Math.sin(time * 7);
-  const pulse = Math.sin(time * 12);
 
   resetVrmPose(bones, time);
   applyVrmExpression(vrm, signInfo.expression, time);
 
-  switch (motion) {
-    case "idle":
-      break;
-    case "wave":
-      setBone(bones, "rightUpperArm", -0.05, -0.18, -1.38);
-      setBone(bones, "rightLowerArm", -1.08, 0.06, -0.18);
-      setBone(bones, "rightHand", 0.1, 0.12, wave * 0.55);
-      setVrmFingerPose(bones, "right", "flat");
-      break;
-    case "chin-forward":
-      // Flat hand starts near the chin and moves forward (THANK-YOU family).
-      setBone(bones, "rightUpperArm", 0.7, 0.1, 0.7);
-      setBone(bones, "rightLowerArm", -1.55 + Math.max(0, wave) * 0.45, -0.15, 0);
-      setBone(bones, "rightHand", -0.2, 0, 0);
-      setVrmFingerPose(bones, "right", "flat");
-      break;
-    case "point-out":
-      // Index finger raised and extended outward at shoulder height.
-      setBone(bones, "rightUpperArm", 0, -0.7, 0.55);
-      setBone(bones, "rightLowerArm", -0.5, -0.2, 0);
-      setBone(bones, "rightHand", 0, 0, 0);
-      setVrmFingerPose(bones, "right", "point");
-      break;
-    case "point-self":
-      // Index finger points back at own chest.
-      setBone(bones, "rightUpperArm", 0.5, 0.3, 0.85);
-      setBone(bones, "rightLowerArm", -1.7, -0.3, 0);
-      setBone(bones, "rightHand", -0.3, 0, 0);
-      setVrmFingerPose(bones, "right", "point");
-      break;
-    case "nod":
-      setBone(bones, "head", Math.sin(time * 8) * 0.16, 0, 0);
-      setVrmFingerPose(bones, "right", "fist");
-      break;
-    case "shake":
-      setBone(bones, "head", 0, Math.sin(time * 9) * 0.22, 0);
-      setVrmFingerPose(bones, "right", "point");
-      break;
-    case "learn":
-      setBone(bones, "leftUpperArm", -0.25, 0.18, 0.78);
-      setBone(bones, "leftLowerArm", -0.82, 0.02, 0.08);
-      setBone(bones, "rightUpperArm", -0.2, -0.2, -0.82);
-      setBone(bones, "rightLowerArm", -0.9 + Math.max(0, wave) * 0.18, 0.06, 0.18);
-      setVrmFingerPose(bones, "left", "flat");
-      setVrmFingerPose(bones, "right", "spell");
-      break;
-    case "tap-head":
-    case "index-temple":
-      // Index finger up at the temple (KNOW / THINK family).
-      setBone(bones, "rightUpperArm", 0.5, 0.15, 0.95);
-      setBone(bones, "rightLowerArm", -1.95, -0.4, 0);
-      setBone(bones, "rightHand", -0.1 + Math.max(0, pulse) * 0.08, 0, 0);
-      setVrmFingerPose(bones, "right", "point");
-      break;
-    case "snap":
-      setBone(bones, "rightUpperArm", -0.15, -0.18, -0.72);
-      setBone(bones, "rightLowerArm", -0.98, 0.04, 0.18);
-      setBone(bones, "rightHand", -0.18, 0.05, pulse > 0 ? 0.45 : -0.1);
-      setVrmFingerPose(bones, "right", pulse > 0 ? "spell" : "fist");
-      break;
-    case "thumbs":
-      setBone(bones, "rightUpperArm", 0.04, -0.08, -0.72);
-      setBone(bones, "rightLowerArm", -0.86, 0.02, 0.2);
-      setBone(bones, "rightHand", -0.6, 0, -0.12);
-      setVrmFingerPose(bones, "right", "thumb");
-      break;
-    case "thumbs-down":
-      setBone(bones, "rightUpperArm", 0.16, -0.08, -0.68);
-      setBone(bones, "rightLowerArm", -0.72, 0.02, 0.2);
-      setBone(bones, "rightHand", 1.45, 0, -0.12);
-      setVrmFingerPose(bones, "right", "thumb");
-      break;
-    case "lift":
-      setBone(bones, "leftUpperArm", -0.2, 0.08, 0.72);
-      setBone(bones, "rightUpperArm", -0.2, -0.08, -0.72);
-      setBone(bones, "leftLowerArm", -0.62 + Math.max(0, wave) * 0.2, 0, -0.08);
-      setBone(bones, "rightLowerArm", -0.62 + Math.max(0, wave) * 0.2, 0, 0.08);
-      setVrmFingerPose(bones, "left", "fist");
-      setVrmFingerPose(bones, "right", "flat");
-      break;
-    case "circle-chest":
-    case "fist-circle":
-      setBone(bones, "rightUpperArm", 0.05, -0.18, -0.65);
-      setBone(bones, "rightLowerArm", -1.0, Math.sin(time * 5) * 0.18, 0.22);
-      setBone(bones, "rightHand", -0.25, Math.cos(time * 5) * 0.28, -0.18);
-      setVrmFingerPose(bones, "right", motion === "fist-circle" ? "fist" : "flat");
-      break;
-    case "shrug":
-    case "waggle":
-      setBone(bones, "leftUpperArm", -0.12, 0.18, 1.05);
-      setBone(bones, "rightUpperArm", -0.12, -0.18, -1.05);
-      setBone(bones, "leftHand", 0.1, 0, 0.28 + wave * 0.2);
-      setBone(bones, "rightHand", 0.1, 0, -0.28 - wave * 0.2);
-      setBone(bones, "head", 0.02, 0, wave * 0.05);
-      break;
-    case "circle-wrist":
-      setBone(bones, "rightUpperArm", -0.14, -0.18, -0.72);
-      setBone(bones, "rightLowerArm", -0.95, 0.03, 0.2);
-      setBone(bones, "rightHand", -0.15, Math.cos(time * 5) * 0.36, Math.sin(time * 5) * 0.36);
-      setVrmFingerPose(bones, "right", "point");
-      break;
-    case "knuckles":
-      setBone(bones, "leftUpperArm", -0.12, 0.1, 0.72);
-      setBone(bones, "rightUpperArm", -0.12, -0.1, -0.72);
-      setBone(bones, "leftLowerArm", -0.88, 0.08 + wave * 0.08, -0.04);
-      setBone(bones, "rightLowerArm", -0.88, -0.08 - wave * 0.08, 0.04);
-      setVrmFingerPose(bones, "left", "fist");
-      setVrmFingerPose(bones, "right", "fist");
-      break;
-    case "y-hand":
-      setBone(bones, "rightUpperArm", -0.5, -0.12, -0.68);
-      setBone(bones, "rightLowerArm", -1.05, 0.04, 0.22);
-      setBone(bones, "rightHand", -0.2, 0.08, -0.18);
-      setVrmFingerPose(bones, "right", "y");
-      break;
-    case "sign":
-      setBone(bones, "leftUpperArm", -0.22, 0.12, 0.72);
-      setBone(bones, "rightUpperArm", -0.22, -0.12, -0.72);
-      setBone(bones, "leftLowerArm", -0.9, Math.sin(time * 4) * 0.16, 0.04);
-      setBone(bones, "rightLowerArm", -0.9, -Math.sin(time * 4) * 0.16, -0.04);
-      setVrmFingerPose(bones, "left", "point");
-      setVrmFingerPose(bones, "right", "point");
-      break;
-    case "spread-hands":
-      setBone(bones, "leftUpperArm", -0.18, 0.08, 0.85);
-      setBone(bones, "rightUpperArm", -0.18, -0.08, -0.85);
-      setBone(bones, "leftLowerArm", -0.52, 0.04, -0.06);
-      setBone(bones, "rightLowerArm", -0.52, -0.04, 0.06);
-      setBone(bones, "leftHand", 0.08, 0, 0.18 + wave * 0.08);
-      setBone(bones, "rightHand", 0.08, 0, -0.18 - wave * 0.08);
-      setVrmFingerPose(bones, "left", "flat");
-      setVrmFingerPose(bones, "right", "flat");
-      break;
-    case "flat-hand":
-      setBone(bones, "rightUpperArm", -0.12, -0.12, -0.75);
-      setBone(bones, "rightLowerArm", -0.85, 0.04, 0.12);
-      setBone(bones, "rightHand", 0.05, 0, -0.12 + wave * 0.06);
-      setVrmFingerPose(bones, "right", "flat");
-      break;
-    // COMPUTER — referenced ASL sign: non-dominant hand flat/palm-down, dominant hand
-    // forms a "C" and brushes in a small circle on the wrist (lifeprint.com/asl101).
-    case "computer":
-      setBone(bones, "leftUpperArm", -0.12, 0.15, 0.65);
-      setBone(bones, "leftLowerArm", -0.35, 0.0, -0.05);
-      setBone(bones, "leftHand", 0.1, 0, 0.1);
-      setVrmFingerPose(bones, "left", "flat");
-      setBone(bones, "rightUpperArm", 0.05, -0.15, -0.6);
-      setBone(bones, "rightLowerArm", -0.75, Math.cos(time * 5) * 0.15, 0.15);
-      setBone(bones, "rightHand", -0.15, Math.sin(time * 5) * 0.2, -0.1);
-      setVrmFingerPose(bones, "right", "spell");
-      break;
-    // CONNECT — referenced ASL sign: both hands (hooked index fingers) start apart
-    // and swing together toward chest center until they link.
-    case "connect": {
-      const converge = (Math.sin(time * 2.2) + 1) / 2;
-      setBone(bones, "leftUpperArm", -0.15, 0.08 + converge * 0.25, 0.55 - converge * 0.2);
-      setBone(bones, "leftLowerArm", -0.55, 0, -0.05);
-      setBone(bones, "rightUpperArm", -0.15, -0.08 - converge * 0.25, -0.55 + converge * 0.2);
-      setBone(bones, "rightLowerArm", -0.55, 0, 0.05);
-      setVrmFingerPose(bones, "left", "point");
-      setVrmFingerPose(bones, "right", "point");
-      break;
-    }
-    // PROBLEM — referenced ASL sign: both fists' knuckles meet in front of the body
-    // and twist against each other.
-    case "problem":
-      setBone(bones, "leftUpperArm", -0.2, 0.1, 0.5);
-      setBone(bones, "leftLowerArm", -0.85, 0.0, -0.08);
-      setBone(bones, "rightUpperArm", -0.2, -0.1, -0.5);
-      setBone(bones, "rightLowerArm", -0.85, 0.0, 0.08);
-      setBone(bones, "leftHand", 0, 0, Math.sin(time * 7) * 0.3);
-      setBone(bones, "rightHand", 0, 0, -Math.sin(time * 7) * 0.3);
-      setVrmFingerPose(bones, "left", "fist");
-      setVrmFingerPose(bones, "right", "fist");
-      break;
-    // PICTURE/IMAGE — referenced ASL sign: non-dominant hand held flat as a "frame",
-    // dominant hand moves from near the face outward to meet it, camera-like.
-    case "picture": {
-      const click = Math.max(0, Math.sin(time * 3));
-      setBone(bones, "leftUpperArm", -0.15, 0.2, 0.75);
-      setBone(bones, "leftLowerArm", -0.6, 0.0, -0.05);
-      setVrmFingerPose(bones, "left", "flat");
-      setBone(bones, "rightUpperArm", -0.45, -0.1, -0.55);
-      setBone(bones, "rightLowerArm", -0.5 - click * 0.4, 0.0, 0.1);
-      setVrmFingerPose(bones, "right", "flat");
-      break;
-    }
-    // TEACH — referenced ASL sign: both hands start near the head/temples and
-    // pulse outward twice, as if giving knowledge outward.
-    case "teach": {
-      const out = Math.max(0, Math.sin(time * 4));
-      setBone(bones, "leftUpperArm", -0.85, 0.15, 0.4 + out * 0.3);
-      setBone(bones, "leftLowerArm", -1.1, 0.0, -out * 0.2);
-      setBone(bones, "rightUpperArm", -0.85, -0.15, -0.4 - out * 0.3);
-      setBone(bones, "rightLowerArm", -1.1, 0.0, out * 0.2);
-      setVrmFingerPose(bones, "left", "spell");
-      setVrmFingerPose(bones, "right", "spell");
-      break;
-    }
-    // ONE — real ASL sign: index finger extended and held up (same handshape as the digit).
-    case "one":
-      setBone(bones, "rightUpperArm", -0.7, -0.05, -0.55);
-      setBone(bones, "rightLowerArm", -1.05, 0.0, 0.08);
-      setBone(bones, "rightHand", -0.1, 0, 0);
-      setVrmFingerPose(bones, "right", "point");
-      break;
-    // ALL — real ASL sign: flat hand sweeps in a horizontal circle in front of the body.
-    case "all":
-      setBone(bones, "rightUpperArm", 0.0, -0.15, -0.6);
-      setBone(bones, "rightLowerArm", -0.85, Math.sin(time * 3) * 0.22, 0.15 + Math.cos(time * 3) * 0.1);
-      setVrmFingerPose(bones, "right", "flat");
-      break;
-    // SOME — real ASL sign: dominant hand's edge slides across the base hand's palm.
-    case "some": {
-      const slide = (Math.sin(time * 2.5) + 1) / 2;
-      setBone(bones, "leftUpperArm", -0.1, 0.15, 0.6);
-      setVrmFingerPose(bones, "left", "flat");
-      setBone(bones, "rightUpperArm", 0.0, -0.15 - slide * 0.15, -0.55);
-      setBone(bones, "rightLowerArm", -0.6, 0, 0.12);
-      setVrmFingerPose(bones, "right", "flat");
-      break;
-    }
-    // EACH — real ASL sign: dominant hand taps sequentially along the base hand.
-    case "each": {
-      const tap = Math.max(0, Math.sin(time * 6));
-      setBone(bones, "leftUpperArm", -0.1, 0.15, 0.6);
-      setVrmFingerPose(bones, "left", "flat");
-      setBone(bones, "rightUpperArm", -0.15, -0.15, -0.55);
-      setBone(bones, "rightLowerArm", -0.95 - tap * 0.15, 0, 0.1);
-      setVrmFingerPose(bones, "right", "point");
-      break;
-    }
-    // BETWEEN — real ASL sign: spread hand oscillates in the space in front of the base hand.
-    case "between":
-      setBone(bones, "leftUpperArm", -0.05, 0.15, 0.7);
-      setVrmFingerPose(bones, "left", "flat");
-      setBone(bones, "rightUpperArm", -0.05, -0.15, -0.55);
-      setBone(bones, "rightLowerArm", -0.65, 0, 0.05 + Math.sin(time * 4) * 0.15);
-      setVrmFingerPose(bones, "right", "relaxed");
-      break;
-    // NOT — real ASL sign: hand starts near the chin and flicks forward/down away from it.
-    case "not": {
-      const flick = Math.max(0, Math.sin(time * 5));
-      setBone(bones, "rightUpperArm", -1.15, -0.1, -0.4);
-      setBone(bones, "rightLowerArm", -1.35 + flick * 0.35, 0, 0.1);
-      setVrmFingerPose(bones, "right", "thumb");
-      break;
-    }
-    // OTHER — real ASL sign: hand twists at the wrist from palm-in to palm-out.
-    case "other":
-      setBone(bones, "rightUpperArm", -0.25, -0.1, -0.55);
-      setBone(bones, "rightLowerArm", -0.85, 0, 0.1);
-      setBone(bones, "rightHand", -0.2, Math.sin(time * 4) * 0.5, 0);
-      setVrmFingerPose(bones, "right", "thumb");
-      break;
-    // ANY — real ASL sign: hand sweeps side to side.
-    case "any":
-      setBone(bones, "rightUpperArm", -0.15, -0.1 + Math.sin(time * 3) * 0.25, -0.55);
-      setBone(bones, "rightLowerArm", -0.8, 0, 0.1);
-      setVrmFingerPose(bones, "right", "thumb");
-      break;
-    // UP — real ASL sign: index finger points and moves upward.
-    case "up": {
-      const lift = Math.max(0, Math.sin(time * 3));
-      setBone(bones, "rightUpperArm", -1.15 - lift * 0.3, -0.05, -0.4);
-      setBone(bones, "rightLowerArm", -0.55, 0, 0.05);
-      setBone(bones, "rightHand", -0.3, 0, 0);
-      setVrmFingerPose(bones, "right", "point");
-      break;
-    }
-    // DOWN — real ASL sign: index finger points and moves downward.
-    case "down": {
-      const drop = Math.max(0, Math.sin(time * 3));
-      setBone(bones, "rightUpperArm", -0.15 + drop * 0.3, -0.05, -0.5);
-      setBone(bones, "rightLowerArm", -0.55, 0, 0.05);
-      setBone(bones, "rightHand", 0.3, 0, 0);
-      setVrmFingerPose(bones, "right", "point");
-      break;
-    }
-    // FOR — real ASL sign: index finger touches the temple then twists to point forward.
-    case "for": {
-      const twist = (Math.sin(time * 3) + 1) / 2;
-      setBone(bones, "rightUpperArm", -0.85, -0.15 + twist * 0.2, -0.5);
-      setBone(bones, "rightLowerArm", -1.15, 0, 0.15);
-      setBone(bones, "rightHand", -0.3, twist * 0.6, -0.2);
-      setVrmFingerPose(bones, "right", "point");
-      break;
-    }
-    // INTO — real ASL sign: fingers of one hand slide into the cupped opening of the other.
-    case "into": {
-      const push = (Math.sin(time * 2.5) + 1) / 2;
-      setBone(bones, "leftUpperArm", -0.1, 0.15, 0.55);
-      setVrmFingerPose(bones, "left", "fist");
-      setBone(bones, "rightUpperArm", -0.1, -0.15 - push * 0.2, -0.5);
-      setBone(bones, "rightLowerArm", -0.7, 0, 0.1);
-      setVrmFingerPose(bones, "right", "point");
-      break;
-    }
-    // OUT — real ASL sign: fingers pull upward out of the cupped non-dominant hand.
-    case "out": {
-      const pull = Math.max(0, Math.sin(time * 3));
-      setBone(bones, "leftUpperArm", -0.05, 0.15, 0.55);
-      setVrmFingerPose(bones, "left", "spell");
-      setBone(bones, "rightUpperArm", -0.3 - pull * 0.35, -0.1, -0.5);
-      setBone(bones, "rightLowerArm", -0.7, 0, 0.1);
-      setVrmFingerPose(bones, "right", "spell");
-      break;
-    }
-    // BACK — real ASL sign: thumb points back over the shoulder.
-    case "back":
-      setBone(bones, "rightUpperArm", -0.15, -0.35, -0.85);
-      setBone(bones, "rightLowerArm", -1.25, -0.2, 0.1);
-      setBone(bones, "rightHand", -0.2, -0.4, -0.3);
-      setVrmFingerPose(bones, "right", "thumb");
-      break;
-    // COMBINE / SUM / TOGETHER — real ASL sign: both curved hands sweep together and interlace.
-    case "combine": {
-      const merge = (Math.sin(time * 2.4) + 1) / 2;
-      setBone(bones, "leftUpperArm", -0.1, 0.1 + merge * 0.25, 0.55 - merge * 0.2);
-      setBone(bones, "leftLowerArm", -0.6, 0, -0.05);
-      setBone(bones, "rightUpperArm", -0.1, -0.1 - merge * 0.25, -0.55 + merge * 0.2);
-      setBone(bones, "rightLowerArm", -0.6, 0, 0.05);
-      setVrmFingerPose(bones, "left", "spell");
-      setVrmFingerPose(bones, "right", "spell");
-      break;
-    }
-    // MEAN — real ASL sign: bent-V fingertips touch the upturned palm and twist.
-    case "mean": {
-      const t = Math.sin(time * 4);
-      setBone(bones, "leftUpperArm", -0.1, 0.15, 0.6);
-      setVrmFingerPose(bones, "left", "flat");
-      setBone(bones, "rightUpperArm", -0.15, -0.1, -0.55);
-      setBone(bones, "rightLowerArm", -0.85, 0, 0.1 + t * 0.2);
-      setBone(bones, "rightHand", -0.3, 0, t * 0.3);
-      setVrmFingerPose(bones, "right", "point");
-      break;
-    }
-    // POSITIVE — real ASL sign: two index fingers cross to form a "plus".
-    case "positive":
-      setBone(bones, "leftUpperArm", -0.2, 0.2, 0.5);
-      setBone(bones, "leftLowerArm", -0.95, 0, -0.1);
-      setBone(bones, "leftHand", 0, 0, 1.4);
-      setVrmFingerPose(bones, "left", "point");
-      setBone(bones, "rightUpperArm", -0.2, -0.2, -0.5);
-      setBone(bones, "rightLowerArm", -0.95, 0, 0.1);
-      setVrmFingerPose(bones, "right", "point");
-      break;
-    // NEGATIVE — real ASL sign: horizontal index finger held against the upturned palm ("minus").
-    case "negative":
-      setBone(bones, "leftUpperArm", -0.1, 0.15, 0.6);
-      setVrmFingerPose(bones, "left", "flat");
-      setBone(bones, "rightUpperArm", -0.15, -0.15, -0.55);
-      setBone(bones, "rightLowerArm", -0.85, 0, 0.1);
-      setBone(bones, "rightHand", 0, 0, 1.4);
-      setVrmFingerPose(bones, "right", "point");
-      break;
-    // CAN — real ASL sign: both fists (S-hands) move down decisively together.
-    case "can": {
-      const chop = Math.max(0, Math.sin(time * 4));
-      setBone(bones, "leftUpperArm", -0.15 + chop * 0.3, 0.1, 0.5);
-      setBone(bones, "rightUpperArm", -0.15 + chop * 0.3, -0.1, -0.5);
-      setBone(bones, "leftLowerArm", -0.9, 0, -0.05);
-      setBone(bones, "rightLowerArm", -0.9, 0, 0.05);
-      setVrmFingerPose(bones, "left", "fist");
-      setVrmFingerPose(bones, "right", "fist");
-      break;
-    }
-    // ABOUT — real ASL sign: index finger circles around the fingertips of the base hand.
-    case "about":
-      setBone(bones, "leftUpperArm", -0.1, 0.15, 0.55);
-      setVrmFingerPose(bones, "left", "spell");
-      setBone(bones, "rightUpperArm", -0.15, -0.12, -0.55);
-      setBone(bones, "rightLowerArm", -0.8, Math.cos(time * 5) * 0.18, 0.1 + Math.sin(time * 5) * 0.1);
-      setVrmFingerPose(bones, "right", "point");
-      break;
-    // FIRST — real ASL sign: dominant index taps the extended thumb of the base hand.
-    case "first": {
-      const tap = Math.max(0, Math.sin(time * 5));
-      setBone(bones, "leftUpperArm", -0.2, 0.2, 0.55);
-      setBone(bones, "leftLowerArm", -0.9, 0, -0.1);
-      setVrmFingerPose(bones, "left", "thumb");
-      setBone(bones, "rightUpperArm", -0.2, -0.15, -0.55);
-      setBone(bones, "rightLowerArm", -1.0 - tap * 0.12, 0, 0.1);
-      setVrmFingerPose(bones, "right", "point");
-      break;
-    }
-    // REPRESENT — real ASL sign: dominant flat hand moves forward to press against the base palm.
-    case "represent": {
-      const forward = (Math.sin(time * 2.5) + 1) / 2;
-      setBone(bones, "leftUpperArm", -0.1, 0.15, 0.6);
-      setVrmFingerPose(bones, "left", "flat");
-      setBone(bones, "rightUpperArm", -0.15, -0.15, -0.55);
-      setBone(bones, "rightLowerArm", -0.8 - forward * 0.2, 0, 0.1);
-      setVrmFingerPose(bones, "right", "point");
-      break;
-    }
-    case "fingerspell": {
-      const letters = (signInfo.letters || "A").toUpperCase().split("").filter((l) => /[A-Z0-9]/.test(l));
-      const letterIndex = letters.length ? Math.floor(time * 3) % letters.length : 0;
-      const currentChar = letters[letterIndex];
-      const shape = (/[0-9]/.test(currentChar) ? NUMBER_HANDSHAPES[currentChar] : FINGERSPELL_HANDSHAPES[currentChar]) || FINGERSPELL_HANDSHAPES.A;
-      setBone(bones, "rightUpperArm", -0.55, -0.18, -0.68);
-      setBone(bones, "rightLowerArm", -0.88, 0.0, 0.12);
-      setBone(bones, "rightHand", shape.wristX, shape.wristY, shape.wristZ);
-      setVrmFingerPose(bones, "right", shape.pose);
-      setVrmFingerPose(bones, "left", "relaxed");
-      break;
-    }
-    default:
-      setBone(bones, "rightUpperArm", -0.08, -0.2, -0.48);
-      setBone(bones, "rightLowerArm", -0.72, Math.cos(time * 8) * 0.08, 0.12);
-      setBone(bones, "rightHand", -0.12, Math.sin(time * 8) * 0.12, -0.08);
-      setVrmFingerPose(bones, "left", "relaxed");
-      setVrmFingerPose(bones, "right", "spell");
-      break;
+  if (motion === "idle") return;
+  // Head-only signs.
+  if (motion === "nod") { setBone(bones, "head", Math.sin(time * 8) * 0.16, 0, 0); return; }
+  if (motion === "shake") { setBone(bones, "head", 0, Math.sin(time * 9) * 0.22, 0); return; }
+
+  // Fingerspelling / number handshapes cycle letters on the right hand.
+  if (motion === "fingerspell") {
+    const letters = (signInfo.letters || "A").toUpperCase().split("").filter((l) => /[A-Z0-9]/.test(l));
+    const idx = letters.length ? Math.floor(time * 3) % letters.length : 0;
+    const ch = letters[idx];
+    const shape = (/[0-9]/.test(ch) ? NUMBER_HANDSHAPES[ch] : FINGERSPELL_HANDSHAPES[ch]) || FINGERSPELL_HANDSHAPES.A;
+    setArmAnchor(bones, "right", ARM_RAISE);
+    setBone(bones, "rightHand", shape.wristX, shape.wristY, shape.wristZ);
+    setVrmFingerPose(bones, "right", shape.pose);
+    return;
   }
+
+  const [family, fingerR, fingerL] = MOTION_FAMILY[motion] || ["raiseR", "open", null];
+  applyGestureFamily(bones, family, time, fingerR, fingerL);
 }
 
 // Development-time invariant: all motion strings declared in SIGN_MOTIONS must be implemented.
