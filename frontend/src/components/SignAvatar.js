@@ -8,6 +8,28 @@ import "./SignAvatar.css";
 const VRM_MODEL_URL = "/models/sign.vrm";
 const signClipCache = new Map();
 
+// Recolor the avatar's default white top. VRoid names the shirt material "...Tops..._CLOTH"
+// (or "Onepiece" for dresses); we tint those material colors after load. Change this hex to
+// pick a different outfit color.
+const CLOTHING_COLOR = "#1f6feb"; // blue
+function tintVrmClothing(vrm, colorHex) {
+  const color = new THREE.Color(colorHex);
+  vrm.scene.traverse((obj) => {
+    if (!obj.isMesh && !obj.isSkinnedMesh) return;
+    const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+    mats.forEach((m) => {
+      if (!m) return;
+      const name = (m.name || "").toLowerCase();
+      if (/tops|onepiece|dress|shirt|coat|jacket/.test(name)) {
+        if (m.color) m.color.copy(color);
+        if (m.uniforms?.litFactor?.value) m.uniforms.litFactor.value.copy(color);
+        if (m.shadeColorFactor) m.shadeColorFactor.copy(color).multiplyScalar(0.85);
+        m.needsUpdate = true;
+      }
+    });
+  });
+}
+
 const SIGN_MOTIONS = {
   HELLO: { label: "Hello", motion: "wave", color: "#00d4ff", expression: "smile" },
   THANK: { label: "Thank You", motion: "chin-forward", color: "#10b981", expression: "soft" },
@@ -1457,19 +1479,22 @@ function applyVrmClip(parts, clip, progress, time) {
 }
 
 // === Verified signing-space arm anchors ===
-// Each is [upperX, upperY, upperZ, lowerX, lowerY, lowerZ] for the RIGHT arm; the left arm
-// mirrors by negating Y and Z. Calibrated visually against the rendered VRM so the hand
-// sits in natural signing space in front of the torso (see resetVrmPose for the rest pose).
-// The strong negative lowerArm-Z (last value) rolls the forearm inward so the hand crosses
-// in front of the torso rather than hanging beside the hip.
-const ARM_RAISE = [0.6, -0.1, 0.75, -1.85, -0.2, -1.0]; // hand in front of chest, mid height
-const ARM_HIGH = [0.5, -0.2, 0.6, -2.05, -0.3, -1.1];   // hand up near upper chest / chin
-const ARM_FORWARD = [0.65, 0.0, 0.85, -1.5, -0.1, -0.7]; // hand in front, extended lower
+// Each is [upperX, upperY, upperZ, lowerX, lowerY, lowerZ]. The upperArm-X of ±1.57 is the
+// 90° roll that orients the arm FORWARD toward the viewer instead of out to the side.
+// The left arm does NOT mirror by simple negation on this rig — both arms were calibrated
+// independently by reading the hand's world position so each hand sits FORWARD of the chest
+// (dz ≈ +0.4-0.5 toward the viewer), roughly centered, at chest height (y ≈ 0.5-0.6).
+const ARM_RAISE = [-1.57, 0, 1.0, -1.6, -1.0, -0.6];   // right hand forward, chest center
+const ARM_HIGH = [-1.57, 0, 0.85, -1.6, -0.9, -0.25];  // right hand forward, upper chest / chin
+const ARM_FORWARD = [-1.3, 0, 0.9, -1.4, -1.0, -0.5];  // right hand forward, lower / extended
+const ARM_RAISE_L = [1.57, 0, 1.2, -1.6, -1.0, -0.5];  // left hand forward, chest center
+const ARM_HIGH_L = [1.57, 0, 1.05, -1.6, -0.9, -0.15]; // left hand forward, upper chest
+const LEFT_ANCHOR = new Map([[ARM_RAISE, ARM_RAISE_L], [ARM_HIGH, ARM_HIGH_L], [ARM_FORWARD, ARM_RAISE_L]]);
 
 function setArmAnchor(bones, side, a, dLowerX = 0) {
-  const s = side === "left" ? -1 : 1;
-  setBone(bones, side === "left" ? "leftUpperArm" : "rightUpperArm", a[0], a[1] * s, a[2] * s);
-  setBone(bones, side === "left" ? "leftLowerArm" : "rightLowerArm", a[3] + dLowerX, a[4] * s, a[5] * s);
+  const arr = side === "left" ? (LEFT_ANCHOR.get(a) || a) : a;
+  setBone(bones, side === "left" ? "leftUpperArm" : "rightUpperArm", arr[0], arr[1], arr[2]);
+  setBone(bones, side === "left" ? "leftLowerArm" : "rightLowerArm", arr[3] + dLowerX, arr[4], arr[5]);
 }
 
 // Gesture families: gentle animated variations around the anchors. These are NOT literal
@@ -1488,27 +1513,25 @@ function applyGestureFamily(bones, family, time, fingerR, fingerL) {
   switch (family) {
     case "highR":
       setArmAnchor(bones, "right", ARM_HIGH, stroke);
-      setBone(bones, "rightHand", wrist * 0.4, 0, ARM_HIGH[5] * 0 + wrist);
+      setBone(bones, "rightHand", wrist * 0.4, 0, wrist);
       break;
     case "fwdR":
       setArmAnchor(bones, "right", ARM_FORWARD, -Math.abs(stroke));
-      setBone(bones, "rightUpperArm", ARM_FORWARD[0], ARM_FORWARD[1], ARM_FORWARD[2] - swing * 0.5);
+      setBone(bones, "rightUpperArm", ARM_FORWARD[0], ARM_FORWARD[1], ARM_FORWARD[2] - swing * 0.4);
       setBone(bones, "rightHand", 0, 0, wrist);
       break;
     case "together": {
-      const conv = (Math.sin(time * 2.8) + 1) / 2; // hands open and close in front of chest
-      setArmAnchor(bones, "right", ARM_RAISE, stroke * 0.4);
-      setArmAnchor(bones, "left", ARM_RAISE, stroke * 0.4);
-      setBone(bones, "rightLowerArm", ARM_RAISE[3] + stroke * 0.4, 0, -0.55 - conv * 0.6);
-      setBone(bones, "leftLowerArm", ARM_RAISE[3] + stroke * 0.4, 0, 0.55 + conv * 0.6);
+      // Both hands forward; extra elbow flex draws them together toward center, then apart.
+      const conv = Math.abs(Math.sin(time * 2.8)) * 0.5;
+      setArmAnchor(bones, "right", ARM_RAISE, -conv);
+      setArmAnchor(bones, "left", ARM_RAISE, -conv);
       break;
     }
     case "apart": {
-      const sp = (Math.sin(time * 2.8) + 1) / 2; // hands spread wide then back
-      setBone(bones, "rightUpperArm", ARM_RAISE[0], -0.15 - sp * 0.4, ARM_RAISE[2] + 0.1);
-      setBone(bones, "rightLowerArm", ARM_RAISE[3] + stroke * 0.3, 0, ARM_RAISE[5] + sp * 0.4);
-      setBone(bones, "leftUpperArm", ARM_RAISE[0], 0.15 + sp * 0.4, -ARM_RAISE[2] - 0.1);
-      setBone(bones, "leftLowerArm", ARM_RAISE[3] + stroke * 0.3, 0, -ARM_RAISE[5] - sp * 0.4);
+      // Both hands forward, extending outward (less flex) then back — stays in front.
+      const sp = Math.abs(Math.sin(time * 2.8)) * 0.5;
+      setArmAnchor(bones, "right", ARM_RAISE, sp);
+      setArmAnchor(bones, "left", ARM_RAISE, sp);
       break;
     }
     case "alt": // hands move up/down in opposition
@@ -1727,6 +1750,7 @@ function SignAvatar3D({ signInfo, signClip, wordProgress, active, activeNMM, sna
           VRMUtils.rotateVRM0(vrm);
 
           fitVrmToScene(vrm);
+          tintVrmClothing(vrm, CLOTHING_COLOR);
           vrm.scene.traverse((object) => {
             object.frustumCulled = false;
             if (object.isMesh || object.isSkinnedMesh) {
