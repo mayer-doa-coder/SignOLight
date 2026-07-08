@@ -5,4 +5,11 @@ node_modules/
 frontend/build/
 frontend/.env
 backend/.env
-backend/cache/
+# Ignore runtime cache contents, but ship the pre-processed demo lectures
+# so the deployed app works despite YouTube blocking caption scraping from
+# datacenter IPs. (Git can't un-ignore a file under a fully-ignored dir, so
+# we ignore the contents with `/*` and re-include the demo files.)
+backend/cache/*
+!backend/cache/aircAruvnKk.json
+!backend/cache/WUvTyaaNkzM.json
+!backend/cache/fNk_zzaMoSs.json
