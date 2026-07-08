@@ -100,11 +100,21 @@ function normalizeGloss(gloss) {
     .toUpperCase();
 }
 
+// Wraps any word with no Latin letters/digits and no existing bracket tag (raw Bangla or
+// other non-Latin script that slipped through un-translated, stray symbols, etc.) as a
+// [CONCEPT:x] so the avatar always gets a labeled, renderable token instead of silently
+// receiving text it has no way to sign or fingerspell.
+function wrapUnsignable(word) {
+  const w = String(word || "");
+  if (!w || w.startsWith("[") || /[A-Za-z0-9]/.test(w)) return w;
+  return `[CONCEPT:${w}]`;
+}
+
 function glossResult(gloss, fallbackText, confidence) {
   const cleaned = normalizeGloss(gloss);
   if (!cleaned) return simpleGloss(fallbackText);
 
-  const words = cleaned.split(/\s+/).slice(0, 10);
+  const words = cleaned.split(/\s+/).slice(0, 10).map(wrapUnsignable);
   return { gloss: words.join(" "), words, confidence: confidence ?? 0.9 };
 }
 
@@ -310,7 +320,7 @@ function simpleGloss(text) {
   const lemmatized = words.map((w) => lemmatizeVerb(w) || w);
   const verbs = lemmatized.filter((w) => verbSet.has(w));
   const nonVerbs = lemmatized.filter((w) => !verbSet.has(w));
-  const ordered = [...nonVerbs, ...verbs];
+  const ordered = [...nonVerbs, ...verbs].map(wrapUnsignable);
 
   return { gloss: ordered.join(" "), words: ordered, confidence: 0.5 };
 }
