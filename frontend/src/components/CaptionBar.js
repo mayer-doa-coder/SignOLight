@@ -63,15 +63,15 @@ export default function CaptionBar({
             </span>
           )}
 
-          {/* BdSL gloss */}
+          {/* ASL gloss */}
           {caption?.gloss && (
             <span
               className="caption-gloss"
-              title="BdSL Gloss — word order follows BdSL grammar (SOV), not English word order"
+              title="ASL Gloss — word order follows ASL topic-comment grammar, not English word order"
               style={{ opacity: caption.confidence != null && caption.confidence < 0.7 ? 0.55 : 1 }}
             >
               🤟 {caption.gloss}
-              <span className="gloss-order-label" title="BdSL uses Subject-Object-Verb order, not English Subject-Verb-Object">(BdSL order)</span>
+              <span className="gloss-order-label" title="ASL uses topic-comment structure, not English Subject-Verb-Object">(ASL order)</span>
               {caption.confidence != null && caption.confidence < 0.7 && (
                 <span className="gloss-uncertain" title="Approximate — Groq AI unavailable">~</span>
               )}
@@ -84,8 +84,8 @@ export default function CaptionBar({
       {(coverage != null || showDebug) && (
         <div className="caption-status-row">
           {coverage != null && (
-            <span className="coverage-badge" title={`BdSL dictionary covers ${coverage.covered} of ${coverage.total} gloss words`}>
-              BdSL coverage: {coverage.percentage}%
+            <span className="coverage-badge" title={`ASL dictionary covers ${coverage.covered} of ${coverage.total} gloss words`}>
+              ASL coverage: {coverage.percentage}%
               {coverage.validated > 0 && (
                 <span className="validated-count"> ({coverage.validated} validated)</span>
               )}
@@ -117,7 +117,7 @@ export default function CaptionBar({
             </div>
           )}
           <div className="debug-row">
-            <span className="debug-label">BdSL Gloss</span>
+            <span className="debug-label">ASL Gloss</span>
             <span className="debug-value mono">{caption.gloss || "—"}</span>
           </div>
           <div className="debug-row">

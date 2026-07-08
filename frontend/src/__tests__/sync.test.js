@@ -55,7 +55,7 @@ describe("findCaption", () => {
 });
 
 // ---------------------------------------------------------------------------
-// computeNMM — BdSL grammar-driven non-manual marker (structured object)
+// computeNMM — ASL grammar-driven non-manual marker (structured object)
 // ---------------------------------------------------------------------------
 
 describe("computeNMM", () => {

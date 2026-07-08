@@ -7,21 +7,30 @@ const groq = process.env.GROQ_API_KEY
   ? new Groq({ apiKey: process.env.GROQ_API_KEY })
   : null;
 
-// BdSL (Bangla Sign Language) gloss prompt.
-// Grammar rules follow BdSL linguistic structure (SOV, topic-comment).
-// Example pairs are grounded in Bangla-SGP dataset patterns
-// (Islam et al., 2024 — arXiv:2511.08507, Appendix A sentence pairs).
-// The 58-word vocabulary the avatar can actually sign.
+// ASL (American Sign Language) gloss prompt.
+// Grammar rules follow standard ASL glossing conventions (topic-comment,
+// WH-word sentence-final, negation sentence-final, dropped articles/auxiliaries).
+// The vocabulary the avatar can actually sign.
 // Included in the LLM prompt so the model prefers words it knows exist as signs.
 const SIGN_VOCAB = [
   "HELLO", "THANK", "YOU", "ME", "YES", "NO", "LEARN", "KNOW", "UNDERSTAND",
   "GOOD", "BAD", "HELP", "PLEASE", "SORRY", "WHAT", "WHERE", "WHEN", "HOW",
-  "WHY", "BECAUSE", "SIGN", "BDSL",
+  "WHY", "BECAUSE", "SIGN", "ASL",
   "NETWORK", "NEURON", "LAYER", "TRAIN", "MODEL", "WEIGHT", "GRADIENT", "LOSS",
   "FUNCTION", "ACTIVATE", "DATA", "INPUT", "OUTPUT", "ERROR", "PREDICT",
   "CALCULATE", "MATRIX", "VECTOR", "PATTERN", "IMAGE", "CLASSIFY", "ACCURACY",
   "PROBABILITY", "DEEP", "CONNECT", "NODE", "SIGNAL", "PIXEL", "EXAMPLE",
   "PROCESS", "STEP", "RESULT", "PROBLEM", "SOLUTION", "COMPUTER", "PROGRAM",
+  "I", "WE", "THEY", "HE", "SHE", "IT", "WANT", "LIKE", "THINK", "GO", "COME",
+  "MAKE", "USE", "WORK", "NEED", "START", "STOP", "CHANGE", "SHOW", "EXPLAIN",
+  "ASK", "ANSWER", "TEACH", "STUDY", "WRITE", "READ", "LOOK", "SEE", "FIND",
+  "GIVE", "TAKE", "PUT", "KEEP", "TRY", "CALL", "TIME", "DAY", "YEAR", "PEOPLE",
+  "THING", "WAY", "PART", "PLACE", "WORD", "IDEA", "QUESTION", "REASON", "TYPE",
+  "GROUP", "LEVEL", "SYSTEM", "WORLD", "NUMBER", "BIG", "SMALL", "MANY", "MORE",
+  "LESS", "SAME", "DIFFERENT", "NEW", "OLD", "IMPORTANT", "EASY", "HARD",
+  "TRUE", "RIGHT", "WRONG", "AND", "BUT", "OR", "IF", "SO", "NOW", "HERE",
+  "THERE", "ALSO", "VERY", "ALWAYS", "AGAIN", "ADD", "REMEMBER", "BUILD",
+  "CONTINUE", "FINISH",
 ].join(" ");
 
 // Detects Bangla/Bengali script (Unicode block U+0980–U+09FF).
@@ -34,29 +43,28 @@ function buildGlossPrompt(text) {
   const banglaSection = detectBangla(text) ? `
 
 IMPORTANT — MIXED BANGLA-ENGLISH TEXT DETECTED:
-- Translate Bengali words to their English conceptual equivalent first, then apply BdSL rules.
+- Translate Bengali words to their English conceptual equivalent first, then apply ASL rules.
 - Bengali nouns: map to nearest SIGN_VOCAB word if a concept match exists.
 - Bengali proper nouns (person names, places, organisations): use [FINGERSPELL:X] with romanised transliteration.
 - Bengali concepts with no SIGN_VOCAB equivalent: use [CONCEPT:bengali_word].
-- Apply SOV order after translation, as always.
+- Apply ASL topic-comment order after translation, as always.
 Mixed examples:
 "শিক্ষক বললেন that neural networks learn patterns" → TEACHER NEURAL NETWORK PATTERN LEARN
 "আমার নাম Riya এবং I study computer science"       → [FINGERSPELL:RIYA] COMPUTER STUDY
 "এই algorithm টা কি কাজ করে?"                       → ALGORITHM WHAT DO
 ` : "";
 
-  return `Convert this English caption to BdSL (Bangla Sign Language) gloss notation.
+  return `Convert this English caption to ASL (American Sign Language) gloss notation.
 
-AVAILABLE BdSL SIGNS — prefer words from this list when meaning is preserved:
+AVAILABLE ASL SIGNS — prefer words from this list when meaning is preserved:
 ${SIGN_VOCAB}
 
-BdSL GRAMMAR RULES — mandatory, not optional:
+ASL GRAMMAR RULES — mandatory, not optional:
 - Topic-comment structure: state the topic FIRST, then what is said about it
-- SOV word order: Subject → Object → Verb (NOT English SVO)
 - Remove ALL articles (a, an, the) — no exceptions
 - Remove ALL auxiliary verbs (is, are, was, were, has, have, will) unless negated
 - Remove ALL prepositions (in, on, at, to, of, from) unless meaning changes entirely
-- WH-words (WHAT, WHERE, WHEN, HOW, WHY) appear at the END of the gloss (BdSL-final)
+- WH-words (WHAT, WHERE, WHEN, HOW, WHY) appear at the END of the gloss (ASL WH-final)
 - Negation: place NOT or CANNOT at the END of the gloss
 - Capitalize every word
 - Maximum 8 words per gloss
@@ -66,7 +74,7 @@ BdSL GRAMMAR RULES — mandatory, not optional:
 - For concepts with no available sign → [CONCEPT:word]
 - Use [NUMBER:X] for all digits
 
-BdSL EXAMPLES — source: Bangla-SGP dataset (arXiv:2511.08507):
+ASL GLOSS EXAMPLES:
 "The student reads the book every day"        → STUDENT EXAMPLE EVERY-DAY LEARN
 "Where does the teacher live?"                → TEACHER LIVE WHERE
 "Did you finish the homework?"                → YOU EXAMPLE FINISH
@@ -86,21 +94,31 @@ Reply ONLY with the gloss — no explanation, no punctuation.` + banglaSection;
 function normalizeGloss(gloss) {
   return String(gloss || "")
     .replace(/^["']|["']$/g, "")
-    .replace(/^BdSL\s+GLOSS:\s*/i, "")
+    .replace(/^(?:BdSL|ASL)\s+GLOSS:\s*/i, "")
     .replace(/\s+/g, " ")
     .trim()
     .toUpperCase();
+}
+
+// Wraps any word with no Latin letters/digits and no existing bracket tag (raw Bangla or
+// other non-Latin script that slipped through un-translated, stray symbols, etc.) as a
+// [CONCEPT:x] so the avatar always gets a labeled, renderable token instead of silently
+// receiving text it has no way to sign or fingerspell.
+function wrapUnsignable(word) {
+  const w = String(word || "");
+  if (!w || w.startsWith("[") || /[A-Za-z0-9]/.test(w)) return w;
+  return `[CONCEPT:${w}]`;
 }
 
 function glossResult(gloss, fallbackText, confidence) {
   const cleaned = normalizeGloss(gloss);
   if (!cleaned) return simpleGloss(fallbackText);
 
-  const words = cleaned.split(/\s+/).slice(0, 10);
+  const words = cleaned.split(/\s+/).slice(0, 10).map(wrapUnsignable);
   return { gloss: words.join(" "), words, confidence: confidence ?? 0.9 };
 }
 
-// Single-caption BdSL gloss via Groq.
+// Single-caption ASL gloss via Groq.
 async function textToSignGloss(text) {
   if (!groq) {
     return simpleGloss(text);
@@ -113,7 +131,7 @@ async function textToSignGloss(text) {
         {
           role: "system",
           content:
-            "You convert English captions into concise BdSL (Bangla Sign Language) gloss for a sign language avatar. BdSL uses topic-comment SOV structure — not English word order.",
+            "You convert English captions into concise ASL (American Sign Language) gloss for a sign language avatar. ASL uses topic-comment structure — not English word order.",
         },
         { role: "user", content: buildGlossPrompt(text) },
       ],
@@ -167,7 +185,7 @@ async function simplifyBatch(captions) {
   }
 }
 
-// Batch BdSL gloss — converts multiple captions in one Groq call.
+// Batch ASL gloss — converts multiple captions in one Groq call.
 async function batchTextToSignGloss(captions) {
   if (!groq) {
     return captions.map((caption) => simpleGloss(caption.text));
@@ -184,18 +202,17 @@ async function batchTextToSignGloss(captions) {
         {
           role: "system",
           content:
-            "You convert English captions into concise BdSL (Bangla Sign Language) gloss. BdSL uses topic-comment SOV structure — NOT English word order, NOT ASL conventions. Return valid JSON only.",
+            "You convert English captions into concise ASL (American Sign Language) gloss. ASL uses topic-comment structure — NOT English word order. Return valid JSON only.",
         },
         {
           role: "user",
-          content: `Convert each caption to BdSL gloss notation.
+          content: `Convert each caption to ASL gloss notation.
 
-AVAILABLE BdSL SIGNS — prefer these words when meaning is preserved:
+AVAILABLE ASL SIGNS — prefer these words when meaning is preserved:
 ${SIGN_VOCAB}
 
-MANDATORY BdSL RULES:
+MANDATORY ASL RULES:
 - Topic-comment structure: topic FIRST, verb LAST
-- SOV word order (Subject → Object → Verb)
 - Remove all articles (a, an, the) — always
 - Remove auxiliary verbs (is, are, was, were) unless negated
 - Use BASE FORM of all verbs: TAKE not TAKES, LEARN not LEARNS, GO not WENT/GOES
@@ -205,7 +222,7 @@ MANDATORY BdSL RULES:
 - For concepts with no available sign → [CONCEPT:word]
 - Use [NUMBER:X] for digits
 
-BdSL EXAMPLES:
+ASL EXAMPLES:
 "The neural network learns patterns"     → NETWORK PATTERN LEARN
 "What does a compiler do?"               → [CONCEPT:compiler] WHAT DO
 "I cannot understand this concept"       → EXAMPLE ME UNDERSTAND CANNOT
@@ -243,7 +260,7 @@ ${numberedCaptions}`,
       const gloss =
         typeof item === "string"
           ? item
-          : item?.gloss || item?.bdsl_gloss || item?.translation || item?.text;
+          : item?.gloss || item?.asl_gloss || item?.translation || item?.text;
       return glossResult(gloss, caption.text, 0.9);
     });
   } catch (err) {
@@ -253,9 +270,9 @@ ${numberedCaptions}`,
 }
 
 // Fallback simple gloss without AI — strips stop words, uppercases remaining,
-// then applies a heuristic SOV reorder (verbs moved to end) to approximate BdSL
+// then applies a heuristic verb-final reorder to approximate ASL topic-comment
 // word order even when Groq is unavailable.
-// Confidence: 0.5 (lower — heuristic only, not validated BdSL grammar).
+// Confidence: 0.5 (lower — heuristic only, not validated ASL grammar).
 function simpleGloss(text) {
   const stopWords = new Set([
     "a", "an", "the", "is", "are", "was", "were", "be", "been", "being",
@@ -263,7 +280,7 @@ function simpleGloss(text) {
     "that", "this", "it", "its", "we", "they", "he", "she", "has", "have",
     "had", "will", "would", "could", "should", "may", "might", "do", "does",
   ]);
-  // Known verbs to move toward the end (BdSL SOV: Subject Object Verb).
+  // Known verbs to move toward the end (ASL topic-comment: topic first, verb last).
   // Covers lecture-domain predicates + common English verbs for general content.
   const verbSet = new Set([
     "LEARN", "TRAIN", "KNOW", "UNDERSTAND", "PREDICT", "CALCULATE",
@@ -303,7 +320,7 @@ function simpleGloss(text) {
   const lemmatized = words.map((w) => lemmatizeVerb(w) || w);
   const verbs = lemmatized.filter((w) => verbSet.has(w));
   const nonVerbs = lemmatized.filter((w) => !verbSet.has(w));
-  const ordered = [...nonVerbs, ...verbs];
+  const ordered = [...nonVerbs, ...verbs].map(wrapUnsignable);
 
   return { gloss: ordered.join(" "), words: ordered, confidence: 0.5 };
 }
@@ -461,7 +478,7 @@ router.post("/batch", async (req, res) => {
       simplifiedTexts.push(...simplified);
     }
 
-    // Step 2: Translate simplified text to BdSL gloss.
+    // Step 2: Translate simplified text to ASL gloss.
     for (let i = 0; i < captions.length; i += batchSize) {
       const batch = captions.slice(i, i + batchSize).map((cap, idx) => ({
         ...cap,

@@ -19,7 +19,7 @@ export function findCaption(captions, timeMs) {
 const WH_WORDS = new Set(["WHAT", "WHERE", "WHEN", "HOW", "WHY"]);
 const NEG_WORDS = new Set(["NO", "NOT", "NEVER", "CANNOT", "CANT", "NOTHING", "NONE"]);
 
-// Derive BdSL Non-Manual Marker from gloss words and original sentence text.
+// Derive ASL Non-Manual Marker from gloss words and original sentence text.
 //
 // Returns a structured NMM descriptor:
 //   { type, wordIndex, headY }
@@ -30,7 +30,7 @@ const NEG_WORDS = new Set(["NO", "NOT", "NEVER", "CANNOT", "CANT", "NOTHING", "N
 //             NMM should only activate once the avatar reaches this word.
 // headY    — head rotation Y amplitude for head-shake (negation only); 0 otherwise.
 //
-// BdSL grammar rules:
+// ASL grammar rules:
 //   WH-questions: furrow brows from the WH-word onset
 //   YN-questions: raise brows from the start of the sentence
 //   Negation: head-shake + firm expression from the NEG-word onset

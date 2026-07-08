@@ -30,10 +30,10 @@ const SIGN_MOTIONS = {
   WHY: { label: "Why", motion: "y-hand", color: "#f59e0b", expression: "question" },
   BECAUSE: { label: "Because", motion: "index-temple", color: "#00d4ff", expression: "focus" },
   SIGN: { label: "Sign", motion: "sign", color: "#00d4ff", expression: "smile" },
-  BDSL: { label: "BdSL", motion: "sign", color: "#00d4ff", expression: "focus" },
+  ASL: { label: "ASL", motion: "sign", color: "#00d4ff", expression: "focus" },
 
   // === Academic / CS / Neural Networks domain vocabulary ===
-  // These are educational gesture representations — not yet validated by a BdSL community reviewer.
+  // These are educational gesture representations — not yet validated by an ASL community reviewer.
   NETWORK:     { label: "Network",     motion: "spread-hands",  color: "#6366f1", expression: "focus" },
   NEURON:      { label: "Neuron",      motion: "point-out",     color: "#22d3ee", expression: "focus" },
   LAYER:       { label: "Layer",       motion: "flat-hand",     color: "#a78bfa", expression: "focus" },
@@ -53,12 +53,12 @@ const SIGN_MOTIONS = {
   MATRIX:      { label: "Matrix",      motion: "spread-hands",  color: "#6366f1", expression: "focus" },
   VECTOR:      { label: "Vector",      motion: "point-out",     color: "#22d3ee", expression: "focus" },
   PATTERN:     { label: "Pattern",     motion: "circle-chest",  color: "#7c3aed", expression: "focus" },
-  IMAGE:       { label: "Image",       motion: "flat-hand",     color: "#f59e0b", expression: "focus" },
+  IMAGE:       { label: "Image",       motion: "picture",       color: "#f59e0b", expression: "focus" },
   CLASSIFY:    { label: "Classify",    motion: "waggle",        color: "#6366f1", expression: "focus" },
   ACCURACY:    { label: "Accuracy",    motion: "thumbs",        color: "#10b981", expression: "smile" },
   PROBABILITY: { label: "Probability", motion: "shrug",         color: "#f59e0b", expression: "focus" },
   DEEP:        { label: "Deep",        motion: "tap-head",      color: "#a78bfa", expression: "focus" },
-  CONNECT:     { label: "Connect",     motion: "lift",          color: "#22d3ee", expression: "focus" },
+  CONNECT:     { label: "Connect",     motion: "connect",       color: "#22d3ee", expression: "focus" },
   NODE:        { label: "Node",        motion: "point-self",    color: "#6366f1", expression: "focus" },
   SIGNAL:      { label: "Signal",      motion: "wave",          color: "#22d3ee", expression: "focus" },
   PIXEL:       { label: "Pixel",       motion: "snap",          color: "#a78bfa", expression: "focus" },
@@ -66,13 +66,257 @@ const SIGN_MOTIONS = {
   PROCESS:     { label: "Process",     motion: "circle-chest",  color: "#22d3ee", expression: "focus" },
   STEP:        { label: "Step",        motion: "index-temple",  color: "#f59e0b", expression: "focus" },
   RESULT:      { label: "Result",      motion: "chin-forward",  color: "#10b981", expression: "smile" },
-  PROBLEM:     { label: "Problem",     motion: "shake",         color: "#ef4444", expression: "firm"  },
+  PROBLEM:     { label: "Problem",     motion: "problem",       color: "#ef4444", expression: "firm"  },
   SOLUTION:    { label: "Solution",    motion: "thumbs",        color: "#10b981", expression: "smile" },
-  COMPUTER:    { label: "Computer",    motion: "knuckles",      color: "#a78bfa", expression: "focus" },
+  COMPUTER:    { label: "Computer",    motion: "computer",      color: "#a78bfa", expression: "focus" },
   PROGRAM:     { label: "Program",     motion: "tap-head",      color: "#6366f1", expression: "focus" },
+
+  // === General-purpose vocabulary (added for broader ASL caption coverage) ===
+  // Reuses the same motion primitives above — approximate glosses, not literal ASL signs.
+  I:           { label: "I",           motion: "point-self",    color: "#f59e0b", expression: "focus" },
+  WE:          { label: "We",          motion: "circle-chest",  color: "#f59e0b", expression: "focus" },
+  THEY:        { label: "They",        motion: "point-out",     color: "#f59e0b", expression: "focus" },
+  HE:          { label: "He",          motion: "point-out",     color: "#7c3aed", expression: "focus" },
+  SHE:         { label: "She",         motion: "point-out",     color: "#7c3aed", expression: "focus" },
+  IT:          { label: "It",          motion: "point-out",     color: "#7c3aed", expression: "focus" },
+  WANT:        { label: "Want",        motion: "lift",          color: "#00d4ff", expression: "focus" },
+  LIKE:        { label: "Like",        motion: "thumbs",        color: "#10b981", expression: "smile" },
+  THINK:       { label: "Think",       motion: "tap-head",      color: "#a78bfa", expression: "focus" },
+  GO:          { label: "Go",          motion: "point-out",     color: "#22d3ee", expression: "focus" },
+  COME:        { label: "Come",        motion: "point-self",    color: "#22d3ee", expression: "focus" },
+  MAKE:        { label: "Make",        motion: "knuckles",      color: "#6366f1", expression: "focus" },
+  USE:         { label: "Use",         motion: "flat-hand",     color: "#6366f1", expression: "focus" },
+  WORK:        { label: "Work",        motion: "knuckles",      color: "#10b981", expression: "focus" },
+  NEED:        { label: "Need",        motion: "lift",          color: "#f59e0b", expression: "focus" },
+  START:       { label: "Start",       motion: "snap",          color: "#10b981", expression: "focus" },
+  STOP:        { label: "Stop",        motion: "shake",         color: "#ef4444", expression: "firm" },
+  CHANGE:      { label: "Change",      motion: "waggle",        color: "#a78bfa", expression: "focus" },
+  SHOW:        { label: "Show",        motion: "chin-forward",  color: "#00d4ff", expression: "focus" },
+  EXPLAIN:     { label: "Explain",     motion: "spread-hands",  color: "#00d4ff", expression: "focus" },
+  ASK:         { label: "Ask",         motion: "y-hand",        color: "#f59e0b", expression: "question" },
+  ANSWER:      { label: "Answer",      motion: "chin-forward",  color: "#10b981", expression: "focus" },
+  TEACH:       { label: "Teach",       motion: "teach",         color: "#7c3aed", expression: "focus" },
+  STUDY:       { label: "Study",       motion: "tap-head",      color: "#7c3aed", expression: "focus" },
+  WRITE:       { label: "Write",       motion: "flat-hand",     color: "#a78bfa", expression: "focus" },
+  READ:        { label: "Read",        motion: "flat-hand",     color: "#22d3ee", expression: "focus" },
+  LOOK:        { label: "Look",        motion: "point-out",     color: "#6366f1", expression: "focus" },
+  SEE:         { label: "See",         motion: "point-out",     color: "#6366f1", expression: "focus" },
+  FIND:        { label: "Find",        motion: "snap",          color: "#22d3ee", expression: "focus" },
+  GIVE:        { label: "Give",        motion: "lift",          color: "#10b981", expression: "soft" },
+  TAKE:        { label: "Take",        motion: "point-self",    color: "#f59e0b", expression: "focus" },
+  PUT:         { label: "Put",         motion: "flat-hand",     color: "#6366f1", expression: "focus" },
+  KEEP:        { label: "Keep",        motion: "circle-chest",  color: "#10b981", expression: "focus" },
+  TRY:         { label: "Try",         motion: "knuckles",      color: "#f59e0b", expression: "focus" },
+  CALL:        { label: "Call",        motion: "wave",          color: "#22d3ee", expression: "focus" },
+  TIME:        { label: "Time",        motion: "circle-wrist",  color: "#f59e0b", expression: "focus" },
+  DAY:         { label: "Day",         motion: "spread-hands",  color: "#f59e0b", expression: "focus" },
+  YEAR:        { label: "Year",        motion: "circle-chest",  color: "#a78bfa", expression: "focus" },
+  PEOPLE:      { label: "People",      motion: "spread-hands",  color: "#6366f1", expression: "focus" },
+  THING:       { label: "Thing",       motion: "flat-hand",     color: "#64748b", expression: "focus" },
+  WAY:         { label: "Way",         motion: "point-out",     color: "#22d3ee", expression: "focus" },
+  PART:        { label: "Part",        motion: "flat-hand",     color: "#a78bfa", expression: "focus" },
+  PLACE:       { label: "Place",       motion: "point-out",     color: "#10b981", expression: "focus" },
+  WORD:        { label: "Word",        motion: "chin-forward",  color: "#7c3aed", expression: "focus" },
+  IDEA:        { label: "Idea",        motion: "tap-head",      color: "#00d4ff", expression: "smile" },
+  QUESTION:    { label: "Question",    motion: "shrug",         color: "#f59e0b", expression: "question" },
+  REASON:      { label: "Reason",      motion: "index-temple",  color: "#a78bfa", expression: "focus" },
+  TYPE:        { label: "Type",        motion: "flat-hand",     color: "#6366f1", expression: "focus" },
+  GROUP:       { label: "Group",       motion: "circle-chest",  color: "#22d3ee", expression: "focus" },
+  LEVEL:       { label: "Level",       motion: "flat-hand",     color: "#a78bfa", expression: "focus" },
+  SYSTEM:      { label: "System",      motion: "spread-hands",  color: "#6366f1", expression: "focus" },
+  WORLD:       { label: "World",       motion: "circle-chest",  color: "#10b981", expression: "focus" },
+  NUMBER:      { label: "Number",      motion: "knuckles",      color: "#f59e0b", expression: "focus" },
+  BIG:         { label: "Big",         motion: "spread-hands",  color: "#10b981", expression: "focus" },
+  SMALL:       { label: "Small",       motion: "flat-hand",     color: "#22d3ee", expression: "focus" },
+  MANY:        { label: "Many",        motion: "spread-hands",  color: "#f59e0b", expression: "focus" },
+  MORE:        { label: "More",        motion: "lift",          color: "#10b981", expression: "focus" },
+  LESS:        { label: "Less",        motion: "flat-hand",     color: "#ef4444", expression: "focus" },
+  SAME:        { label: "Same",        motion: "flat-hand",     color: "#6366f1", expression: "focus" },
+  DIFFERENT:   { label: "Different",   motion: "waggle",        color: "#a78bfa", expression: "focus" },
+  NEW:         { label: "New",         motion: "snap",          color: "#00d4ff", expression: "smile" },
+  OLD:         { label: "Old",         motion: "tap-head",      color: "#64748b", expression: "focus" },
+  IMPORTANT:   { label: "Important",   motion: "knuckles",      color: "#ef4444", expression: "firm" },
+  EASY:        { label: "Easy",        motion: "flat-hand",     color: "#10b981", expression: "smile" },
+  HARD:        { label: "Hard",        motion: "knuckles",      color: "#ef4444", expression: "firm" },
+  TRUE:        { label: "True",        motion: "nod",           color: "#10b981", expression: "smile" },
+  RIGHT:       { label: "Right",       motion: "thumbs",        color: "#10b981", expression: "smile" },
+  WRONG:       { label: "Wrong",       motion: "thumbs-down",   color: "#ef4444", expression: "firm" },
+  AND:         { label: "And",         motion: "circle-wrist",  color: "#64748b", expression: "neutral" },
+  BUT:         { label: "But",         motion: "waggle",        color: "#64748b", expression: "neutral" },
+  OR:          { label: "Or",          motion: "shrug",         color: "#64748b", expression: "question" },
+  IF:          { label: "If",          motion: "shrug",         color: "#f59e0b", expression: "question" },
+  SO:          { label: "So",          motion: "chin-forward",  color: "#64748b", expression: "neutral" },
+  NOW:         { label: "Now",         motion: "point-self",    color: "#22d3ee", expression: "focus" },
+  HERE:        { label: "Here",        motion: "point-self",    color: "#10b981", expression: "focus" },
+  THERE:       { label: "There",       motion: "point-out",     color: "#10b981", expression: "focus" },
+  ALSO:        { label: "Also",        motion: "lift",          color: "#64748b", expression: "focus" },
+  VERY:        { label: "Very",        motion: "knuckles",      color: "#f59e0b", expression: "focus" },
+  ALWAYS:      { label: "Always",      motion: "circle-chest",  color: "#10b981", expression: "focus" },
+  AGAIN:       { label: "Again",       motion: "circle-wrist",  color: "#22d3ee", expression: "focus" },
+  ADD:         { label: "Add",         motion: "lift",          color: "#10b981", expression: "focus" },
+  REMEMBER:    { label: "Remember",    motion: "tap-head",      color: "#7c3aed", expression: "focus" },
+  BUILD:       { label: "Build",       motion: "knuckles",      color: "#6366f1", expression: "focus" },
+  CONTINUE:    { label: "Continue",    motion: "point-out",     color: "#22d3ee", expression: "focus" },
+  FINISH:      { label: "Finish",      motion: "chin-forward",  color: "#10b981", expression: "smile" },
+
+  // === High-frequency words identified from the real demo lecture transcript ===
+  // (backend/cache/aircAruvnKk.json) that had no dictionary sign at all — each
+  // motion below is referenced against its real ASL sign, not a generic reuse.
+  ONE:         { label: "One",         motion: "one",           color: "#f59e0b", expression: "focus" },
+  ALL:         { label: "All",         motion: "all",           color: "#10b981", expression: "focus" },
+  SOME:        { label: "Some",        motion: "some",          color: "#22d3ee", expression: "focus" },
+  EACH:        { label: "Each",        motion: "each",          color: "#a78bfa", expression: "focus" },
+  BETWEEN:     { label: "Between",     motion: "between",       color: "#6366f1", expression: "focus" },
+  NOT:         { label: "Not",         motion: "not",           color: "#ef4444", expression: "firm"  },
+  OTHER:       { label: "Other",       motion: "other",         color: "#7c3aed", expression: "focus" },
+  ANY:         { label: "Any",         motion: "any",           color: "#f59e0b", expression: "focus" },
+  UP:          { label: "Up",          motion: "up",            color: "#10b981", expression: "focus" },
+  DOWN:        { label: "Down",        motion: "down",          color: "#ef4444", expression: "focus" },
+
+  // === Batch 2: next-highest-frequency transcript words with distinct authored signs ===
+  FOR:         { label: "For",         motion: "for",           color: "#6366f1", expression: "focus" },
+  INTO:        { label: "Into",        motion: "into",          color: "#22d3ee", expression: "focus" },
+  OUT:         { label: "Out",         motion: "out",           color: "#f59e0b", expression: "focus" },
+  BACK:        { label: "Back",        motion: "back",          color: "#a78bfa", expression: "focus" },
+  SUM:         { label: "Sum",         motion: "combine",       color: "#10b981", expression: "focus" },
+  TOTAL:       { label: "Total",       motion: "combine",       color: "#10b981", expression: "focus" },
+  COMBINE:     { label: "Combine",     motion: "combine",       color: "#10b981", expression: "focus" },
+  TOGETHER:    { label: "Together",    motion: "combine",       color: "#10b981", expression: "focus" },
+  MEAN:        { label: "Mean",        motion: "mean",          color: "#6366f1", expression: "focus" },
+  POSITIVE:    { label: "Positive",    motion: "positive",      color: "#10b981", expression: "smile" },
+  NEGATIVE:    { label: "Negative",    motion: "negative",      color: "#ef4444", expression: "firm"  },
+  CAN:         { label: "Can",         motion: "can",           color: "#10b981", expression: "focus" },
+  ABOUT:       { label: "About",       motion: "about",         color: "#22d3ee", expression: "focus" },
+  FIRST:       { label: "First",       motion: "first",         color: "#f59e0b", expression: "focus" },
+  REPRESENT:   { label: "Represent",   motion: "represent",     color: "#7c3aed", expression: "focus" },
+  TWO:         { label: "Two",         motion: "fingerspell",   color: "#f59e0b", expression: "focus", letters: "2" },
+  ZERO:        { label: "Zero",        motion: "fingerspell",   color: "#f59e0b", expression: "focus", letters: "0" },
+
+  // === Batch 3: common words mapped to the closest existing motion primitive. ===
+  // These are approximations (reused motion shapes), not individually validated ASL
+  // signs — they exist so frequent words get a coherent gesture instead of fingerspelling.
+  JUST:        { label: "Just",        motion: "flat-hand",     color: "#64748b", expression: "focus" },
+  EVEN:        { label: "Even",        motion: "flat-hand",     color: "#64748b", expression: "focus" },
+  THAN:        { label: "Than",        motion: "flat-hand",     color: "#64748b", expression: "focus" },
+  LITTLE:      { label: "Little",      motion: "flat-hand",     color: "#22d3ee", expression: "focus" },
+  LONG:        { label: "Long",        motion: "flat-hand",     color: "#a78bfa", expression: "focus" },
+  LINE:        { label: "Line",        motion: "flat-hand",     color: "#a78bfa", expression: "focus" },
+  EDGE:        { label: "Edge",        motion: "flat-hand",     color: "#a78bfa", expression: "focus" },
+  HIDDEN:      { label: "Hidden",      motion: "flat-hand",     color: "#6366f1", expression: "focus" },
+  BASICALLY:   { label: "Basically",   motion: "flat-hand",     color: "#64748b", expression: "focus" },
+  LINEAR:      { label: "Linear",      motion: "flat-hand",     color: "#a78bfa", expression: "focus" },
+  HAND:        { label: "Hand",        motion: "flat-hand",     color: "#f0b28c", expression: "focus" },
+  THESE:       { label: "These",       motion: "point-out",     color: "#22d3ee", expression: "focus" },
+  THOSE:       { label: "Those",       motion: "point-out",     color: "#22d3ee", expression: "focus" },
+  THEIR:       { label: "Their",       motion: "point-out",     color: "#22d3ee", expression: "focus" },
+  THATS:       { label: "That's",      motion: "point-out",     color: "#22d3ee", expression: "focus" },
+  SPECIFIC:    { label: "Specific",    motion: "point-out",     color: "#6366f1", expression: "focus" },
+  PARTICULAR:  { label: "Particular",  motion: "point-out",     color: "#6366f1", expression: "focus" },
+  POINT:       { label: "Point",       motion: "point-out",     color: "#f59e0b", expression: "focus" },
+  PICK:        { label: "Pick",        motion: "point-out",     color: "#10b981", expression: "focus" },
+  SECOND:      { label: "Second",      motion: "point-out",     color: "#f59e0b", expression: "focus" },
+  DIGIT:       { label: "Digit",       motion: "knuckles",      color: "#f59e0b", expression: "focus" },
+  CERTAIN:     { label: "Certain",     motion: "knuckles",      color: "#10b981", expression: "focus" },
+  REALLY:      { label: "Really",      motion: "knuckles",      color: "#ef4444", expression: "firm"  },
+  STRUCTURE:   { label: "Structure",   motion: "knuckles",      color: "#6366f1", expression: "focus" },
+  CLOSE:       { label: "Close",       motion: "knuckles",      color: "#22d3ee", expression: "focus" },
+  DO:          { label: "Do",          motion: "knuckles",      color: "#6366f1", expression: "focus" },
+  DID:         { label: "Did",         motion: "knuckles",      color: "#6366f1", expression: "focus" },
+  NEURAL:      { label: "Neural",      motion: "tap-head",      color: "#22d3ee", expression: "focus" },
+  BRAIN:       { label: "Brain",       motion: "tap-head",      color: "#22d3ee", expression: "focus" },
+  RECOGNIZE:   { label: "Recognize",   motion: "tap-head",      color: "#7c3aed", expression: "focus" },
+  HOPE:        { label: "Hope",        motion: "tap-head",      color: "#10b981", expression: "soft"  },
+  MOTIVATED:   { label: "Motivated",   motion: "tap-head",      color: "#f59e0b", expression: "focus" },
+  SAY:         { label: "Say",         motion: "chin-forward",  color: "#00d4ff", expression: "focus" },
+  TELL:        { label: "Tell",        motion: "chin-forward",  color: "#00d4ff", expression: "focus" },
+  FEED:        { label: "Feed",        motion: "chin-forward",  color: "#10b981", expression: "focus" },
+  NEXT:        { label: "Next",        motion: "chin-forward",  color: "#22d3ee", expression: "focus" },
+  THEN:        { label: "Then",        motion: "chin-forward",  color: "#64748b", expression: "focus" },
+  WHO:         { label: "Who",         motion: "chin-forward",  color: "#f59e0b", expression: "question" },
+  WELL:        { label: "Well",        motion: "spread-hands",  color: "#64748b", expression: "focus" },
+  MUCH:        { label: "Much",        motion: "spread-hands",  color: "#f59e0b", expression: "focus" },
+  LOT:         { label: "Lot",         motion: "spread-hands",  color: "#f59e0b", expression: "focus" },
+  REGION:      { label: "Region",      motion: "spread-hands",  color: "#6366f1", expression: "focus" },
+  KIND:        { label: "Kind",        motion: "circle-chest",  color: "#22d3ee", expression: "focus" },
+  SORT:        { label: "Sort",        motion: "circle-chest",  color: "#22d3ee", expression: "focus" },
+  FORM:        { label: "Form",        motion: "circle-chest",  color: "#a78bfa", expression: "focus" },
+  OUR:         { label: "Our",         motion: "circle-chest",  color: "#10b981", expression: "focus" },
+  INVOLVE:     { label: "Involve",     motion: "circle-chest",  color: "#6366f1", expression: "focus" },
+  LOOP:        { label: "Loop",        motion: "circle-wrist",  color: "#22d3ee", expression: "focus" },
+  AROUND:      { label: "Around",      motion: "circle-wrist",  color: "#22d3ee", expression: "focus" },
+  MOMENT:      { label: "Moment",      motion: "circle-wrist",  color: "#f59e0b", expression: "focus" },
+  EXACTLY:     { label: "Exactly",     motion: "snap",          color: "#22d3ee", expression: "focus" },
+  FIRING:      { label: "Firing",      motion: "snap",          color: "#ef4444", expression: "focus" },
+  ACTIVE:      { label: "Active",      motion: "snap",          color: "#22d3ee", expression: "smile" },
+  ACTUALLY:    { label: "Actually",    motion: "y-hand",        color: "#f59e0b", expression: "focus" },
+  AS:          { label: "As",          motion: "y-hand",        color: "#64748b", expression: "focus" },
+  LAST:        { label: "Last",        motion: "y-hand",        color: "#a78bfa", expression: "focus" },
+  WHICH:       { label: "Which",       motion: "shrug",         color: "#f59e0b", expression: "question" },
+  WHETHER:     { label: "Whether",     motion: "shrug",         color: "#f59e0b", expression: "question" },
+  MAYBE:       { label: "Maybe",       motion: "shrug",         color: "#f59e0b", expression: "question" },
+  VALUE:       { label: "Value",       motion: "thumbs",        color: "#f59e0b", expression: "focus" },
+  ABLE:        { label: "Able",        motion: "thumbs",        color: "#10b981", expression: "focus" },
+  VIDEO:       { label: "Video",       motion: "picture",       color: "#f59e0b", expression: "focus" },
+  IM:          { label: "I'm",         motion: "point-self",    color: "#f59e0b", expression: "focus" },
+  ILL:         { label: "I'll",        motion: "point-self",    color: "#f59e0b", expression: "focus" },
+  OWN:         { label: "Own",         motion: "point-self",    color: "#f59e0b", expression: "focus" },
+  CONNECTION:  { label: "Connection",  motion: "connect",       color: "#22d3ee", expression: "focus" },
+  RELEVANT:    { label: "Relevant",    motion: "connect",       color: "#22d3ee", expression: "focus" },
+  VARIANT:     { label: "Variant",     motion: "waggle",        color: "#a78bfa", expression: "focus" },
+  VARIOUS:     { label: "Various",     motion: "waggle",        color: "#a78bfa", expression: "focus" },
+  LETS:        { label: "Let's",       motion: "lift",          color: "#10b981", expression: "focus" },
+  HOLD:        { label: "Hold",        motion: "lift",          color: "#f59e0b", expression: "focus" },
+  GET:         { label: "Get",         motion: "lift",          color: "#10b981", expression: "focus" },
+  GIVEN:       { label: "Given",       motion: "lift",          color: "#10b981", expression: "soft"  },
+  TOP:         { label: "Top",         motion: "up",            color: "#10b981", expression: "focus" },
+  LOW:         { label: "Low",         motion: "down",          color: "#ef4444", expression: "focus" },
+  COUPLE:      { label: "Couple",      motion: "some",          color: "#22d3ee", expression: "focus" },
+  CHALLENGE:   { label: "Challenge",   motion: "problem",       color: "#ef4444", expression: "firm"  },
+  DIFFICULT:   { label: "Difficult",   motion: "problem",       color: "#ef4444", expression: "firm"  },
+  ONCE:        { label: "Once",        motion: "one",           color: "#f59e0b", expression: "focus" },
+  BEFORE:      { label: "Before",      motion: "back",          color: "#a78bfa", expression: "focus" },
+  BY:          { label: "By",          motion: "flat-hand",     color: "#64748b", expression: "focus" },
+  ACCORDING:   { label: "According",   motion: "flat-hand",     color: "#64748b", expression: "focus" },
+  YOUR:        { label: "Your",        motion: "point-out",     color: "#22d3ee", expression: "focus" },
+  BREAK:       { label: "Break",       motion: "problem",       color: "#ef4444", expression: "focus" },
+  COURSE:      { label: "Course",      motion: "learn",         color: "#00d4ff", expression: "focus" },
+  DONT:        { label: "Don't",       motion: "not",           color: "#ef4444", expression: "firm"  },
+  ASSOCIATED:  { label: "Associated",  motion: "connect",       color: "#22d3ee", expression: "focus" },
+  CORRESPOND:  { label: "Correspond",  motion: "connect",       color: "#22d3ee", expression: "focus" },
+  JUMP:        { label: "Jump",        motion: "snap",          color: "#22d3ee", expression: "focus" },
 };
 
 const FINGER_NAMES = ["thumb", "index", "middle", "ring", "pinky"];
+
+// Reclaims dictionary signs for common inflected forms (plurals, -ing/-ed, -tion) that
+// don't exact-match a SIGN_MOTIONS key — e.g. "NEURONS"/"WEIGHTS"/"ACTIVATIONS" should
+// sign as NEURON/WEIGHT/ACTIVATE rather than fall through to fingerspelling. Measured
+// against the actual demo lecture transcript, this alone recovers ~6.5% of all word
+// occurrences with zero new hand-authored motions.
+function lemmatizeForDictionary(word) {
+  const candidates = [];
+  if (word.endsWith("IES")) candidates.push(word.slice(0, -3) + "Y");
+  if (word.endsWith("TIONS")) candidates.push(word.slice(0, -5) + "TE");
+  if (word.endsWith("TION")) candidates.push(word.slice(0, -4) + "TE");
+  // -ION/-IONS off a base verb: CONNECTIONS→CONNECTION→CONNECT (base is in dict).
+  if (word.endsWith("IONS")) candidates.push(word.slice(0, -4));
+  if (word.endsWith("ION")) candidates.push(word.slice(0, -3));
+  if (word.endsWith("ES")) candidates.push(word.slice(0, -2));
+  if (word.endsWith("S") && word.length > 3) candidates.push(word.slice(0, -1));
+  if (word.endsWith("ING")) {
+    candidates.push(word.slice(0, -3));
+    candidates.push(word.slice(0, -3) + "E");
+  }
+  if (word.endsWith("ED")) {
+    candidates.push(word.slice(0, -2));
+    candidates.push(word.slice(0, -1));
+  }
+  if (word.endsWith("LY")) candidates.push(word.slice(0, -2));
+  for (const candidate of candidates) {
+    if (SIGN_MOTIONS[candidate]) return SIGN_MOTIONS[candidate];
+  }
+  return null;
+}
 
 function getSignInfo(word) {
   const s = String(word || "").trim().toUpperCase();
@@ -83,15 +327,36 @@ function getSignInfo(word) {
   const conceptMatch = s.match(/^\[CONCEPT:(.+)\]$/);
   if (conceptMatch) {
     const cw = conceptMatch[1].replace(/[^A-Za-z\s]/g, "").toUpperCase().trim();
-    return { label: cw, motion: "concept-card", color: "#64748b", expression: "neutral" };
+    const letters = cw.replace(/[^A-Z0-9]/g, "");
+    return { label: cw, motion: "fingerspell", color: "#64748b", expression: "neutral", letters, isConcept: true };
   }
   const numMatch = s.match(/^\[NUMBER:(\d+)\]$/);
   if (numMatch) {
-    return { label: "#" + numMatch[1], motion: "concept-card", color: "#64748b", expression: "neutral" };
+    return { label: "#" + numMatch[1], motion: "fingerspell", color: "#64748b", expression: "neutral", letters: numMatch[1] };
   }
-  const upper = s.replace(/[^A-Z]/g, "") || "";
-  // Fallback hierarchy: SIGN_MOTIONS → concept card (not generic fingerspell)
-  return SIGN_MOTIONS[upper] || { label: upper || "Ready", motion: "concept-card", color: "#64748b", expression: "neutral" };
+
+  const upper = s.replace(/[^A-Z]/g, "");
+  if (SIGN_MOTIONS[upper]) return SIGN_MOTIONS[upper];
+  const lemma = lemmatizeForDictionary(upper);
+  if (lemma) return lemma;
+
+  // Fallback hierarchy: JSON clip (checked by caller) → SIGN_MOTIONS procedural sign →
+  // inflected form of a dictionary sign → fingerspell. Every gloss word must be signed — no word is ever shown as plain text only.
+  // Includes digits so untagged numeric/mixed tokens (e.g. "3D", "2024") still get signed
+  // instead of leaving the avatar idle with nothing to spell.
+  const spellable = s.replace(/[^A-Z0-9]/g, "");
+  if (spellable) {
+    return { label: upper || spellable, motion: "fingerspell", color: "#06b6d4", expression: "neutral", letters: spellable };
+  }
+  if (!s) {
+    // No word at all (e.g. before captions load) — this is the only legitimate "nothing to sign" case.
+    return { label: "Ready", motion: "idle", color: "#64748b", expression: "neutral" };
+  }
+  // Word has real content but none of it is in our Latin alphabet/digits (untranslated
+  // non-English text, symbols, etc.) — there's nothing to fingerspell, but the avatar must
+  // still visibly gesture rather than stand still, so it holds a neutral handshape while
+  // the original text is shown via the fingerspell ticker's subtitle.
+  return { label: s.slice(0, 20), motion: "fingerspell", color: "#64748b", expression: "neutral", letters: "", isConcept: true };
 }
 
 // Returns "" for bracket-tagged words so loadSignClip skips the network fetch.
@@ -113,7 +378,15 @@ function displayGlossWord(word) {
   return s.replace(/[^A-Z]/g, "");
 }
 
+// JSON clips (public/signs/*.json) were authored against an incorrect rest-pose assumption
+// (arms out in a T-pose) and render broken on this VRM rig. Until they are re-authored to the
+// corrected signing-space convention, they are disabled and every word uses the procedural
+// gesture system in applyVrmMotion, which keeps the avatar consistent. Files are kept intact;
+// flip this flag to re-enable clip playback once the clips are fixed.
+const SIGN_CLIPS_ENABLED = false;
+
 async function loadSignClip(word) {
+  if (!SIGN_CLIPS_ENABLED) return null;
   const key = normalizeGlossWord(word);
   if (!key) return null;
   if (signClipCache.has(key)) return signClipCache.get(key);
@@ -312,6 +585,16 @@ function setFingerPose(hand, pose = "open") {
     thumb: { thumb: -0.65, index: 1.2, middle: 1.2, ring: 1.2, pinky: 1.2 },
     y: { thumb: -0.45, index: 1.15, middle: 1.2, ring: 1.15, pinky: -0.25 },
     spell: { thumb: 0.25, index: 0.35, middle: 0.1, ring: 0.45, pinky: 0.7 },
+    // ASL number handshapes (2,3,5–9) — approximated with single-axis finger curl;
+    // the rig can't model true thumb-to-fingertip contact for 6–9, so those use the
+    // matching finger curled toward center as the closest available approximation.
+    two: { thumb: 0.5, index: 0.0, middle: 0.0, ring: 1.2, pinky: 1.2 },
+    three: { thumb: -0.3, index: 0.0, middle: 0.0, ring: 1.2, pinky: 1.2 },
+    five: { thumb: 0.15, index: 0.0, middle: 0.0, ring: 0.0, pinky: 0.05 },
+    six: { thumb: 0.6, index: 0.0, middle: 0.0, ring: 0.0, pinky: 1.1 },
+    seven: { thumb: 0.55, index: 0.0, middle: 0.0, ring: 0.9, pinky: 0.0 },
+    eight: { thumb: 0.5, index: 0.0, middle: 0.85, ring: 0.0, pinky: 0.0 },
+    nine: { thumb: 0.5, index: 0.85, middle: 0.0, ring: 0.0, pinky: 0.0 },
   }[pose] || {};
 
   FINGER_NAMES.forEach((name) => {
@@ -338,7 +621,7 @@ function applyExpression(parts, expression, time) {
 
 // Simplified handshape descriptors for fingerspelling.
 // Each letter maps to an existing finger pose + wrist rotation for visual distinction.
-// These are NOT validated BdSL manual alphabet shapes — the letter ticker carries the meaning.
+// These are NOT validated ASL manual alphabet shapes — the letter ticker carries the meaning.
 const FINGERSPELL_HANDSHAPES = {
   A: { pose: "fist",  wristX: -0.10, wristY:  0.00, wristZ: -0.10 },
   B: { pose: "flat",  wristX:  0.00, wristY:  0.00, wristZ:  0.10 },
@@ -366,6 +649,23 @@ const FINGERSPELL_HANDSHAPES = {
   X: { pose: "point", wristX:  0.20, wristY:  0.00, wristZ: -0.10 },
   Y: { pose: "y",     wristX:  0.00, wristY:  0.00, wristZ: -0.10 },
   Z: { pose: "point", wristX: -0.20, wristY:  0.00, wristZ:  0.00 },
+};
+
+// Real ASL number handshapes 0–9 (standard convention: 1–5 count up on extended
+// fingers, 6–9 are thumb touching a fingertip — approximated per the pose comment
+// above). Held with a neutral wrist, unlike fingerspelled letters, matching how
+// ASL numbers are actually signed (steady handshape, not wrist-oriented).
+const NUMBER_HANDSHAPES = {
+  0: { pose: "spell", wristX: 0, wristY: 0, wristZ: 0 },
+  1: { pose: "point", wristX: 0, wristY: 0, wristZ: 0 },
+  2: { pose: "two",   wristX: 0, wristY: 0, wristZ: 0 },
+  3: { pose: "three", wristX: 0, wristY: 0, wristZ: 0 },
+  4: { pose: "flat",  wristX: 0, wristY: 0, wristZ: 0 },
+  5: { pose: "five",  wristX: 0, wristY: 0, wristZ: 0 },
+  6: { pose: "six",   wristX: 0, wristY: 0, wristZ: 0 },
+  7: { pose: "seven", wristX: 0, wristY: 0, wristZ: 0 },
+  8: { pose: "eight", wristX: 0, wristY: 0, wristZ: 0 },
+  9: { pose: "nine",  wristX: 0, wristY: 0, wristZ: 0 },
 };
 
 function applyMotion(parts, signInfo, time) {
@@ -530,10 +830,291 @@ function applyMotion(parts, signInfo, time) {
       parts.right.hand.rotation.set(0.05, 0, -0.12 + wave * 0.06);
       setFingerPose(parts.right.hand, "flat");
       break;
+    // COMPUTER — referenced ASL sign: non-dominant hand flat/palm-down, dominant hand
+    // forms a "C" and brushes in a small circle on the wrist (lifeprint.com/asl101).
+    case "computer":
+      setEuler(parts.left.shoulder, -0.35, 0.05, 0.65);
+      setEuler(parts.left.elbow, -0.15, 0.0, -0.05);
+      parts.left.hand.rotation.set(0.1, 0, 0.1);
+      setFingerPose(parts.left.hand, "flat");
+      setEuler(parts.right.shoulder, -0.45, -0.15, -0.5);
+      setEuler(parts.right.elbow, -0.55, 0.0, 0.15);
+      parts.right.hand.position.x = -0.18 + Math.cos(time * 5) * 0.05;
+      parts.right.hand.position.z = 0.05 + Math.sin(time * 5) * 0.05;
+      setFingerPose(parts.right.hand, "spell");
+      break;
+    // CONNECT — referenced ASL sign: both hands (hooked index fingers) start apart
+    // and move together at chest center until they link.
+    case "connect": {
+      const converge = (Math.sin(time * 2.2) + 1) / 2;
+      setEuler(parts.left.shoulder, -0.35, 0.1, 0.55);
+      setEuler(parts.right.shoulder, -0.35, -0.1, -0.55);
+      parts.left.hand.position.x = 0.16 - converge * 0.16;
+      parts.right.hand.position.x = -0.16 + converge * 0.16;
+      setFingerPose(parts.left.hand, "point");
+      setFingerPose(parts.right.hand, "point");
+      break;
+    }
+    // PROBLEM — referenced ASL sign: both fists' knuckles meet in front of the body
+    // and twist against each other.
+    case "problem":
+      setEuler(parts.left.shoulder, -0.55, 0.1, 0.5);
+      setEuler(parts.left.elbow, -0.7, 0.0, -0.1);
+      setEuler(parts.right.shoulder, -0.55, -0.1, -0.5);
+      setEuler(parts.right.elbow, -0.7, 0.0, 0.1);
+      parts.left.hand.rotation.z = Math.sin(time * 7) * 0.25;
+      parts.right.hand.rotation.z = -Math.sin(time * 7) * 0.25;
+      setFingerPose(parts.left.hand, "fist");
+      setFingerPose(parts.right.hand, "fist");
+      break;
+    // PICTURE/IMAGE — referenced ASL sign: non-dominant hand held flat as a "frame",
+    // dominant hand moves from near the face outward to meet it, camera-like.
+    case "picture": {
+      const click = Math.max(0, Math.sin(time * 3));
+      setEuler(parts.left.shoulder, -0.3, 0.2, 0.75);
+      setEuler(parts.left.elbow, -0.65, 0.0, -0.05);
+      parts.left.hand.rotation.set(0, 0, 0.15);
+      setFingerPose(parts.left.hand, "flat");
+      setEuler(parts.right.shoulder, -1.05, -0.1, -0.55);
+      setEuler(parts.right.elbow, -0.55 - click * 0.35, 0.0, 0.1);
+      parts.right.hand.rotation.set(0, 0, -0.15);
+      setFingerPose(parts.right.hand, "flat");
+      break;
+    }
+    // TEACH — referenced ASL sign: both hands start near the head/temples and
+    // pulse outward twice, as if giving knowledge outward.
+    case "teach": {
+      const out = Math.max(0, Math.sin(time * 4));
+      setEuler(parts.left.shoulder, -1.1, 0.15, 0.35 + out * 0.3);
+      setEuler(parts.left.elbow, -1.15, 0.0, -out * 0.2);
+      setEuler(parts.right.shoulder, -1.1, -0.15, -0.35 - out * 0.3);
+      setEuler(parts.right.elbow, -1.15, 0.0, out * 0.2);
+      setFingerPose(parts.left.hand, "spell");
+      setFingerPose(parts.right.hand, "spell");
+      break;
+    }
+    // ONE — real ASL sign: index finger extended and held up (same handshape as the digit).
+    case "one":
+      setEuler(parts.right.shoulder, -1.05, -0.05, -0.5);
+      setEuler(parts.right.elbow, -0.85, 0.0, 0.05);
+      parts.right.hand.rotation.set(-0.1, 0, 0);
+      setFingerPose(parts.right.hand, "point");
+      break;
+    // ALL — real ASL sign: flat hand sweeps in a horizontal circle in front of the body.
+    case "all":
+      setEuler(parts.right.shoulder, -0.55, -0.1, -0.6);
+      setEuler(parts.right.elbow, -0.75, 0.0, 0.1);
+      parts.right.hand.position.x = -0.05 + Math.cos(time * 3) * 0.1;
+      parts.right.hand.position.z = 0.08 + Math.sin(time * 3) * 0.1;
+      parts.right.hand.rotation.set(0.1, 0, 0);
+      setFingerPose(parts.right.hand, "flat");
+      break;
+    // SOME — real ASL sign: dominant hand's edge slides across the base hand's palm.
+    case "some": {
+      const slide = (Math.sin(time * 2.5) + 1) / 2;
+      setEuler(parts.left.shoulder, -0.3, 0.1, 0.6);
+      parts.left.hand.rotation.set(0.2, 0, 0.1);
+      setFingerPose(parts.left.hand, "flat");
+      setEuler(parts.right.shoulder, -0.35, -0.15, -0.55);
+      setEuler(parts.right.elbow, -0.55, 0, 0.1);
+      parts.right.hand.position.x = -0.22 + slide * 0.14;
+      parts.right.hand.rotation.set(0.15, 0, -0.1);
+      setFingerPose(parts.right.hand, "flat");
+      break;
+    }
+    // EACH — real ASL sign: dominant hand taps sequentially along the base hand.
+    case "each": {
+      const tap = Math.max(0, Math.sin(time * 6));
+      setEuler(parts.left.shoulder, -0.3, 0.1, 0.6);
+      parts.left.hand.rotation.set(0.2, 0, 0.1);
+      setFingerPose(parts.left.hand, "flat");
+      setEuler(parts.right.shoulder, -0.5, -0.15, -0.55);
+      setEuler(parts.right.elbow, -0.75 - tap * 0.15, 0, 0.1);
+      parts.right.hand.rotation.set(-0.2, 0, -0.1);
+      setFingerPose(parts.right.hand, "point");
+      break;
+    }
+    // BETWEEN — real ASL sign: spread hand oscillates in the space in front of the base hand.
+    case "between":
+      setEuler(parts.left.shoulder, -0.25, 0.1, 0.7);
+      parts.left.hand.rotation.set(0.1, 0, 0.3);
+      setFingerPose(parts.left.hand, "flat");
+      setEuler(parts.right.shoulder, -0.3, -0.15, -0.55);
+      setEuler(parts.right.elbow, -0.6, 0, 0.05);
+      parts.right.hand.position.z = 0.05 + Math.sin(time * 4) * 0.08;
+      setFingerPose(parts.right.hand, "open");
+      break;
+    // NOT — real ASL sign: hand starts near the chin and flicks forward/down away from it.
+    case "not": {
+      const flick = Math.max(0, Math.sin(time * 5));
+      setEuler(parts.right.shoulder, -1.3, -0.1, -0.4);
+      setEuler(parts.right.elbow, -1.2 + flick * 0.35, 0, 0.1);
+      parts.right.hand.rotation.set(-0.1, 0, 0);
+      setFingerPose(parts.right.hand, "thumb");
+      break;
+    }
+    // OTHER — real ASL sign: hand twists at the wrist from palm-in to palm-out.
+    case "other":
+      setEuler(parts.right.shoulder, -0.65, -0.1, -0.55);
+      setEuler(parts.right.elbow, -0.75, 0, 0.1);
+      parts.right.hand.rotation.set(-0.2, Math.sin(time * 4) * 0.5, 0);
+      setFingerPose(parts.right.hand, "thumb");
+      break;
+    // ANY — real ASL sign: hand sweeps side to side.
+    case "any":
+      setEuler(parts.right.shoulder, -0.55, -0.1 + Math.sin(time * 3) * 0.25, -0.55);
+      setEuler(parts.right.elbow, -0.7, 0, 0.1);
+      setFingerPose(parts.right.hand, "thumb");
+      break;
+    // UP — real ASL sign: index finger points and moves upward.
+    case "up": {
+      const lift = Math.max(0, Math.sin(time * 3));
+      setEuler(parts.right.shoulder, -1.3 - lift * 0.3, -0.05, -0.4);
+      setEuler(parts.right.elbow, -0.5, 0, 0.05);
+      parts.right.hand.rotation.set(-0.3, 0, 0);
+      setFingerPose(parts.right.hand, "point");
+      break;
+    }
+    // DOWN — real ASL sign: index finger points and moves downward.
+    case "down": {
+      const drop = Math.max(0, Math.sin(time * 3));
+      setEuler(parts.right.shoulder, -0.35 + drop * 0.3, -0.05, -0.5);
+      setEuler(parts.right.elbow, -0.5, 0, 0.05);
+      parts.right.hand.rotation.set(0.3, 0, 0);
+      setFingerPose(parts.right.hand, "point");
+      break;
+    }
+    // FOR — real ASL sign: index finger touches the temple then twists to point forward.
+    case "for": {
+      const twist = (Math.sin(time * 3) + 1) / 2;
+      setEuler(parts.right.shoulder, -1.15, -0.15 + twist * 0.2, -0.5);
+      setEuler(parts.right.elbow, -1.0, 0, 0.15);
+      parts.right.hand.rotation.set(-0.3, twist * 0.6, -0.2);
+      setFingerPose(parts.right.hand, "point");
+      break;
+    }
+    // INTO — real ASL sign: fingers of one hand slide into the cupped opening of the other.
+    case "into": {
+      const push = (Math.sin(time * 2.5) + 1) / 2;
+      setEuler(parts.left.shoulder, -0.35, 0.15, 0.55);
+      setFingerPose(parts.left.hand, "fist");
+      setEuler(parts.right.shoulder, -0.4, -0.15 - push * 0.15, -0.5);
+      setEuler(parts.right.elbow, -0.7, 0, 0.1);
+      parts.right.hand.position.x = -0.16 + push * 0.12;
+      setFingerPose(parts.right.hand, "point");
+      break;
+    }
+    // OUT — real ASL sign: fingers pull upward out of the cupped non-dominant hand.
+    case "out": {
+      const pull = Math.max(0, Math.sin(time * 3));
+      setEuler(parts.left.shoulder, -0.3, 0.15, 0.55);
+      setFingerPose(parts.left.hand, "spell");
+      setEuler(parts.right.shoulder, -0.55 - pull * 0.35, -0.1, -0.5);
+      setEuler(parts.right.elbow, -0.7, 0, 0.1);
+      parts.right.hand.position.y = -0.59 + pull * 0.18;
+      setFingerPose(parts.right.hand, "spell");
+      break;
+    }
+    // BACK — real ASL sign: thumb points back over the shoulder.
+    case "back":
+      setEuler(parts.right.shoulder, -0.7, -0.35, -0.75);
+      setEuler(parts.right.elbow, -1.1, -0.2, 0.1);
+      parts.right.hand.rotation.set(-0.2, -0.4, -0.3);
+      setFingerPose(parts.right.hand, "thumb");
+      break;
+    // COMBINE / SUM / TOGETHER — real ASL sign: both curved hands sweep together and interlace.
+    case "combine": {
+      const merge = (Math.sin(time * 2.4) + 1) / 2;
+      setEuler(parts.left.shoulder, -0.4, 0.1 + merge * 0.2, 0.55 - merge * 0.2);
+      setEuler(parts.right.shoulder, -0.4, -0.1 - merge * 0.2, -0.55 + merge * 0.2);
+      parts.left.hand.position.x = 0.18 - merge * 0.18;
+      parts.right.hand.position.x = -0.18 + merge * 0.18;
+      setFingerPose(parts.left.hand, "spell");
+      setFingerPose(parts.right.hand, "spell");
+      break;
+    }
+    // MEAN — real ASL sign: bent-V fingertips touch the upturned palm and twist.
+    case "mean": {
+      const t = Math.sin(time * 4);
+      setEuler(parts.left.shoulder, -0.3, 0.1, 0.6);
+      parts.left.hand.rotation.set(0.2, 0, 0.1);
+      setFingerPose(parts.left.hand, "flat");
+      setEuler(parts.right.shoulder, -0.5, -0.1, -0.55);
+      setEuler(parts.right.elbow, -0.8, 0, 0.1 + t * 0.2);
+      parts.right.hand.rotation.set(-0.3, 0, t * 0.3);
+      setFingerPose(parts.right.hand, "point");
+      break;
+    }
+    // POSITIVE — real ASL sign: two index fingers cross to form a "plus".
+    case "positive":
+      setEuler(parts.left.shoulder, -0.7, 0.2, 0.5);
+      setEuler(parts.left.elbow, -0.9, 0, -0.1);
+      parts.left.hand.rotation.set(0, 0, 1.4);
+      setFingerPose(parts.left.hand, "point");
+      setEuler(parts.right.shoulder, -0.7, -0.2, -0.5);
+      setEuler(parts.right.elbow, -0.9, 0, 0.1);
+      parts.right.hand.rotation.set(0, 0, 0);
+      setFingerPose(parts.right.hand, "point");
+      break;
+    // NEGATIVE — real ASL sign: horizontal index finger held against the upturned palm ("minus").
+    case "negative":
+      setEuler(parts.left.shoulder, -0.3, 0.1, 0.6);
+      parts.left.hand.rotation.set(0.2, 0, 0.1);
+      setFingerPose(parts.left.hand, "flat");
+      setEuler(parts.right.shoulder, -0.5, -0.15, -0.55);
+      setEuler(parts.right.elbow, -0.8, 0, 0.1);
+      parts.right.hand.rotation.set(0, 0, 1.4);
+      setFingerPose(parts.right.hand, "point");
+      break;
+    // CAN — real ASL sign: both fists (S-hands) move down decisively together.
+    case "can": {
+      const chop = Math.max(0, Math.sin(time * 4));
+      setEuler(parts.left.shoulder, -0.6 + chop * 0.25, 0.1, 0.5);
+      setEuler(parts.right.shoulder, -0.6 + chop * 0.25, -0.1, -0.5);
+      setEuler(parts.left.elbow, -0.85, 0, -0.05);
+      setEuler(parts.right.elbow, -0.85, 0, 0.05);
+      setFingerPose(parts.left.hand, "fist");
+      setFingerPose(parts.right.hand, "fist");
+      break;
+    }
+    // ABOUT — real ASL sign: index finger circles around the fingertips of the base hand.
+    case "about":
+      setEuler(parts.left.shoulder, -0.35, 0.15, 0.55);
+      setFingerPose(parts.left.hand, "spell");
+      setEuler(parts.right.shoulder, -0.5, -0.12, -0.55);
+      setEuler(parts.right.elbow, -0.8, 0, 0.1);
+      parts.right.hand.position.x = -0.14 + Math.cos(time * 5) * 0.08;
+      parts.right.hand.position.z = 0.05 + Math.sin(time * 5) * 0.08;
+      setFingerPose(parts.right.hand, "point");
+      break;
+    // FIRST — real ASL sign: dominant index taps the extended thumb of the base hand.
+    case "first": {
+      const tap = Math.max(0, Math.sin(time * 5));
+      setEuler(parts.left.shoulder, -0.55, 0.2, 0.55);
+      setEuler(parts.left.elbow, -0.85, 0, -0.1);
+      setFingerPose(parts.left.hand, "thumb");
+      setEuler(parts.right.shoulder, -0.6, -0.15, -0.55);
+      setEuler(parts.right.elbow, -0.9 - tap * 0.12, 0, 0.1);
+      setFingerPose(parts.right.hand, "point");
+      break;
+    }
+    // REPRESENT — real ASL sign: dominant flat hand moves forward to press against the base palm.
+    case "represent": {
+      const forward = (Math.sin(time * 2.5) + 1) / 2;
+      setEuler(parts.left.shoulder, -0.35, 0.15, 0.6);
+      parts.left.hand.rotation.set(0, 0, 0.2);
+      setFingerPose(parts.left.hand, "flat");
+      setEuler(parts.right.shoulder, -0.5, -0.15, -0.55);
+      setEuler(parts.right.elbow, -0.75 - forward * 0.2, 0, 0.1);
+      parts.right.hand.position.z = forward * 0.1;
+      setFingerPose(parts.right.hand, "point");
+      break;
+    }
     case "fingerspell": {
-      const letters = (signInfo.letters || "A").toUpperCase().split("").filter((l) => /[A-Z]/.test(l));
+      const letters = (signInfo.letters || "A").toUpperCase().split("").filter((l) => /[A-Z0-9]/.test(l));
       const letterIndex = letters.length ? Math.floor(time * 3) % letters.length : 0;
-      const shape = FINGERSPELL_HANDSHAPES[letters[letterIndex]] || FINGERSPELL_HANDSHAPES.A;
+      const currentChar = letters[letterIndex];
+      const shape = (/[0-9]/.test(currentChar) ? NUMBER_HANDSHAPES[currentChar] : FINGERSPELL_HANDSHAPES[currentChar]) || FINGERSPELL_HANDSHAPES.A;
       setEuler(parts.right.shoulder, -0.95, -0.08, -0.55);
       setEuler(parts.right.elbow, -0.82, 0.0, 0.12);
       parts.right.hand.rotation.set(shape.wristX, shape.wristY, shape.wristZ);
@@ -541,9 +1122,6 @@ function applyMotion(parts, signInfo, time) {
       setFingerPose(parts.left.hand, "open");
       break;
     }
-    case "concept-card":
-      // Avatar idles naturally; the concept card overlay in React carries all the meaning.
-      break;
     default:
       setEuler(parts.left.shoulder, -0.75, 0.12, 0.58);
       setEuler(parts.right.shoulder, -0.75, -0.12, -0.58);
@@ -715,12 +1293,17 @@ function resetVrmPose(bones, time) {
   setBone(bones, "neck", 0, 0, 0);
   setBone(bones, "head", 0, 0, 0);
 
-  setBone(bones, "leftUpperArm", 0.02, 0.02, 0.08);
-  setBone(bones, "leftLowerArm", 0.04, 0.02, 0.04);
-  setBone(bones, "leftHand", 0, 0, 0.02);
-  setBone(bones, "rightUpperArm", 0.02, -0.02, -0.08);
-  setBone(bones, "rightLowerArm", 0.04, -0.02, -0.04);
-  setBone(bones, "rightHand", 0, 0, -0.02);
+  // Signing-ready rest pose. The VRM normalized rig rests in a T-pose (arms horizontal
+  // at rotation 0), so these values rotate the arms DOWN and slightly FORWARD with the
+  // elbows bent, putting the hands in front of the torso — calibrated visually against
+  // the rendered model. Convention: upperArm.z+ lowers the arm, .x+ swings it forward,
+  // lowerArm.x- flexes the elbow. Left arm mirrors (negate y,z).
+  setBone(bones, "leftUpperArm", 0.6, -0.2, -1.1);
+  setBone(bones, "leftLowerArm", -1.5, 0, 0.4);
+  setBone(bones, "leftHand", 0, 0, 0);
+  setBone(bones, "rightUpperArm", 0.6, 0.2, 1.1);
+  setBone(bones, "rightLowerArm", -1.5, 0, -0.4);
+  setBone(bones, "rightHand", 0, 0, 0);
 
   setVrmFingerPose(bones, "left", "relaxed");
   setVrmFingerPose(bones, "right", "relaxed");
@@ -742,6 +1325,16 @@ function setVrmFingerPose(bones, side, pose) {
     thumb: { Thumb: -0.25, Index: 1.16, Middle: 1.18, Ring: 1.16, Little: 1.14 },
     y: { Thumb: -0.18, Index: 1.05, Middle: 1.1, Ring: 1.1, Little: 0.02 },
     spell: { Thumb: 0.35, Index: 0.22, Middle: 0.12, Ring: 0.28, Little: 0.45 },
+    // ASL number handshapes (2,3,5–9) — approximated with single-axis finger curl;
+    // the rig can't model true thumb-to-fingertip contact for 6–9, so those use the
+    // matching finger curled toward center as the closest available approximation.
+    two: { Thumb: 0.5, Index: 0.05, Middle: 0.05, Ring: 1.2, Little: 1.2 },
+    three: { Thumb: -0.15, Index: 0.05, Middle: 0.05, Ring: 1.16, Little: 1.14 },
+    five: { Thumb: 0.2, Index: 0.05, Middle: 0.05, Ring: 0.05, Little: 0.08 },
+    six: { Thumb: 0.6, Index: 0.05, Middle: 0.05, Ring: 0.05, Little: 1.05 },
+    seven: { Thumb: 0.55, Index: 0.05, Middle: 0.05, Ring: 0.9, Little: 0.05 },
+    eight: { Thumb: 0.5, Index: 0.05, Middle: 0.85, Ring: 0.05, Little: 0.05 },
+    nine: { Thumb: 0.5, Index: 0.85, Middle: 0.05, Ring: 0.05, Little: 0.05 },
   }[pose] || {};
 
   Object.entries(poses).forEach(([finger, curl], index) => {
@@ -786,7 +1379,7 @@ function applyVrmExpression(vrm, expression, time, intensity = 1, mouthShape = n
 
   if (expression === "focus") manager.setValue("aa", (0.08 + Math.max(0, Math.sin(time * 5)) * 0.08) * intensity);
 
-  // NMM mouth morpheme approximation — BdSL has mouth-shape components that accompany each NMM type.
+  // NMM mouth morpheme approximation — ASL has mouth-shape components that accompany each NMM type.
   // "ou" (pursed) for WH-questions, "aa" (open) for YN-questions, "ih" (tight) for negation.
   if (mouthShape === "ou") manager.setValue("ou", 0.30 * intensity);
   else if (mouthShape === "aa") manager.setValue("aa", 0.20 * intensity);
@@ -863,172 +1456,158 @@ function applyVrmClip(parts, clip, progress, time) {
   return true;
 }
 
+// === Verified signing-space arm anchors ===
+// Each is [upperX, upperY, upperZ, lowerX, lowerY, lowerZ] for the RIGHT arm; the left arm
+// mirrors by negating Y and Z. Calibrated visually against the rendered VRM so the hand
+// sits in natural signing space in front of the torso (see resetVrmPose for the rest pose).
+// The strong negative lowerArm-Z (last value) rolls the forearm inward so the hand crosses
+// in front of the torso rather than hanging beside the hip.
+const ARM_RAISE = [0.6, -0.1, 0.75, -1.85, -0.2, -1.0]; // hand in front of chest, mid height
+const ARM_HIGH = [0.5, -0.2, 0.6, -2.05, -0.3, -1.1];   // hand up near upper chest / chin
+const ARM_FORWARD = [0.65, 0.0, 0.85, -1.5, -0.1, -0.7]; // hand in front, extended lower
+
+function setArmAnchor(bones, side, a, dLowerX = 0) {
+  const s = side === "left" ? -1 : 1;
+  setBone(bones, side === "left" ? "leftUpperArm" : "rightUpperArm", a[0], a[1] * s, a[2] * s);
+  setBone(bones, side === "left" ? "leftLowerArm" : "rightLowerArm", a[3] + dLowerX, a[4] * s, a[5] * s);
+}
+
+// Gesture families: gentle animated variations around the anchors. These are NOT literal
+// ASL signs — no procedural rig can render readable ASL without motion-capture data. They
+// keep the avatar visibly signing in natural space rather than freezing or T-posing, and
+// are paired with distinct handshapes/expressions per word for variety.
+function applyGestureFamily(bones, family, time, fingerR, fingerL) {
+  // Continuous, clearly-visible signing movement. Amplitudes are large on purpose so the
+  // hands are always obviously moving (the previous ±0.08 wiggle read as frozen). `stroke`
+  // is the main up/down travel of the forearm; `swing` moves the elbow forward/back; `wrist`
+  // articulates the hand so it never looks locked.
+  const stroke = Math.sin(time * 3.4) * 0.32;
+  const stroke2 = Math.sin(time * 3.4 + Math.PI) * 0.32; // opposite phase for two-hand alternation
+  const swing = Math.sin(time * 2.6) * 0.22;
+  const wrist = Math.sin(time * 4.2) * 0.35;
+  switch (family) {
+    case "highR":
+      setArmAnchor(bones, "right", ARM_HIGH, stroke);
+      setBone(bones, "rightHand", wrist * 0.4, 0, ARM_HIGH[5] * 0 + wrist);
+      break;
+    case "fwdR":
+      setArmAnchor(bones, "right", ARM_FORWARD, -Math.abs(stroke));
+      setBone(bones, "rightUpperArm", ARM_FORWARD[0], ARM_FORWARD[1], ARM_FORWARD[2] - swing * 0.5);
+      setBone(bones, "rightHand", 0, 0, wrist);
+      break;
+    case "together": {
+      const conv = (Math.sin(time * 2.8) + 1) / 2; // hands open and close in front of chest
+      setArmAnchor(bones, "right", ARM_RAISE, stroke * 0.4);
+      setArmAnchor(bones, "left", ARM_RAISE, stroke * 0.4);
+      setBone(bones, "rightLowerArm", ARM_RAISE[3] + stroke * 0.4, 0, -0.55 - conv * 0.6);
+      setBone(bones, "leftLowerArm", ARM_RAISE[3] + stroke * 0.4, 0, 0.55 + conv * 0.6);
+      break;
+    }
+    case "apart": {
+      const sp = (Math.sin(time * 2.8) + 1) / 2; // hands spread wide then back
+      setBone(bones, "rightUpperArm", ARM_RAISE[0], -0.15 - sp * 0.4, ARM_RAISE[2] + 0.1);
+      setBone(bones, "rightLowerArm", ARM_RAISE[3] + stroke * 0.3, 0, ARM_RAISE[5] + sp * 0.4);
+      setBone(bones, "leftUpperArm", ARM_RAISE[0], 0.15 + sp * 0.4, -ARM_RAISE[2] - 0.1);
+      setBone(bones, "leftLowerArm", ARM_RAISE[3] + stroke * 0.3, 0, -ARM_RAISE[5] - sp * 0.4);
+      break;
+    }
+    case "alt": // hands move up/down in opposition
+      setArmAnchor(bones, "right", ARM_RAISE, stroke);
+      setArmAnchor(bones, "left", ARM_RAISE, stroke2);
+      setBone(bones, "rightHand", 0, 0, wrist);
+      break;
+    case "highBoth":
+      setArmAnchor(bones, "right", ARM_HIGH, stroke);
+      setArmAnchor(bones, "left", ARM_HIGH, stroke);
+      break;
+    case "raiseR":
+    default:
+      setArmAnchor(bones, "right", ARM_RAISE, stroke);
+      setBone(bones, "rightUpperArm", ARM_RAISE[0], ARM_RAISE[1] + swing * 0.3, ARM_RAISE[2]);
+      setBone(bones, "rightHand", 0, 0, wrist);
+  }
+  setVrmFingerPose(bones, "right", fingerR || "open");
+  if (fingerL) setVrmFingerPose(bones, "left", fingerL);
+}
+
+// Maps every motion name to a gesture family + right/left handshape.
+const MOTION_FAMILY = {
+  wave: ["raiseR", "flat"],
+  "chin-forward": ["fwdR", "flat"],
+  "point-out": ["raiseR", "point"],
+  "point-self": ["fwdR", "point"],
+  learn: ["highR", "spell"],
+  "tap-head": ["highR", "point"],
+  "index-temple": ["highR", "point"],
+  snap: ["raiseR", "spell"],
+  thumbs: ["raiseR", "thumb"],
+  "thumbs-down": ["raiseR", "thumb"],
+  lift: ["together", "fist", "flat"],
+  "circle-chest": ["fwdR", "flat"],
+  "fist-circle": ["fwdR", "fist"],
+  shrug: ["apart", "open", "open"],
+  waggle: ["apart", "open", "open"],
+  "circle-wrist": ["raiseR", "point"],
+  knuckles: ["together", "fist", "fist"],
+  "y-hand": ["raiseR", "y"],
+  sign: ["alt", "point", "point"],
+  "spread-hands": ["apart", "flat", "flat"],
+  "flat-hand": ["fwdR", "flat"],
+  computer: ["fwdR", "spell"],
+  connect: ["together", "point", "point"],
+  problem: ["together", "fist", "fist"],
+  picture: ["fwdR", "flat"],
+  teach: ["highBoth", "spell", "spell"],
+  one: ["raiseR", "point"],
+  all: ["apart", "flat", "flat"],
+  some: ["fwdR", "flat"],
+  each: ["raiseR", "point"],
+  between: ["apart", "open", "open"],
+  not: ["highR", "thumb"],
+  other: ["raiseR", "thumb"],
+  any: ["raiseR", "thumb"],
+  up: ["highR", "point"],
+  down: ["fwdR", "point"],
+  for: ["highR", "point"],
+  into: ["together", "point", "point"],
+  out: ["highR", "spell"],
+  back: ["raiseR", "thumb"],
+  combine: ["together", "spell", "spell"],
+  mean: ["fwdR", "point"],
+  positive: ["together", "point", "point"],
+  negative: ["fwdR", "point"],
+  can: ["together", "fist", "fist"],
+  about: ["fwdR", "point"],
+  first: ["raiseR", "point"],
+  represent: ["fwdR", "point"],
+};
+
 function applyVrmMotion(parts, signInfo, time) {
   const { bones, vrm } = parts;
   const motion = signInfo.motion;
-  const wave = Math.sin(time * 7);
-  const pulse = Math.sin(time * 12);
 
   resetVrmPose(bones, time);
   applyVrmExpression(vrm, signInfo.expression, time);
 
-  switch (motion) {
-    case "idle":
-      break;
-    case "wave":
-      setBone(bones, "rightUpperArm", -0.05, -0.18, -1.38);
-      setBone(bones, "rightLowerArm", -1.08, 0.06, -0.18);
-      setBone(bones, "rightHand", 0.1, 0.12, wave * 0.55);
-      setVrmFingerPose(bones, "right", "flat");
-      break;
-    case "chin-forward":
-      setBone(bones, "rightUpperArm", 0.1, -0.28, -0.72);
-      setBone(bones, "rightLowerArm", -1.2, 0.18, -0.12);
-      setBone(bones, "rightHand", -0.12, 0.12, -0.2 + Math.max(0, wave) * 0.32);
-      setVrmFingerPose(bones, "right", "flat");
-      break;
-    case "point-out":
-      setBone(bones, "rightUpperArm", -0.45, -0.48, -0.82);
-      setBone(bones, "rightLowerArm", -0.55, -0.08, -0.08);
-      setBone(bones, "rightHand", -0.25, -0.1, -0.24);
-      setVrmFingerPose(bones, "right", "point");
-      break;
-    case "point-self":
-      setBone(bones, "rightUpperArm", 0.15, 0.2, -0.65);
-      setBone(bones, "rightLowerArm", -1.15, 0.28, 0.12);
-      setBone(bones, "rightHand", -0.65, 0.05, 0.25);
-      setVrmFingerPose(bones, "right", "point");
-      break;
-    case "nod":
-      setBone(bones, "head", Math.sin(time * 8) * 0.16, 0, 0);
-      setVrmFingerPose(bones, "right", "fist");
-      break;
-    case "shake":
-      setBone(bones, "head", 0, Math.sin(time * 9) * 0.22, 0);
-      setVrmFingerPose(bones, "right", "point");
-      break;
-    case "learn":
-      setBone(bones, "leftUpperArm", -0.25, 0.18, 0.78);
-      setBone(bones, "leftLowerArm", -0.82, 0.02, 0.08);
-      setBone(bones, "rightUpperArm", -0.2, -0.2, -0.82);
-      setBone(bones, "rightLowerArm", -0.9 + Math.max(0, wave) * 0.18, 0.06, 0.18);
-      setVrmFingerPose(bones, "left", "flat");
-      setVrmFingerPose(bones, "right", "spell");
-      break;
-    case "tap-head":
-    case "index-temple":
-      setBone(bones, "rightUpperArm", -0.55, -0.28, -0.78);
-      setBone(bones, "rightLowerArm", -1.32, -0.06, 0.28);
-      setBone(bones, "rightHand", -0.25 + Math.max(0, pulse) * 0.08, 0.08, -0.16);
-      setVrmFingerPose(bones, "right", "point");
-      break;
-    case "snap":
-      setBone(bones, "rightUpperArm", -0.15, -0.18, -0.72);
-      setBone(bones, "rightLowerArm", -0.98, 0.04, 0.18);
-      setBone(bones, "rightHand", -0.18, 0.05, pulse > 0 ? 0.45 : -0.1);
-      setVrmFingerPose(bones, "right", pulse > 0 ? "spell" : "fist");
-      break;
-    case "thumbs":
-      setBone(bones, "rightUpperArm", 0.04, -0.08, -0.72);
-      setBone(bones, "rightLowerArm", -0.86, 0.02, 0.2);
-      setBone(bones, "rightHand", -0.6, 0, -0.12);
-      setVrmFingerPose(bones, "right", "thumb");
-      break;
-    case "thumbs-down":
-      setBone(bones, "rightUpperArm", 0.16, -0.08, -0.68);
-      setBone(bones, "rightLowerArm", -0.72, 0.02, 0.2);
-      setBone(bones, "rightHand", 1.45, 0, -0.12);
-      setVrmFingerPose(bones, "right", "thumb");
-      break;
-    case "lift":
-      setBone(bones, "leftUpperArm", -0.2, 0.08, 0.72);
-      setBone(bones, "rightUpperArm", -0.2, -0.08, -0.72);
-      setBone(bones, "leftLowerArm", -0.62 + Math.max(0, wave) * 0.2, 0, -0.08);
-      setBone(bones, "rightLowerArm", -0.62 + Math.max(0, wave) * 0.2, 0, 0.08);
-      setVrmFingerPose(bones, "left", "fist");
-      setVrmFingerPose(bones, "right", "flat");
-      break;
-    case "circle-chest":
-    case "fist-circle":
-      setBone(bones, "rightUpperArm", 0.05, -0.18, -0.65);
-      setBone(bones, "rightLowerArm", -1.0, Math.sin(time * 5) * 0.18, 0.22);
-      setBone(bones, "rightHand", -0.25, Math.cos(time * 5) * 0.28, -0.18);
-      setVrmFingerPose(bones, "right", motion === "fist-circle" ? "fist" : "flat");
-      break;
-    case "shrug":
-    case "waggle":
-      setBone(bones, "leftUpperArm", -0.12, 0.18, 1.05);
-      setBone(bones, "rightUpperArm", -0.12, -0.18, -1.05);
-      setBone(bones, "leftHand", 0.1, 0, 0.28 + wave * 0.2);
-      setBone(bones, "rightHand", 0.1, 0, -0.28 - wave * 0.2);
-      setBone(bones, "head", 0.02, 0, wave * 0.05);
-      break;
-    case "circle-wrist":
-      setBone(bones, "rightUpperArm", -0.14, -0.18, -0.72);
-      setBone(bones, "rightLowerArm", -0.95, 0.03, 0.2);
-      setBone(bones, "rightHand", -0.15, Math.cos(time * 5) * 0.36, Math.sin(time * 5) * 0.36);
-      setVrmFingerPose(bones, "right", "point");
-      break;
-    case "knuckles":
-      setBone(bones, "leftUpperArm", -0.12, 0.1, 0.72);
-      setBone(bones, "rightUpperArm", -0.12, -0.1, -0.72);
-      setBone(bones, "leftLowerArm", -0.88, 0.08 + wave * 0.08, -0.04);
-      setBone(bones, "rightLowerArm", -0.88, -0.08 - wave * 0.08, 0.04);
-      setVrmFingerPose(bones, "left", "fist");
-      setVrmFingerPose(bones, "right", "fist");
-      break;
-    case "y-hand":
-      setBone(bones, "rightUpperArm", -0.5, -0.12, -0.68);
-      setBone(bones, "rightLowerArm", -1.05, 0.04, 0.22);
-      setBone(bones, "rightHand", -0.2, 0.08, -0.18);
-      setVrmFingerPose(bones, "right", "y");
-      break;
-    case "sign":
-      setBone(bones, "leftUpperArm", -0.22, 0.12, 0.72);
-      setBone(bones, "rightUpperArm", -0.22, -0.12, -0.72);
-      setBone(bones, "leftLowerArm", -0.9, Math.sin(time * 4) * 0.16, 0.04);
-      setBone(bones, "rightLowerArm", -0.9, -Math.sin(time * 4) * 0.16, -0.04);
-      setVrmFingerPose(bones, "left", "point");
-      setVrmFingerPose(bones, "right", "point");
-      break;
-    case "spread-hands":
-      setBone(bones, "leftUpperArm", -0.18, 0.08, 0.85);
-      setBone(bones, "rightUpperArm", -0.18, -0.08, -0.85);
-      setBone(bones, "leftLowerArm", -0.52, 0.04, -0.06);
-      setBone(bones, "rightLowerArm", -0.52, -0.04, 0.06);
-      setBone(bones, "leftHand", 0.08, 0, 0.18 + wave * 0.08);
-      setBone(bones, "rightHand", 0.08, 0, -0.18 - wave * 0.08);
-      setVrmFingerPose(bones, "left", "flat");
-      setVrmFingerPose(bones, "right", "flat");
-      break;
-    case "flat-hand":
-      setBone(bones, "rightUpperArm", -0.12, -0.12, -0.75);
-      setBone(bones, "rightLowerArm", -0.85, 0.04, 0.12);
-      setBone(bones, "rightHand", 0.05, 0, -0.12 + wave * 0.06);
-      setVrmFingerPose(bones, "right", "flat");
-      break;
-    case "fingerspell": {
-      const letters = (signInfo.letters || "A").toUpperCase().split("").filter((l) => /[A-Z]/.test(l));
-      const letterIndex = letters.length ? Math.floor(time * 3) % letters.length : 0;
-      const shape = FINGERSPELL_HANDSHAPES[letters[letterIndex]] || FINGERSPELL_HANDSHAPES.A;
-      setBone(bones, "rightUpperArm", -0.55, -0.18, -0.68);
-      setBone(bones, "rightLowerArm", -0.88, 0.0, 0.12);
-      setBone(bones, "rightHand", shape.wristX, shape.wristY, shape.wristZ);
-      setVrmFingerPose(bones, "right", shape.pose);
-      setVrmFingerPose(bones, "left", "relaxed");
-      break;
-    }
-    case "concept-card":
-      // Avatar idles naturally; the concept card overlay in React carries all the meaning.
-      break;
-    default:
-      setBone(bones, "rightUpperArm", -0.08, -0.2, -0.48);
-      setBone(bones, "rightLowerArm", -0.72, Math.cos(time * 8) * 0.08, 0.12);
-      setBone(bones, "rightHand", -0.12, Math.sin(time * 8) * 0.12, -0.08);
-      setVrmFingerPose(bones, "left", "relaxed");
-      setVrmFingerPose(bones, "right", "spell");
-      break;
+  if (motion === "idle") return;
+  // Head-only signs.
+  if (motion === "nod") { setBone(bones, "head", Math.sin(time * 8) * 0.16, 0, 0); return; }
+  if (motion === "shake") { setBone(bones, "head", 0, Math.sin(time * 9) * 0.22, 0); return; }
+
+  // Fingerspelling / number handshapes cycle letters on the right hand.
+  if (motion === "fingerspell") {
+    const letters = (signInfo.letters || "A").toUpperCase().split("").filter((l) => /[A-Z0-9]/.test(l));
+    const idx = letters.length ? Math.floor(time * 3) % letters.length : 0;
+    const ch = letters[idx];
+    const shape = (/[0-9]/.test(ch) ? NUMBER_HANDSHAPES[ch] : FINGERSPELL_HANDSHAPES[ch]) || FINGERSPELL_HANDSHAPES.A;
+    setArmAnchor(bones, "right", ARM_RAISE);
+    setBone(bones, "rightHand", shape.wristX, shape.wristY, shape.wristZ);
+    setVrmFingerPose(bones, "right", shape.pose);
+    return;
   }
+
+  const [family, fingerR, fingerL] = MOTION_FAMILY[motion] || ["raiseR", "open", null];
+  applyGestureFamily(bones, family, time, fingerR, fingerL);
 }
 
 // Development-time invariant: all motion strings declared in SIGN_MOTIONS must be implemented.
@@ -1037,7 +1616,11 @@ if (process.env.NODE_ENV !== "production") {
     "idle", "wave", "chin-forward", "point-out", "point-self", "nod", "shake",
     "learn", "tap-head", "index-temple", "snap", "thumbs", "thumbs-down", "lift",
     "circle-chest", "fist-circle", "shrug", "waggle", "circle-wrist", "knuckles",
-    "y-hand", "sign", "spread-hands", "flat-hand", "concept-card", "fingerspell",
+    "y-hand", "sign", "spread-hands", "flat-hand", "fingerspell",
+    "computer", "connect", "problem", "picture", "teach",
+    "one", "all", "some", "each", "between", "not", "other", "any", "up", "down",
+    "for", "into", "out", "back", "combine", "mean", "positive", "negative",
+    "can", "about", "first", "represent",
   ]);
   Object.entries(SIGN_MOTIONS).forEach(([word, info]) => {
     if (!IMPLEMENTED_MOTIONS.has(info.motion)) {
@@ -1409,8 +1992,13 @@ export default function SignAvatar({ caption, isActive, currentTime = 0, sentenc
 
   const currentWord = words[wordIndex] || "";
   const signInfo = getSignInfo(currentWord);
-  const isConceptCard = signInfo.motion === "concept-card" && !!currentWord && isActive;
   const isFingerspell = signInfo.motion === "fingerspell" && !!currentWord && isActive;
+  const conceptDefinition = signInfo.isConcept
+    ? caption?.conceptExplanations?.[signInfo.label] ||
+      (signInfo.letters
+        ? "No established ASL sign — spelled letter by letter"
+        : "No ASL sign or spelling available for this text")
+    : null;
   const fsLetters = isFingerspell
     ? (signInfo.letters || "").split("").filter((l) => /[A-Z0-9]/.test(l))
     : [];
@@ -1455,20 +2043,12 @@ export default function SignAvatar({ caption, isActive, currentTime = 0, sentenc
       <div className={`avatar-stage ${isActive ? "active" : "idle"}`}>
         <SignAvatar3D
           signInfo={signInfo}
-          signClip={isConceptCard ? null : signClip}
+          signClip={signClip}
           wordProgress={wordProgress}
           active={!!isActive}
           activeNMM={activeNMM}
           snapToSign={isCatchingUp}
         />
-        {isConceptCard && (
-          <div className="concept-card glass fade-in-up">
-            <span className="concept-card-word">{displayGlossWord(currentWord)}</span>
-            <span className="concept-card-subtitle">
-              {caption?.conceptExplanations?.[signInfo.label] || "No established BdSL sign"}
-            </span>
-          </div>
-        )}
         {isFingerspell && (
           <div className="fingerspell-ticker glass fade-in-up">
             <span className="fingerspell-label">Fingerspelling</span>
@@ -1482,6 +2062,9 @@ export default function SignAvatar({ caption, isActive, currentTime = 0, sentenc
                 </span>
               ))}
             </div>
+            {conceptDefinition && (
+              <span className="concept-card-subtitle">{conceptDefinition}</span>
+            )}
           </div>
         )}
         <div className="avatar-depth-grid" />

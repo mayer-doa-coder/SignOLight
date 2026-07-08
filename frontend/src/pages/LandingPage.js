@@ -88,7 +88,7 @@ export default function LandingPage({ onVideoSubmit, onOpenSignDemo }) {
         </h1>
 
         <p className="hero-subtitle">
-          Accurate captions → simplified language → synchronized BdSL signs.
+          Accurate captions → simplified language → synchronized ASL signs.
           Paste any YouTube lecture and follow every concept — built for
           deaf and hard-of-hearing students in Bangladesh.
         </p>
@@ -98,7 +98,7 @@ export default function LandingPage({ onVideoSubmit, onOpenSignDemo }) {
           <span className="value-arrow">→</span>
           <span className="value-step">Simplified Language</span>
           <span className="value-arrow">→</span>
-          <span className="value-step accent">BdSL Signs</span>
+          <span className="value-step accent">ASL Signs</span>
         </div>
 
         {/* URL Input */}
@@ -177,8 +177,8 @@ export default function LandingPage({ onVideoSubmit, onOpenSignDemo }) {
           },
           {
             icon: "🤖",
-            title: "BdSL Gloss Translation",
-            desc: "Groq AI converts captions to BdSL gloss with topic-comment SOV grammar — based on Bangla-SGP research",
+            title: "ASL Gloss Translation",
+            desc: "Groq AI converts captions to ASL gloss with topic-comment grammar",
           },
           {
             icon: "⚡",
@@ -187,8 +187,8 @@ export default function LandingPage({ onVideoSubmit, onOpenSignDemo }) {
           },
           {
             icon: "🙌",
-            title: "Honest Fallbacks",
-            desc: "For words without established BdSL signs, a concept card explains the term — no misleading gestures",
+            title: "Every Word Signed",
+            desc: "Words without a dictionary ASL sign are fingerspelled letter-by-letter — the avatar never falls back to plain text",
           },
         ].map((f, i) => (
           <div className="feature-card" key={i} style={{ animationDelay: `${i * 0.1}s` }}>
@@ -202,7 +202,7 @@ export default function LandingPage({ onVideoSubmit, onOpenSignDemo }) {
       <footer className="landing-footer">
         <p>Built with ❤️ for inclusive education · SignLearn 2025</p>
         <p className="landing-disclaimer">
-          Educational prototype. Sign representations are not validated by the BdSL Deaf community.
+          Educational prototype. Sign representations are not validated by the ASL Deaf community.
           Comprehension score range for synthetic avatars: 2.5–3.5/5 (Quandt et al. 2022).
         </p>
       </footer>
