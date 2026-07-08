@@ -5,7 +5,6 @@ import CaptionBar from "../components/CaptionBar";
 import YouTubePlayer from "../components/YouTubePlayer";
 import ControlPanel from "../components/ControlPanel";
 import { findCaption, computeNMM } from "../utils/sync";
-import { computeDictionaryCoverage } from "../utils/notation";
 import "./PlayerPage.css";
 
 const API = process.env.REACT_APP_API_URL || "http://localhost:5000";
@@ -18,33 +17,25 @@ const YT_BUFFERING = 3;
 const NEUTRAL_NMM = { type: "neutral", wordIndex: -1, headY: 0 };
 
 export default function PlayerPage({ videoData, onBack }) {
-  const [captions, setCaptions] = useState([]);
   const [signedCaptions, setSignedCaptions] = useState([]);
   const [currentTime, setCurrentTime] = useState(0);
   const [currentCaption, setCurrentCaption] = useState(null);
   const [playerState, setPlayerState] = useState("idle");
   const [loadingCaptions, setLoadingCaptions] = useState(false);
   const [processed, setProcessed] = useState(false);
-  const [captionSource, setCaptionSource] = useState("");
   const [signEnabled, setSignEnabled] = useState(true);
   const [layout, setLayout] = useState("side-by-side");
   const [captionError, setCaptionError] = useState("");
   const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
   const [learningMode, setLearningMode] = useState(false);
-  const [showDebug, setShowDebug] = useState(false);
-  const [debugDriftMs, setDebugDriftMs] = useState(null);
   // seekingRef distinguishes intentional seeks from network-stall buffering
   const seekingRef = useRef(false);
   const playerRef = useRef(null);
-  // Drift telemetry: tracks caption sync deviation to verify the ≤2s success metric.
-  const driftRef = useRef({ lastUpdateMs: 0, maxDrift: 0 });
 
   useEffect(() => {
-    setCaptions([]);
     setSignedCaptions([]);
     setCurrentCaption(null);
     setCaptionError("");
-    setCaptionSource("");
     setProcessed(false);
     setLoadingCaptions(false);
     setPlayerState("idle");
@@ -57,19 +48,6 @@ export default function PlayerPage({ videoData, onBack }) {
 
     const currentTimeMs = currentTime * 1000;
     const found = findCaption(signedCaptions, currentTimeMs);
-
-    // Drift telemetry: measure how far the current video time is from the caption midpoint.
-    // Verifies the ≤2s success metric. Only measures when a caption is active.
-    if (found && playerState === "playing") {
-      const captionMidMs = (found.start + found.end) / 2;
-      const drift = Math.abs(currentTimeMs - captionMidMs);
-      driftRef.current.maxDrift = Math.max(driftRef.current.maxDrift, drift);
-      const nowMs = Date.now();
-      if (nowMs - driftRef.current.lastUpdateMs > 2000) {
-        setDebugDriftMs(Math.round(drift));
-        driftRef.current.lastUpdateMs = nowMs;
-      }
-    }
 
     if (playerState === "seeking") {
       setCurrentCaption(found);
@@ -99,7 +77,6 @@ export default function PlayerPage({ videoData, onBack }) {
     setLoadingCaptions(true);
     setCaptionError("");
     setProcessed(false);
-    setCaptions([]);
     setSignedCaptions([]);
 
     try {
@@ -108,8 +85,6 @@ export default function PlayerPage({ videoData, onBack }) {
         const cached = await axios.get(`${API}/api/cache/${videoData.videoId}`);
         if (cached.data?.results?.length) {
           setSignedCaptions(cached.data.results);
-          setCaptions(cached.data.results);
-          setCaptionSource("pre-processed cache");
           setProcessed(true);
           return;
         }
@@ -122,8 +97,6 @@ export default function PlayerPage({ videoData, onBack }) {
       });
 
       const rawCaptions = captionRes.data.captions || [];
-      setCaptions(rawCaptions);
-      setCaptionSource(captionRes.data.source || captionRes.data.format || "");
 
       if (!rawCaptions.length) {
         setCaptionError("No captions found for this video.");
@@ -170,12 +143,6 @@ export default function PlayerPage({ videoData, onBack }) {
     [currentCaption]
   );
 
-  // Dictionary coverage — computed once per processed batch.
-  const coverage = useMemo(
-    () => (signedCaptions.length ? computeDictionaryCoverage(signedCaptions) : null),
-    [signedCaptions]
-  );
-
   return (
     <div className="player-page">
       <header className="player-header">
@@ -198,23 +165,21 @@ export default function PlayerPage({ videoData, onBack }) {
           onSpeedChange={handleSpeedChange}
           learningMode={learningMode}
           onToggleLearning={() => setLearningMode((v) => !v)}
-          showDebug={showDebug}
-          onToggleDebug={() => setShowDebug((v) => !v)}
         />
       </header>
 
       {loadingCaptions && (
         <div className="status-bar loading">
           <span className="status-spinner" />
-          Processing captions, simplifying text, and generating ASL gloss...
+          Processing captions and preparing sign language...
         </div>
       )}
 
       {!loadingCaptions && !processed && !captionError && (
         <div className="status-bar ready">
-          <span>Ready to process captions for the sign avatar.</span>
+          <span>Ready to generate captions and sign language for this video.</span>
           <button className="process-btn" onClick={processVideo}>
-            Process full video
+            Process video
           </button>
         </div>
       )}
@@ -225,35 +190,6 @@ export default function PlayerPage({ videoData, onBack }) {
           <button className="process-btn error-retry" onClick={processVideo}>
             Try again
           </button>
-        </div>
-      )}
-
-      {!loadingCaptions && signedCaptions.length > 0 && (
-        <div className="status-bar success">
-          <span>
-            {signedCaptions.length} segments translated to ASL
-            {captionSource ? ` — ${captionSource}` : ""}
-            {coverage ? ` — dictionary covers ${coverage.percentage}% of gloss words` : ""}
-            {signEnabled ? " — sign avatar active" : " — discreet mode"}
-          </span>
-        </div>
-      )}
-
-      {showDebug && signedCaptions.length > 0 && (
-        <div className="status-bar debug-panel">
-          <span>
-            Sync drift:{" "}
-            {debugDriftMs !== null ? (
-              <strong style={{ color: debugDriftMs > 2000 ? "#ef4444" : "#10b981" }}>
-                {debugDriftMs}ms
-              </strong>
-            ) : (
-              "measuring…"
-            )}
-            {" "}— max: {Math.round(driftRef.current.maxDrift)}ms — target ≤2000ms
-            {" "}— speed: {playbackSpeed}×
-            {" "}— words: {(signedCaptions.flatMap((c) => c.words || []).length)} total
-          </span>
         </div>
       )}
 
@@ -270,25 +206,8 @@ export default function PlayerPage({ videoData, onBack }) {
         {signEnabled && (
           <div className={`sign-panel ${layout === "picture-in-picture" ? "pip" : ""}`}>
             <div className="sign-panel-header">
-              <span className="sign-badge">ASL Sign Interpreter</span>
-              {currentCaption && <span className="live-badge">LIVE</span>}
-              {learningMode && (
-                <span className="learning-badge" title="Learning mode: signing at reduced speed">
-                  📖 {playbackSpeed < 1 ? `${playbackSpeed}×` : "Learn"}
-                </span>
-              )}
-              {sentenceNMM.type !== "neutral" && (
-                <span
-                  className="nmm-live-badge"
-                  title={`NMM: ${sentenceNMM.type} (onset: word #${sentenceNMM.wordIndex})`}
-                >
-                  {sentenceNMM.type === "wh-question" ? "WH?" : sentenceNMM.type === "yn-question" ? "YN?" : "NEG"}
-                </span>
-              )}
+              <span className="sign-badge">Sign Language</span>
             </div>
-            <p className="player-avatar-disclaimer">
-              Educational prototype · Comprehension 2.5–3.5/5 (Quandt et al. 2022) · Signs not validated by ASL community
-            </p>
             <SignAvatar
               caption={currentCaption}
               isActive={!!currentCaption && signEnabled}
@@ -305,9 +224,6 @@ export default function PlayerPage({ videoData, onBack }) {
         allCaptions={signedCaptions}
         currentTime={currentTime}
         onSeek={handleSeek}
-        sentenceNMM={sentenceNMM}
-        coverage={coverage}
-        showDebug={showDebug}
       />
     </div>
   );

@@ -22,9 +22,8 @@
   font-family: var(--font-display);
   font-size: 11px;
   font-weight: 700;
-  color: var(--accent-cyan);
-  background: rgba(0, 212, 255, 0.1);
-  border: 1px solid rgba(0, 212, 255, 0.2);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
   padding: 2px 8px;
   border-radius: 4px;
   flex-shrink: 0;
@@ -41,7 +40,7 @@
 }
 
 .caption-text {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
   color: var(--text-primary);
   line-height: 1.4;
@@ -50,7 +49,7 @@
 
 /* Educational scaffolding: simplified text layer */
 .caption-simplified {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-secondary);
   font-weight: 400;
   line-height: 1.4;
@@ -64,129 +63,9 @@
   font-family: var(--font-display);
   font-size: 10px;
   font-weight: 700;
-  color: rgba(0, 212, 255, 0.5);
+  color: var(--text-muted);
   flex-shrink: 0;
   margin-top: 2px;
-}
-
-/* Right-side meta: NMM badge + gloss */
-.caption-meta {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-.caption-gloss {
-  font-family: var(--font-display);
-  font-size: 11px;
-  color: var(--text-muted);
-  border-left: 1px solid var(--border);
-  padding-left: 12px;
-  max-width: 280px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.gloss-order-label {
-  font-size: 9px;
-  opacity: 0.55;
-  margin-left: 5px;
-  font-style: italic;
-  font-family: var(--font-body);
-  white-space: nowrap;
-}
-
-/* NMM grammar badge */
-.nmm-tag {
-  font-family: var(--font-display);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-  padding: 1px 7px;
-  border-radius: 4px;
-  background: rgba(139, 92, 246, 0.15);
-  border: 1px solid rgba(139, 92, 246, 0.35);
-  color: #a78bfa;
-}
-
-/* Status row: coverage + debug toggle */
-.caption-status-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 5px 20px;
-  border-bottom: 1px solid var(--border);
-  background: rgba(15, 23, 42, 0.4);
-}
-
-.coverage-badge {
-  font-family: var(--font-display);
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--text-muted);
-}
-
-.validated-count {
-  color: var(--accent-green, #10b981);
-  margin-left: 4px;
-}
-
-.debug-toggle {
-  font-family: var(--font-display);
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--text-muted);
-  background: none;
-  border: 1px solid var(--border);
-  padding: 2px 8px;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.debug-toggle:hover {
-  border-color: var(--accent-cyan);
-  color: var(--accent-cyan);
-}
-
-/* Gloss debug panel */
-.gloss-debug-panel {
-  padding: 10px 20px;
-  border-bottom: 1px solid var(--border);
-  background: rgba(2, 6, 23, 0.6);
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.debug-row {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-}
-
-.debug-label {
-  font-family: var(--font-display);
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--accent-cyan);
-  width: 80px;
-  flex-shrink: 0;
-}
-
-.debug-value {
-  font-size: 12px;
-  color: var(--text-secondary);
-  line-height: 1.4;
-  word-break: break-word;
-}
-
-.debug-value.mono {
-  font-family: var(--font-display);
-  color: var(--text-primary);
 }
 
 /* Caption scroll timeline */
@@ -202,7 +81,7 @@
 }
 
 .caption-scroll::-webkit-scrollbar { height: 4px; }
-.caption-scroll::-webkit-scrollbar-thumb { background: var(--accent-purple); border-radius: 2px; }
+.caption-scroll::-webkit-scrollbar-thumb { background: var(--border-accent); border-radius: 2px; }
 
 .caption-chip {
   flex-shrink: 0;
@@ -220,13 +99,12 @@
 }
 
 .caption-chip:hover {
-  border-color: var(--accent-cyan);
+  border-color: var(--border-accent);
 }
 
 .caption-chip.active {
-  border-color: var(--accent-cyan);
-  background: rgba(0, 212, 255, 0.1);
-  box-shadow: 0 0 12px rgba(0, 212, 255, 0.15);
+  border-color: var(--border-accent);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .caption-chip.past {
@@ -237,7 +115,7 @@
   font-family: var(--font-display);
   font-size: 10px;
   font-weight: 700;
-  color: var(--accent-cyan);
+  color: var(--text-muted);
   flex-shrink: 0;
 }
 
@@ -251,11 +129,4 @@
 
 .caption-chip.active .chip-text {
   color: var(--text-primary);
-}
-
-.chip-uncertain,
-.gloss-uncertain {
-  font-size: 10px;
-  color: #f59e0b;
-  margin-left: 2px;
 }

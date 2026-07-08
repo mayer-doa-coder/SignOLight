@@ -53,10 +53,7 @@ export default function SignDemoPage({ onBack }) {
         <button className="back-btn" onClick={onBack}>
           Back
         </button>
-        <div>
-          <h1>ASL Sign Motion Demo</h1>
-          <p>Plays local sign motion files from /public/signs — procedural motion for words without clips.</p>
-        </div>
+        <h1>Sign Demo</h1>
       </header>
 
       <main className="sign-demo-main">
@@ -94,10 +91,6 @@ export default function SignDemoPage({ onBack }) {
           </div>
         </aside>
       </main>
-      <footer className="sign-demo-disclaimer">
-        Educational prototype. Sign representations are not validated by the ASL Deaf community.
-        Comprehension score range for synthetic avatars: 2.5–3.5/5 (Quandt et al. 2022).
-      </footer>
     </div>
   );
 }

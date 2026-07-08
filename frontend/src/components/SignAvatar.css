@@ -7,8 +7,8 @@
   gap: 12px;
   padding: 14px;
   background:
-    radial-gradient(ellipse at 50% 20%, rgba(0, 212, 255, 0.08), transparent 55%),
-    linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(2, 6, 23, 0.98));
+    radial-gradient(ellipse at 50% 20%, rgba(255, 255, 255, 0.05), transparent 55%),
+    #000000;
   min-height: 360px;
   position: relative;
   overflow: hidden;
@@ -27,13 +27,13 @@
   position: absolute;
   inset: 10% 12% 6%;
   border-radius: 50%;
-  background: radial-gradient(ellipse, rgba(0, 212, 255, 0.12), transparent 68%);
+  background: radial-gradient(ellipse, rgba(255, 255, 255, 0.07), transparent 68%);
   filter: blur(6px);
   pointer-events: none;
 }
 
 .avatar-stage.active::before {
-  background: radial-gradient(ellipse, rgba(16, 185, 129, 0.13), transparent 68%);
+  background: radial-gradient(ellipse, rgba(255, 255, 255, 0.12), transparent 68%);
 }
 
 .avatar-canvas {
@@ -45,56 +45,6 @@
   z-index: 2;
 }
 
-/* Definition line shown under the fingerspell ticker for words with no established ASL sign */
-.concept-card-subtitle {
-  font-size: 0.78rem;
-  color: rgba(148, 163, 184, 0.85);
-  font-family: "Nunito", sans-serif;
-  max-width: 90%;
-}
-
-.fingerspell-ticker {
-  position: absolute;
-  inset: 0;
-  z-index: 10;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  border-radius: 12px;
-  padding: 24px;
-  text-align: center;
-}
-
-.fingerspell-label {
-  font-family: "Space Mono", monospace;
-  font-size: 0.65rem;
-  font-weight: 700;
-  color: rgba(6, 182, 212, 0.65);
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-}
-
-.fingerspell-letters {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-
-.fingerspell-letter {
-  font-family: "Space Mono", monospace;
-  font-size: clamp(1.6rem, 5vw, 2.6rem);
-  font-weight: 700;
-  color: rgba(6, 182, 212, 0.35);
-  letter-spacing: 0.05em;
-  transition: color 0.12s, transform 0.12s;
-}
-
-.fingerspell-letter.active {
-  color: #06b6d4;
-  transform: scale(1.25);
-}
 
 .avatar-depth-grid {
   position: absolute;
@@ -118,34 +68,6 @@
   color: var(--text-muted);
   font-weight: 700;
   text-align: center;
-}
-
-.word-indicator {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 18px;
-  background: rgba(15, 23, 42, 0.88);
-  border: 1.5px solid;
-  border-radius: 999px;
-  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.28);
-  max-width: min(94%, 520px);
-}
-
-.word-text {
-  font-family: var(--font-display);
-  font-size: 18px;
-  font-weight: 800;
-  min-width: 60px;
-  text-align: center;
-  white-space: nowrap;
-}
-
-.motion-text {
-  font-size: 12px;
-  color: var(--text-muted);
-  font-weight: 700;
-  white-space: nowrap;
 }
 
 .word-progress {
@@ -192,12 +114,12 @@
   transition: all 0.2s;
   padding: 2px 6px;
   border-radius: 4px;
-  background: rgba(15, 23, 42, 0.5);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .gloss-word.active {
-  color: var(--accent-cyan);
-  background: rgba(0, 212, 255, 0.13);
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.14);
   transform: translateY(-1px) scale(1.08);
 }
 
@@ -205,21 +127,6 @@
   color: var(--text-muted);
   opacity: 0.5;
   text-decoration: line-through;
-}
-
-/* NMM grammar badge in word-indicator */
-.nmm-badge {
-  font-family: var(--font-display);
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  padding: 1px 6px;
-  border-radius: 4px;
-  background: rgba(139, 92, 246, 0.15);
-  border: 1px solid rgba(139, 92, 246, 0.35);
-  color: #a78bfa;
-  flex-shrink: 0;
-  cursor: help;
 }
 
 @media (max-width: 900px) {
@@ -236,15 +143,5 @@
 
   .avatar-stage {
     min-height: 260px;
-  }
-
-  .word-indicator {
-    flex-wrap: wrap;
-    justify-content: center;
-    border-radius: 12px;
-  }
-
-  .word-text {
-    font-size: 16px;
   }
 }
