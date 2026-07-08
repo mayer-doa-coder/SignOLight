@@ -104,10 +104,10 @@ export function createSignMetadata({
 }
 
 // ---------------------------------------------------------------------------
-// BdSL dictionary metadata
+// ASL dictionary metadata
 // confidence: 0 = unvalidated educational representation
-//             1 = community-validated by Deaf BdSL signer
-// All current entries are confidence: 0 until a Deaf BdSL reviewer confirms them.
+//             1 = community-validated by Deaf ASL signer
+// All current entries are confidence: 0 until a Deaf ASL reviewer confirms them.
 // ---------------------------------------------------------------------------
 
 export const SIGN_METADATA = {
@@ -300,7 +300,7 @@ export const SIGN_METADATA = {
     orientationL: Orientation.OUT,
     symmetric: true,
     source: "procedural",
-    notes: "Educational representation — not BdSL-validated",
+    notes: "Educational representation — not ASL-validated",
   }),
   NEURON: createSignMetadata({
     gloss: "NEURON",
@@ -309,7 +309,7 @@ export const SIGN_METADATA = {
     location: Location.NEUTRAL,
     movement: Movement.FORWARD,
     source: "procedural",
-    notes: "Educational representation — not BdSL-validated",
+    notes: "Educational representation — not ASL-validated",
   }),
   LAYER: createSignMetadata({
     gloss: "LAYER",
@@ -319,7 +319,7 @@ export const SIGN_METADATA = {
     movement: Movement.STATIC,
     orientationR: Orientation.DOWN,
     source: "procedural",
-    notes: "Educational representation — not BdSL-validated",
+    notes: "Educational representation — not ASL-validated",
   }),
   DATA: createSignMetadata({
     gloss: "DATA",
@@ -328,7 +328,7 @@ export const SIGN_METADATA = {
     location: Location.CHEST,
     movement: Movement.STATIC,
     source: "procedural",
-    notes: "Educational representation — not BdSL-validated",
+    notes: "Educational representation — not ASL-validated",
   }),
   TRAIN: createSignMetadata({
     gloss: "TRAIN",
@@ -337,7 +337,7 @@ export const SIGN_METADATA = {
     location: Location.TEMPLE,
     movement: Movement.STATIC,
     source: "procedural",
-    notes: "Educational representation — not BdSL-validated",
+    notes: "Educational representation — not ASL-validated",
   }),
   MODEL: createSignMetadata({
     gloss: "MODEL",
@@ -346,7 +346,7 @@ export const SIGN_METADATA = {
     location: Location.CHEST,
     movement: Movement.CIRCULAR,
     source: "procedural",
-    notes: "Educational representation — not BdSL-validated",
+    notes: "Educational representation — not ASL-validated",
   }),
   ERROR: createSignMetadata({
     gloss: "ERROR",
@@ -356,7 +356,7 @@ export const SIGN_METADATA = {
     movement: Movement.SHAKE,
     nmm: { headShake: true },
     source: "procedural",
-    notes: "Educational representation — not BdSL-validated",
+    notes: "Educational representation — not ASL-validated",
   }),
 };
 

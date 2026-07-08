@@ -183,7 +183,7 @@ export default function PlayerPage({ videoData, onBack }) {
           Back
         </button>
         <div className="player-title">
-          <span className="title-icon">BdSL</span>
+          <span className="title-icon">ASL</span>
           <div>
             <h1 className="video-title">{videoData.title}</h1>
             <p className="video-author">by {videoData.author}</p>
@@ -206,7 +206,7 @@ export default function PlayerPage({ videoData, onBack }) {
       {loadingCaptions && (
         <div className="status-bar loading">
           <span className="status-spinner" />
-          Processing captions, simplifying text, and generating BdSL gloss...
+          Processing captions, simplifying text, and generating ASL gloss...
         </div>
       )}
 
@@ -231,7 +231,7 @@ export default function PlayerPage({ videoData, onBack }) {
       {!loadingCaptions && signedCaptions.length > 0 && (
         <div className="status-bar success">
           <span>
-            {signedCaptions.length} segments translated to BdSL
+            {signedCaptions.length} segments translated to ASL
             {captionSource ? ` — ${captionSource}` : ""}
             {coverage ? ` — dictionary covers ${coverage.percentage}% of gloss words` : ""}
             {signEnabled ? " — sign avatar active" : " — discreet mode"}
@@ -270,7 +270,7 @@ export default function PlayerPage({ videoData, onBack }) {
         {signEnabled && (
           <div className={`sign-panel ${layout === "picture-in-picture" ? "pip" : ""}`}>
             <div className="sign-panel-header">
-              <span className="sign-badge">BdSL Sign Interpreter</span>
+              <span className="sign-badge">ASL Sign Interpreter</span>
               {currentCaption && <span className="live-badge">LIVE</span>}
               {learningMode && (
                 <span className="learning-badge" title="Learning mode: signing at reduced speed">
@@ -287,7 +287,7 @@ export default function PlayerPage({ videoData, onBack }) {
               )}
             </div>
             <p className="player-avatar-disclaimer">
-              Educational prototype · Comprehension 2.5–3.5/5 (Quandt et al. 2022) · Signs not validated by BdSL community
+              Educational prototype · Comprehension 2.5–3.5/5 (Quandt et al. 2022) · Signs not validated by ASL community
             </p>
             <SignAvatar
               caption={currentCaption}

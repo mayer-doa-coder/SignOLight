@@ -10,7 +10,7 @@
  *   1. Deterministic — same input always produces same output
  *   2. Seek-safe — any arbitrary time produces correct state without history
  *   3. Pause-safe — frozen state is exactly re-computable on resume
- *   4. Language-independent — no BdSL-specific logic here
+ *   4. Language-independent — no ASL-specific logic here
  *
  * This module contains PURE FUNCTIONS only — no React state, no side effects.
  * React components call these functions to compute sign state from video time.

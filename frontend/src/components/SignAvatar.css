@@ -45,34 +45,12 @@
   z-index: 2;
 }
 
-/* Concept card — shown when no established BdSL sign exists for a word */
-.concept-card {
-  position: absolute;
-  inset: 0;
-  z-index: 10;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border-radius: 12px;
-  padding: 24px;
-  text-align: center;
-}
-
-.concept-card-word {
-  font-family: "Space Mono", monospace;
-  font-size: clamp(1.4rem, 4vw, 2.2rem);
-  font-weight: 700;
-  color: var(--color-accent-cyan, #22d3ee);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
+/* Definition line shown under the fingerspell ticker for words with no established ASL sign */
 .concept-card-subtitle {
   font-size: 0.78rem;
   color: rgba(148, 163, 184, 0.85);
   font-family: "Nunito", sans-serif;
+  max-width: 90%;
 }
 
 .fingerspell-ticker {

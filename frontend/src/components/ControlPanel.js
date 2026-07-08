@@ -74,7 +74,7 @@ export default function ControlPanel({
       <button
         className={`sign-toggle ${signEnabled ? "on" : "off"}`}
         onClick={onToggleSign}
-        title={signEnabled ? "Switch to caption-only (discreet) mode" : "Enable BdSL sign avatar"}
+        title={signEnabled ? "Switch to caption-only (discreet) mode" : "Enable ASL sign avatar"}
       >
         <span className="toggle-icon">{signEnabled ? "🤟" : "📝"}</span>
         <span className="toggle-label">
