@@ -1,0 +1,36 @@
+{
+  "gloss": "INPUT",
+  "duration": 1.2,
+  "frames": [
+    {
+      "time": 0,
+      "bones": {
+        "rightUpperArm": [-0.08, -0.10, -1.05],
+        "rightLowerArm": [-0.48, 0.02, 0.14],
+        "rightHand":     [0.05, 0, 0.14]
+      },
+      "fingers": { "right": "flat", "left": "relaxed" },
+      "expression": "focus"
+    },
+    {
+      "time": 0.55,
+      "bones": {
+        "rightUpperArm": [-0.10, -0.14, -0.82],
+        "rightLowerArm": [-0.68, 0.04, 0.10],
+        "rightHand":     [0.06, 0, 0.08]
+      },
+      "fingers": { "right": "flat", "left": "relaxed" },
+      "expression": "focus"
+    },
+    {
+      "time": 1.1,
+      "bones": {
+        "rightUpperArm": [0.08, 0.06, -0.62],
+        "rightLowerArm": [-1.05, 0.15, 0.06],
+        "rightHand":     [-0.14, 0.04, -0.06]
+      },
+      "fingers": { "right": "flat", "left": "relaxed" },
+      "expression": "focus"
+    }
+  ]
+}

@@ -1,0 +1,98 @@
+import React from "react";
+import "./ControlPanel.css";
+
+const LAYOUTS = [
+  { id: "side-by-side", icon: "⬛⬛", label: "Side by Side" },
+  { id: "picture-in-picture", icon: "⬛◻", label: "Picture in Picture" },
+  { id: "fullscreen-sign", icon: "◻⬛", label: "Focus Sign" },
+];
+
+const SPEEDS = [
+  { value: 1.0, label: "1×" },
+  { value: 0.75, label: "¾×" },
+  { value: 0.5, label: "½×" },
+];
+
+export default function ControlPanel({
+  signEnabled,
+  onToggleSign,
+  layout,
+  onLayoutChange,
+  playbackSpeed = 1.0,
+  onSpeedChange,
+  learningMode = false,
+  onToggleLearning,
+  showDebug = false,
+  onToggleDebug,
+}) {
+  return (
+    <div className="control-panel">
+      {/* Layout switcher */}
+      <div className="layout-btns" title="Change layout">
+        {LAYOUTS.map((l) => (
+          <button
+            key={l.id}
+            className={`layout-btn ${layout === l.id ? "active" : ""}`}
+            onClick={() => onLayoutChange(l.id)}
+            title={l.label}
+          >
+            {l.icon}
+          </button>
+        ))}
+      </div>
+
+      {/* Playback speed selector — learning mode support */}
+      {onSpeedChange && (
+        <div className="speed-btns" title="Avatar signing speed">
+          {SPEEDS.map((s) => (
+            <button
+              key={s.value}
+              className={`speed-btn ${playbackSpeed === s.value ? "active" : ""}`}
+              onClick={() => onSpeedChange(s.value)}
+              title={`Sign at ${s.label} speed`}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Learning mode toggle — repeat + slow sign */}
+      {onToggleLearning && (
+        <button
+          className={`mode-toggle ${learningMode ? "on" : ""}`}
+          onClick={onToggleLearning}
+          title={learningMode ? "Exit learning mode" : "Learning mode: signs repeat at current speed"}
+        >
+          <span className="toggle-icon">{learningMode ? "📖" : "📖"}</span>
+          <span className="toggle-label">{learningMode ? "Learning" : "Learn"}</span>
+          <span className={`toggle-dot ${learningMode ? "active" : ""}`} />
+        </button>
+      )}
+
+      {/* Sign toggle — discreet mode hides the avatar, captions always stay */}
+      <button
+        className={`sign-toggle ${signEnabled ? "on" : "off"}`}
+        onClick={onToggleSign}
+        title={signEnabled ? "Switch to caption-only (discreet) mode" : "Enable BdSL sign avatar"}
+      >
+        <span className="toggle-icon">{signEnabled ? "🤟" : "📝"}</span>
+        <span className="toggle-label">
+          {signEnabled ? "Sign + Caption" : "Caption Only (Discreet)"}
+        </span>
+        <span className={`toggle-dot ${signEnabled ? "active" : ""}`} />
+      </button>
+
+      {/* Gloss debug toggle */}
+      {onToggleDebug && (
+        <button
+          className={`mode-toggle ${showDebug ? "on" : ""}`}
+          onClick={onToggleDebug}
+          title="Toggle gloss debug view"
+        >
+          <span className="toggle-label">{showDebug ? "Debug ▲" : "Debug"}</span>
+        </button>
+      )}
+    </div>
+  );
+}

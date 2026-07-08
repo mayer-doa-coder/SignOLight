@@ -1,0 +1,39 @@
+{
+  "gloss": "NO",
+  "duration": 0.95,
+  "frames": [
+    {
+      "time": 0,
+      "bones": {
+        "head": [0, -0.16, 0],
+        "rightUpperArm": [-0.22, -0.25, -0.62],
+        "rightLowerArm": [-0.82, 0.02, 0.15],
+        "rightHand": [-0.22, 0, -0.12]
+      },
+      "fingers": { "right": "point", "left": "relaxed" },
+      "expression": "firm"
+    },
+    {
+      "time": 0.42,
+      "bones": {
+        "head": [0, 0.16, 0],
+        "rightUpperArm": [-0.22, -0.25, -0.62],
+        "rightLowerArm": [-0.82, 0.02, 0.15],
+        "rightHand": [-0.22, 0.1, 0.1]
+      },
+      "fingers": { "right": "fist", "left": "relaxed" },
+      "expression": "firm"
+    },
+    {
+      "time": 0.8,
+      "bones": {
+        "head": [0, -0.08, 0],
+        "rightUpperArm": [-0.22, -0.25, -0.62],
+        "rightLowerArm": [-0.82, 0.02, 0.15],
+        "rightHand": [-0.22, -0.08, -0.08]
+      },
+      "fingers": { "right": "fist", "left": "relaxed" },
+      "expression": "firm"
+    }
+  ]
+}

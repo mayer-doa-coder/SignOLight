@@ -1,0 +1,140 @@
+.control-panel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.layout-btns {
+  display: flex;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.layout-btn {
+  padding: 6px 12px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  border-right: 1px solid var(--border);
+}
+
+.layout-btn:last-child { border-right: none; }
+
+.layout-btn:hover { color: var(--text-primary); background: rgba(255,255,255,0.04); }
+.layout-btn.active {
+  color: var(--accent-cyan);
+  background: rgba(0, 212, 255, 0.08);
+}
+
+/* Sign toggle */
+.sign-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sign-toggle.on {
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+}
+
+.sign-toggle.off {
+  color: var(--text-muted);
+}
+
+.sign-toggle:hover {
+  background: rgba(0, 212, 255, 0.06);
+}
+
+.toggle-icon { font-size: 16px; }
+.toggle-label { font-size: 12px; }
+
+.toggle-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition: background 0.2s;
+}
+
+.toggle-dot.active {
+  background: var(--accent-cyan);
+  box-shadow: 0 0 6px var(--accent-cyan);
+}
+
+/* Speed selector */
+.speed-btns {
+  display: flex;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.speed-btn {
+  padding: 6px 10px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  border-right: 1px solid var(--border);
+}
+
+.speed-btn:last-child { border-right: none; }
+.speed-btn:hover { color: var(--text-primary); background: rgba(255,255,255,0.04); }
+.speed-btn.active {
+  color: #a78bfa;
+  background: rgba(139, 92, 246, 0.12);
+}
+
+/* Generic mode toggle */
+.mode-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--text-muted);
+}
+
+.mode-toggle.on {
+  border-color: #a78bfa;
+  color: #a78bfa;
+  background: rgba(139, 92, 246, 0.08);
+}
+
+.mode-toggle:hover {
+  background: rgba(139, 92, 246, 0.06);
+}
+
+@media (max-width: 700px) {
+  .control-panel { gap: 6px; }
+  .toggle-label { display: none; }
+  .speed-btns { display: none; }
+}

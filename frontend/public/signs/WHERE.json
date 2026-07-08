@@ -1,0 +1,28 @@
+{
+  "gloss": "WHERE",
+  "duration": 1.0,
+  "frames": [
+    {
+      "time": 0,
+      "bones": {
+        "head": [0.02, 0, 0],
+        "rightUpperArm": [-0.25, -0.2, -0.68],
+        "rightLowerArm": [-0.82, 0.02, 0.18],
+        "rightHand": [-0.2, -0.25, -0.1]
+      },
+      "fingers": { "right": "point", "left": "relaxed" },
+      "expression": "question"
+    },
+    {
+      "time": 0.45,
+      "bones": {
+        "head": [0.02, 0.04, 0],
+        "rightUpperArm": [-0.25, -0.2, -0.68],
+        "rightLowerArm": [-0.82, 0.02, 0.18],
+        "rightHand": [-0.2, 0.25, -0.1]
+      },
+      "fingers": { "right": "point", "left": "relaxed" },
+      "expression": "question"
+    }
+  ]
+}

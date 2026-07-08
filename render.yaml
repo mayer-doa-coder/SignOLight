@@ -1,0 +1,40 @@
+# render.yaml - Render.com deployment config
+# Two services: Express API + React frontend
+# NLP microservice (WhisperX) is deployed separately on Hugging Face Spaces — see docs/WHISPERX_DEPLOYMENT.md
+
+services:
+  # ── Backend (Express API on Render) ──────────────────────────────
+  - type: web
+    name: signlearn-api
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: node server.js
+    plan: free
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: GROQ_API_KEY
+        sync: false          # Set this manually in Render dashboard
+      - key: FRONTEND_URL
+        sync: false          # Set to your Vercel/Render frontend URL
+      - key: NLP_SERVICE_URL
+        sync: false          # Set to your Hugging Face Space URL (e.g. https://username-signlight-nlp.hf.space)
+                             # Leave blank to run Phase A only (syllable-weighted timing, no WhisperX)
+
+  # ── Frontend (Static React on Render) ────────────────────────────
+  - type: web
+    name: signlearn-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: build
+    plan: free
+    envVars:
+      - key: REACT_APP_API_URL
+        sync: false          # Set to your Render backend URL
+
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

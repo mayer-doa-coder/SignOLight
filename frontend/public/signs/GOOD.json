@@ -1,0 +1,26 @@
+{
+  "gloss": "GOOD",
+  "duration": 1.05,
+  "frames": [
+    {
+      "time": 0,
+      "bones": {
+        "rightUpperArm": [0.08, -0.2, -0.72],
+        "rightLowerArm": [-1.1, 0.16, -0.08],
+        "rightHand": [-0.22, 0.1, -0.18]
+      },
+      "fingers": { "right": "flat", "left": "relaxed" },
+      "expression": "smile"
+    },
+    {
+      "time": 0.55,
+      "bones": {
+        "rightUpperArm": [-0.08, -0.26, -0.82],
+        "rightLowerArm": [-0.65, 0.06, 0.04],
+        "rightHand": [-0.05, 0.03, -0.25]
+      },
+      "fingers": { "right": "flat", "left": "relaxed" },
+      "expression": "smile"
+    }
+  ]
+}

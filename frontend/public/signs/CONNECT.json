@@ -1,0 +1,45 @@
+{
+  "gloss": "CONNECT",
+  "duration": 1.2,
+  "frames": [
+    {
+      "time": 0,
+      "bones": {
+        "leftUpperArm":  [-0.12, 0.18, 0.88],
+        "leftLowerArm":  [-0.50, 0.06, -0.06],
+        "leftHand":      [-0.08, 0, 0.18],
+        "rightUpperArm": [-0.12, -0.18, -0.88],
+        "rightLowerArm": [-0.50, -0.06, 0.06],
+        "rightHand":     [-0.08, 0, -0.18]
+      },
+      "fingers": { "left": "point", "right": "point" },
+      "expression": "focus"
+    },
+    {
+      "time": 0.6,
+      "bones": {
+        "leftUpperArm":  [-0.12, 0.10, 0.65],
+        "leftLowerArm":  [-0.62, 0.04, -0.04],
+        "leftHand":      [-0.06, 0, 0.10],
+        "rightUpperArm": [-0.12, -0.10, -0.65],
+        "rightLowerArm": [-0.62, -0.04, 0.04],
+        "rightHand":     [-0.06, 0, -0.10]
+      },
+      "fingers": { "left": "point", "right": "point" },
+      "expression": "focus"
+    },
+    {
+      "time": 1.1,
+      "bones": {
+        "leftUpperArm":  [-0.12, 0.10, 0.65],
+        "leftLowerArm":  [-0.62, 0.04, -0.04],
+        "leftHand":      [-0.06, 0, 0.10],
+        "rightUpperArm": [-0.12, -0.10, -0.65],
+        "rightLowerArm": [-0.62, -0.04, 0.04],
+        "rightHand":     [-0.06, 0, -0.10]
+      },
+      "fingers": { "left": "fist", "right": "fist" },
+      "expression": "focus"
+    }
+  ]
+}

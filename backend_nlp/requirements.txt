@@ -1,0 +1,9 @@
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+spacy>=3.7.0
+numpy>=1.26.0
+# WhisperX word-level ASR timestamps (Phase B2)
+# torch/torchaudio installed separately in Dockerfile (CPU wheel, index URL required)
+whisperx>=3.1.1
+faster-whisper>=1.0.0
+yt-dlp>=2024.1.0
