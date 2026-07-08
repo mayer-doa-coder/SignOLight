@@ -1285,12 +1285,17 @@ function resetVrmPose(bones, time) {
   setBone(bones, "neck", 0, 0, 0);
   setBone(bones, "head", 0, 0, 0);
 
-  setBone(bones, "leftUpperArm", 0.02, 0.02, 0.08);
-  setBone(bones, "leftLowerArm", 0.04, 0.02, 0.04);
-  setBone(bones, "leftHand", 0, 0, 0.02);
-  setBone(bones, "rightUpperArm", 0.02, -0.02, -0.08);
-  setBone(bones, "rightLowerArm", 0.04, -0.02, -0.04);
-  setBone(bones, "rightHand", 0, 0, -0.02);
+  // Signing-ready rest pose. The VRM normalized rig rests in a T-pose (arms horizontal
+  // at rotation 0), so these values rotate the arms DOWN and slightly FORWARD with the
+  // elbows bent, putting the hands in front of the torso — calibrated visually against
+  // the rendered model. Convention: upperArm.z+ lowers the arm, .x+ swings it forward,
+  // lowerArm.x- flexes the elbow. Left arm mirrors (negate y,z).
+  setBone(bones, "leftUpperArm", 0.6, -0.2, -1.1);
+  setBone(bones, "leftLowerArm", -1.5, 0, 0.4);
+  setBone(bones, "leftHand", 0, 0, 0);
+  setBone(bones, "rightUpperArm", 0.6, 0.2, 1.1);
+  setBone(bones, "rightLowerArm", -1.5, 0, -0.4);
+  setBone(bones, "rightHand", 0, 0, 0);
 
   setVrmFingerPose(bones, "left", "relaxed");
   setVrmFingerPose(bones, "right", "relaxed");
@@ -1462,21 +1467,24 @@ function applyVrmMotion(parts, signInfo, time) {
       setVrmFingerPose(bones, "right", "flat");
       break;
     case "chin-forward":
-      setBone(bones, "rightUpperArm", 0.1, -0.28, -0.72);
-      setBone(bones, "rightLowerArm", -1.2, 0.18, -0.12);
-      setBone(bones, "rightHand", -0.12, 0.12, -0.2 + Math.max(0, wave) * 0.32);
+      // Flat hand starts near the chin and moves forward (THANK-YOU family).
+      setBone(bones, "rightUpperArm", 0.7, 0.1, 0.7);
+      setBone(bones, "rightLowerArm", -1.55 + Math.max(0, wave) * 0.45, -0.15, 0);
+      setBone(bones, "rightHand", -0.2, 0, 0);
       setVrmFingerPose(bones, "right", "flat");
       break;
     case "point-out":
-      setBone(bones, "rightUpperArm", -0.45, -0.48, -0.82);
-      setBone(bones, "rightLowerArm", -0.55, -0.08, -0.08);
-      setBone(bones, "rightHand", -0.25, -0.1, -0.24);
+      // Index finger raised and extended outward at shoulder height.
+      setBone(bones, "rightUpperArm", 0, -0.7, 0.55);
+      setBone(bones, "rightLowerArm", -0.5, -0.2, 0);
+      setBone(bones, "rightHand", 0, 0, 0);
       setVrmFingerPose(bones, "right", "point");
       break;
     case "point-self":
-      setBone(bones, "rightUpperArm", 0.15, 0.2, -0.65);
-      setBone(bones, "rightLowerArm", -1.15, 0.28, 0.12);
-      setBone(bones, "rightHand", -0.65, 0.05, 0.25);
+      // Index finger points back at own chest.
+      setBone(bones, "rightUpperArm", 0.5, 0.3, 0.85);
+      setBone(bones, "rightLowerArm", -1.7, -0.3, 0);
+      setBone(bones, "rightHand", -0.3, 0, 0);
       setVrmFingerPose(bones, "right", "point");
       break;
     case "nod":
@@ -1497,9 +1505,10 @@ function applyVrmMotion(parts, signInfo, time) {
       break;
     case "tap-head":
     case "index-temple":
-      setBone(bones, "rightUpperArm", -0.55, -0.28, -0.78);
-      setBone(bones, "rightLowerArm", -1.32, -0.06, 0.28);
-      setBone(bones, "rightHand", -0.25 + Math.max(0, pulse) * 0.08, 0.08, -0.16);
+      // Index finger up at the temple (KNOW / THINK family).
+      setBone(bones, "rightUpperArm", 0.5, 0.15, 0.95);
+      setBone(bones, "rightLowerArm", -1.95, -0.4, 0);
+      setBone(bones, "rightHand", -0.1 + Math.max(0, pulse) * 0.08, 0, 0);
       setVrmFingerPose(bones, "right", "point");
       break;
     case "snap":
