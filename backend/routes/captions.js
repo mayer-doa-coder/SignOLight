@@ -19,6 +19,39 @@ const INNERTUBE_ANDROID_VERSION =
 const INNERTUBE_ANDROID_USER_AGENT =
   `com.google.android.youtube/${INNERTUBE_ANDROID_VERSION} ` +
   "(Linux; U; Android 11) gzip";
+const INNERTUBE_CLIENTS = [
+  {
+    name: "ANDROID",
+    id: "3",
+    version: INNERTUBE_ANDROID_VERSION,
+    userAgent: INNERTUBE_ANDROID_USER_AGENT,
+    context: { androidSdkVersion: 30 },
+  },
+  {
+    name: "IOS",
+    id: "5",
+    version: "20.10.4",
+    userAgent: "com.google.ios.youtube/20.10.4 (iPhone16,2; U; CPU iOS 18_3_1 like Mac OS X)",
+    context: {
+      deviceMake: "Apple",
+      deviceModel: "iPhone16,2",
+      osName: "iPhone",
+      osVersion: "18.3.1.20D67",
+    },
+  },
+  {
+    name: "TVHTML5",
+    id: "7",
+    version: "7.20250205.16.00",
+    userAgent: "Mozilla/5.0 (ChromiumStylePlatform) Cobalt/Version",
+  },
+  {
+    name: "WEB",
+    id: "1",
+    version: "2.20250222.10.00",
+    userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+  },
+];
 const PREFER_INNERTUBE =
   process.env.YOUTUBE_PREFER_INNERTUBE == null
     ? process.env.NODE_ENV === "production"
@@ -304,60 +337,72 @@ async function getCaptionTracksFromTimedText(videoId) {
 }
 
 async function getCaptionTracksFromInnertube(videoId) {
-  try {
-    const response = await fetchWithTimeout(
-      `https://www.youtube.com/youtubei/v1/player?key=${INNERTUBE_API_KEY}&prettyPrint=false`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "User-Agent": INNERTUBE_ANDROID_USER_AGENT,
-          "X-YouTube-Client-Name": "3",
-          "X-YouTube-Client-Version": INNERTUBE_ANDROID_VERSION,
-        },
-        body: JSON.stringify({
-          context: {
-            client: {
-              clientName: "ANDROID",
-              clientVersion: INNERTUBE_ANDROID_VERSION,
-              androidSdkVersion: 30,
-              hl: "en",
-              gl: "US",
-            },
+  const attempts = await Promise.allSettled(
+    INNERTUBE_CLIENTS.map(async (client) => {
+      const response = await fetchWithTimeout(
+        `https://www.youtube.com/youtubei/v1/player?key=${INNERTUBE_API_KEY}&prettyPrint=false`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "User-Agent": client.userAgent,
+            "X-YouTube-Client-Name": client.id,
+            "X-YouTube-Client-Version": client.version,
           },
-          videoId,
-          contentCheckOk: true,
-          racyCheckOk: true,
-        }),
-      },
-      15000
-    );
-
-    if (!response.ok) {
-      console.warn(`[captions] InnerTube returned ${response.status} for ${videoId}`);
-      return [];
-    }
-
-    const player = await response.json();
-    const status = player?.playabilityStatus?.status;
-    const tracks =
-      player?.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
-
-    if (!tracks.length) {
-      console.warn(
-        `[captions] InnerTube returned no tracks for ${videoId} (status=${status || "unknown"})`
+          body: JSON.stringify({
+            context: {
+              client: {
+                clientName: client.name,
+                clientVersion: client.version,
+                hl: "en",
+                gl: "US",
+                ...(client.context || {}),
+              },
+            },
+            videoId,
+            contentCheckOk: true,
+            racyCheckOk: true,
+          }),
+        },
+        15000
       );
-      return [];
-    }
 
+      if (!response.ok) {
+        return { client, tracks: [], status: `HTTP_${response.status}` };
+      }
+
+      const player = await response.json();
+      return {
+        client,
+        tracks:
+          player?.captions?.playerCaptionsTracklistRenderer?.captionTracks || [],
+        status: player?.playabilityStatus?.status || "UNKNOWN",
+      };
+    })
+  );
+
+  for (const attempt of attempts) {
+    if (attempt.status !== "fulfilled") continue;
+    const { client, tracks } = attempt.value;
+    if (!tracks.length) continue;
     return tracks.map((track) => ({
       ...track,
-      _source: "innertube-android",
+      _source: `innertube-${client.name.toLowerCase()}`,
+      _clientHeaders: {
+        "User-Agent": client.userAgent,
+        "X-YouTube-Client-Name": client.id,
+        "X-YouTube-Client-Version": client.version,
+      },
     }));
-  } catch (err) {
-    console.warn(`[captions] InnerTube fallback failed for ${videoId}: ${err.message}`);
-    return [];
   }
+
+  const summary = attempts.map((attempt, index) =>
+    attempt.status === "fulfilled"
+      ? `${attempt.value.client.name}:${attempt.value.status}`
+      : `${INNERTUBE_CLIENTS[index].name}:ERROR`
+  );
+  console.warn(`[captions] InnerTube clients returned no tracks for ${videoId}: ${summary.join(",")}`);
+  return [];
 }
 
 function chooseCaptionTrack(tracks) {
@@ -385,8 +430,9 @@ async function fetchCaptionTextFromTrack(track, targetLanguage = "en") {
   const response = await fetchWithTimeout(
     url,
     {
-      headers:
-        track._source === "innertube-android"
+      headers: track._clientHeaders
+        ? { ...YOUTUBE_HEADERS, ...track._clientHeaders }
+        : track._source === "innertube-android"
           ? {
               ...YOUTUBE_HEADERS,
               "User-Agent": INNERTUBE_ANDROID_USER_AGENT,
