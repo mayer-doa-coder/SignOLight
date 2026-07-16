@@ -609,9 +609,15 @@ router.get("/", async (req, res) => {
     let captionText = "";
     let captions = [];
     let source = "direct";
+    const trackAttempts = [];
 
     for (const candidate of candidateTracks.filter(Boolean)) {
       const result = await fetchParsedCaptionTrack(candidate, targetLanguage);
+      trackAttempts.push({
+        source: candidate._source || "captionTracks",
+        languageCode: candidate.languageCode || "unknown",
+        captionCount: result.captions.length,
+      });
       if (!result.captions.length) continue;
       track = candidate;
       captionText = result.text;
@@ -651,6 +657,14 @@ router.get("/", async (req, res) => {
           "innertube-android",
           "transcript-library",
         ],
+        diagnostics: {
+          trackCounts: {
+            watchPage: pageTracks.length,
+            timedText: listTracks.length,
+            innertube: innertubeTracks.length,
+          },
+          trackAttempts,
+        },
       });
     }
 
