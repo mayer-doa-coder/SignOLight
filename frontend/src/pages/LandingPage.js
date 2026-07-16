@@ -7,16 +7,24 @@ const API = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
 
 const SAMPLE_VIDEOS = [
   {
-    url: "https://www.youtube.com/watch?v=aircAruvnKk",
-    label: "3Blue1Brown — Neural Networks",
+    url: "https://www.youtube.com/watch?v=LPZh9BOjkQs",
+    label: "3Blue1Brown — LLMs Explained",
   },
   {
-    url: "https://www.youtube.com/watch?v=WUvTyaaNkzM",
-    label: "3Blue1Brown — Calculus",
+    url: "https://www.youtube.com/watch?v=CMiPYHNNg28",
+    label: "Photosynthesis — Plant Biology",
   },
   {
-    url: "https://www.youtube.com/watch?v=fNk_zzaMoSs",
-    label: "3Blue1Brown — Vectors",
+    url: "https://www.youtube.com/watch?v=1XSyyjcEHo0",
+    label: "Professor Dave — Newton's First Law",
+  },
+  {
+    url: "https://www.youtube.com/watch?v=B6mi1-YoRT4",
+    label: "Physics — What Is Force?",
+  },
+  {
+    url: "https://www.youtube.com/watch?v=zlLpKzPz84Q",
+    label: "Physics — Force & Pressure",
   },
 ];
 
