@@ -527,6 +527,24 @@ router.post("/translate", async (req, res) => {
   }
 });
 
+// POST /api/sign/timestamps — WhisperX word-level timing for cached captions.
+// Cached videos skip /batch, so expose the same timestamp enrichment path separately.
+router.post("/timestamps", async (req, res) => {
+  try {
+    const { videoId } = req.body;
+    if (!videoId) return res.status(400).json({ error: "videoId is required" });
+    const words = await fetchWordTimestamps(videoId);
+    res.json({
+      videoId,
+      words: words || [],
+      source: words?.length ? "whisperx" : "caption-timing-fallback",
+    });
+  } catch (err) {
+    console.error("Timestamp extraction error:", err);
+    res.status(500).json({ error: "Timestamp extraction failed" });
+  }
+});
+
 // POST /api/sign/batch — translate multiple captions at once.
 // Optional body field `videoId` — when provided, results are written to both
 // the hot Map cache and the file cache so future requests skip re-processing.

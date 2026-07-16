@@ -1,3 +1,11 @@
+import {
+  banglaGestureLabel,
+  banglaWordFromToken,
+  banglaWordToGestureUnits,
+  isBanglaGesture,
+  isBanglaWordToken,
+} from "./banglaAlphabet";
+
 const COMMON_GESTURES = new Set([
   "HELLO",
   "THANK",
@@ -214,7 +222,11 @@ const NUMBER_WORDS = {
 };
 
 export function displayMixamoWord(word) {
-  const value = String(word || "").trim().toUpperCase();
+  const raw = String(word || "").trim();
+  if (isBanglaGesture(raw)) return banglaGestureLabel(raw);
+  if (isBanglaWordToken(raw)) return banglaWordFromToken(raw);
+
+  const value = raw.toUpperCase();
   const fingerspell = value.match(/^\[FINGERSPELL:([A-Z0-9]+)\]$/);
   if (fingerspell) return fingerspell[1];
   const number = value.match(/^\[NUMBER:(\d+)\]$/);
@@ -224,7 +236,46 @@ export function displayMixamoWord(word) {
   return value.replace(/[^A-Z0-9]/g, "");
 }
 
-export function gestureForMixamoWord(word) {
+export function spellingUnitsForMixamoWord(word) {
+  const raw = String(word || "").trim();
+  if (isBanglaWordToken(raw)) return banglaWordToGestureUnits(raw);
+  if (isBanglaGesture(raw)) return [];
+
+  const value = raw.toUpperCase();
+  const tagged = value.match(/^\[(?:FINGERSPELL|CONCEPT|NUMBER):(.+)\]$/);
+  const label = tagged
+    ? tagged[1].replace(/[^A-Z0-9]/g, "")
+    : displayMixamoWord(value);
+  if (!label) return [];
+
+  const commonGesture = COMMON_ALIASES[label] || label;
+  const hasAuthoredGesture =
+    COMMON_GESTURES.has(commonGesture) ||
+    NUMBER_WORDS[label] ||
+    /^[A-Z]$/.test(label) ||
+    /^[0-9]$/.test(label);
+
+  if (!tagged && hasAuthoredGesture) return [];
+
+  return label.split("").map((character) => ({
+    label: character,
+    gesture: /[0-9]/.test(character) ? `NUM_${character}` : character,
+  }));
+}
+
+export function gestureForMixamoWord(word, wordProgress = 0) {
+  const raw = String(word || "").trim();
+  if (isBanglaGesture(raw)) return raw;
+
+  const spellingUnits = spellingUnitsForMixamoWord(raw);
+  if (spellingUnits.length) {
+    const index = Math.min(
+      spellingUnits.length - 1,
+      Math.floor(Math.max(0, Math.min(0.999999, wordProgress)) * spellingUnits.length)
+    );
+    return spellingUnits[index].gesture;
+  }
+
   const label = displayMixamoWord(word);
   if (!label) return "RELAXED";
   const commonGesture = COMMON_ALIASES[label] || label;

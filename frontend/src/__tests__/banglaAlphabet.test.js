@@ -1,6 +1,8 @@
 import {
   BANGLA_ALPHABET,
   banglaGestureLabel,
+  banglaTextToWordTokens,
+  banglaWordToGestureUnits,
   isBanglaGesture,
 } from "../services/banglaAlphabet";
 
@@ -36,5 +38,19 @@ describe("Bangla manual alphabet", () => {
 
   it("uses only the front-view Bangla gesture namespace", () => {
     expect(BANGLA_ALPHABET.every(({ id }) => /^BN_[A-Z]+$/.test(id))).toBe(true);
+  });
+
+  it("converts translated Bangla words into chart-backed gesture units", () => {
+    expect(banglaWordToGestureUnits("[BANGLA:আমার]").map(({ gesture }) => gesture)).toEqual([
+      "BN_AA",
+      "BN_MA",
+      "BN_AA",
+      "BN_RA",
+    ]);
+    expect(banglaTextToWordTokens("আমি একটি ছেলে")).toEqual([
+      "[BANGLA:আমি]",
+      "[BANGLA:একটি]",
+      "[BANGLA:ছেলে]",
+    ]);
   });
 });

@@ -11,6 +11,7 @@ const SPEEDS = [
   { value: 1.0, label: "1×" },
   { value: 0.75, label: "¾×" },
   { value: 0.5, label: "½×" },
+  { value: 0.25, label: "¼×" },
 ];
 
 export default function ControlPanel({
@@ -24,6 +25,9 @@ export default function ControlPanel({
   onToggleLearning,
   fingerspellMode = false,
   onToggleFingerspell,
+  avatarLanguage = "en",
+  onLanguageChange,
+  banglaLoading = false,
 }) {
   return (
     <div className="control-panel">
@@ -40,6 +44,24 @@ export default function ControlPanel({
           </button>
         ))}
       </div>
+
+      {onLanguageChange && (
+        <div className="language-btns" title="Avatar language">
+          <button
+            className={avatarLanguage === "en" ? "active" : ""}
+            onClick={() => onLanguageChange("en")}
+          >
+            English
+          </button>
+          <button
+            className={avatarLanguage === "bn" ? "active" : ""}
+            onClick={() => onLanguageChange("bn")}
+            disabled={banglaLoading}
+          >
+            {banglaLoading ? "বাংলা…" : "বাংলা"}
+          </button>
+        </div>
+      )}
 
       {/* Playback speed selector — learning mode support */}
       {onSpeedChange && (

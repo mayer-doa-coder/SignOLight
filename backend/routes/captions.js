@@ -1,7 +1,12 @@
 const express = require("express");
 const router = express.Router();
 const fetch = require("node-fetch");
+const fs = require("fs/promises");
+const path = require("path");
 const { YoutubeTranscript } = require("youtube-transcript");
+
+const TRANSLATION_CACHE_DIR =
+  process.env.SIGNOLIGHT_CACHE_DIR || path.resolve(__dirname, "../cache");
 
 const YOUTUBE_HEADERS = {
   "User-Agent":
@@ -9,6 +14,145 @@ const YOUTUBE_HEADERS = {
   "Accept-Language": "en-US,en;q=0.9",
   Referer: "https://www.youtube.com/",
 };
+
+function containsBangla(text) {
+  return /[\u0980-\u09ff]/.test(String(text || ""));
+}
+
+function translationCachePath(videoId, language) {
+  const safeVideoId = String(videoId || "").replace(/[^a-zA-Z0-9_-]/g, "");
+  const safeLanguage = String(language || "").replace(/[^a-zA-Z0-9_-]/g, "");
+  return path.join(
+    TRANSLATION_CACHE_DIR,
+    `${safeVideoId}.${safeLanguage}.captions.json`
+  );
+}
+
+async function readTranslationCache(videoId, language) {
+  try {
+    const raw = await fs.readFile(
+      translationCachePath(videoId, language),
+      "utf8"
+    );
+    const cached = JSON.parse(raw);
+    return cached?.captions?.length ? cached : null;
+  } catch {
+    return null;
+  }
+}
+
+async function writeTranslationCache(videoId, language, payload) {
+  try {
+    await fs.mkdir(TRANSLATION_CACHE_DIR, { recursive: true });
+    await fs.writeFile(
+      translationCachePath(videoId, language),
+      JSON.stringify(payload, null, 2),
+      "utf8"
+    );
+  } catch (err) {
+    console.error("Translation cache write error:", err.message);
+  }
+}
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function translateJoinedTexts(texts, targetLanguage) {
+  const joined = texts.join("\n");
+  const url =
+    "https://translate.googleapis.com/translate_a/single" +
+    `?client=gtx&sl=auto&tl=${encodeURIComponent(targetLanguage)}` +
+    `&dt=t&q=${encodeURIComponent(joined)}`;
+  const response = await fetchWithTimeout(url, {
+    headers: {
+      ...YOUTUBE_HEADERS,
+      Referer: "https://translate.google.com/",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Free translation service returned ${response.status}`);
+  }
+
+  const data = await response.json();
+  const translated = (data?.[0] || [])
+    .map((segment) => segment?.[0] || "")
+    .join("")
+    .replace(/\r/g, "");
+  const lines = translated.split("\n");
+
+  while (lines.length > texts.length && lines.at(-1) === "") lines.pop();
+  if (lines.length !== texts.length || lines.some((line) => !line.trim())) {
+    throw new Error("Free translation service changed caption boundaries");
+  }
+
+  return lines.map((line) => line.trim());
+}
+
+function makeTranslationChunks(texts, maxItems = 12, maxCharacters = 1600) {
+  const chunks = [];
+  let current = [];
+  let characters = 0;
+
+  for (const text of texts) {
+    const nextLength = String(text || "").length + (current.length ? 1 : 0);
+    if (
+      current.length &&
+      (current.length >= maxItems || characters + nextLength > maxCharacters)
+    ) {
+      chunks.push(current);
+      current = [];
+      characters = 0;
+    }
+    current.push(text);
+    characters += nextLength;
+  }
+
+  if (current.length) chunks.push(current);
+  return chunks;
+}
+
+async function translateChunkWithBoundaryFallback(texts, targetLanguage) {
+  try {
+    return await translateJoinedTexts(texts, targetLanguage);
+  } catch (batchError) {
+    const translated = [];
+    for (const text of texts) {
+      const [line] = await translateJoinedTexts([text], targetLanguage);
+      translated.push(line);
+    }
+    return translated;
+  }
+}
+
+async function translateTextsFree(texts, targetLanguage, concurrency = 3) {
+  const chunks = makeTranslationChunks(texts);
+  const results = new Array(chunks.length);
+  let nextChunk = 0;
+
+  async function worker() {
+    while (nextChunk < chunks.length) {
+      const index = nextChunk;
+      nextChunk += 1;
+      results[index] = await translateChunkWithBoundaryFallback(
+        chunks[index],
+        targetLanguage
+      );
+    }
+  }
+
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, chunks.length) }, () => worker())
+  );
+  return results.flat();
+}
 
 function extractVideoId(url) {
   const patterns = [
@@ -152,11 +296,14 @@ function chooseCaptionTrack(tracks) {
   );
 }
 
-async function fetchCaptionTextFromTrack(track) {
-  const wantsTranslation = track.languageCode !== "en" && track.isTranslatable;
+async function fetchCaptionTextFromTrack(track, targetLanguage = "en") {
+  const wantsTranslation =
+    targetLanguage &&
+    track.languageCode !== targetLanguage &&
+    track.isTranslatable;
   const url = appendQuery(track.baseUrl, {
     fmt: "vtt",
-    ...(wantsTranslation ? { tlang: "en" } : {}),
+    ...(wantsTranslation ? { tlang: targetLanguage } : {}),
   });
 
   const response = await fetch(url, { headers: YOUTUBE_HEADERS });
@@ -165,12 +312,15 @@ async function fetchCaptionTextFromTrack(track) {
   return response.text();
 }
 
-async function fetchDirectCaptionText(videoId) {
+async function fetchDirectCaptionText(videoId, targetLanguage = "en") {
+  const translation = targetLanguage !== "en"
+    ? `&tlang=${encodeURIComponent(targetLanguage)}`
+    : "";
   const urls = [
-    `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&fmt=vtt`,
-    `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&kind=asr&fmt=vtt`,
-    `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&fmt=srv3`,
-    `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&kind=asr&fmt=srv3`,
+    `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&fmt=vtt${translation}`,
+    `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&kind=asr&fmt=vtt${translation}`,
+    `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&fmt=srv3${translation}`,
+    `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&kind=asr&fmt=srv3${translation}`,
   ];
 
   for (const url of urls) {
@@ -283,9 +433,22 @@ function parseCaptions(captionText) {
 router.get("/", async (req, res) => {
   try {
     const { videoId, url } = req.query;
+    const targetLanguage = /^[a-z]{2,3}(?:-[A-Z]{2})?$/.test(req.query.lang || "")
+      ? req.query.lang
+      : "en";
     const id = videoId || extractVideoId(url);
 
     if (!id) return res.status(400).json({ error: "videoId is required" });
+
+    if (targetLanguage !== "en") {
+      const cachedTranslation = await readTranslationCache(id, targetLanguage);
+      if (cachedTranslation) {
+        return res.json({
+          ...cachedTranslation,
+          source: `${cachedTranslation.source || "free-translation"}-cache`,
+        });
+      }
+    }
 
     const pageTracks = await getCaptionTracksFromWatchPage(id);
     const listTracks = pageTracks.length
@@ -293,11 +456,13 @@ router.get("/", async (req, res) => {
       : await getCaptionTracksFromTimedText(id);
     const track = chooseCaptionTrack([...pageTracks, ...listTracks]);
 
-    let captionText = track ? await fetchCaptionTextFromTrack(track) : "";
+    let captionText = track
+      ? await fetchCaptionTextFromTrack(track, targetLanguage)
+      : "";
     let source = track ? "captionTracks" : "direct";
 
     if (!captionText.trim()) {
-      captionText = await fetchDirectCaptionText(id);
+      captionText = await fetchDirectCaptionText(id, targetLanguage);
       source = "direct";
     }
 
@@ -319,7 +484,33 @@ router.get("/", async (req, res) => {
       });
     }
 
-    res.json({
+    const sourceLanguage = track?.languageCode || "en";
+    let translated =
+      targetLanguage === sourceLanguage ||
+      (targetLanguage === "bn" &&
+        captions.some((caption) => containsBangla(caption.text)));
+
+    if (targetLanguage === "bn" && !translated) {
+      const translatedTexts = await translateTextsFree(
+        captions.map((caption) => caption.text),
+        targetLanguage
+      );
+      captions = captions.map((caption, index) => ({
+        ...caption,
+        text: translatedTexts[index],
+      }));
+      translated = captions.some((caption) => containsBangla(caption.text));
+      source = "google-translate-free";
+    }
+
+    if (targetLanguage === "bn" && !translated) {
+      return res.status(502).json({
+        error:
+          "Bangla translation is temporarily unavailable. Please try again.",
+      });
+    }
+
+    const payload = {
       captions,
       count: captions.length,
       format: usedLibraryFallback
@@ -328,13 +519,29 @@ router.get("/", async (req, res) => {
           ? "vtt"
           : "xml",
       source,
-      language: track?.languageCode || "en",
-      translated: !!(track && track.languageCode !== "en" && track.isTranslatable),
-    });
+      language: targetLanguage,
+      sourceLanguage,
+      translated,
+    };
+
+    if (targetLanguage !== "en" && translated) {
+      await writeTranslationCache(id, targetLanguage, payload);
+    }
+
+    res.json(payload);
   } catch (err) {
     console.error("Caption fetch error:", err);
-    res.status(500).json({ error: "Failed to fetch captions" });
+    res.status(500).json({
+      error:
+        err.name === "AbortError"
+          ? "The translation service timed out. Please try again."
+          : "Failed to fetch or translate captions",
+    });
   }
 });
 
 module.exports = router;
+module.exports._test = {
+  containsBangla,
+  makeTranslationChunks,
+};

@@ -1,8 +1,11 @@
 /* Player Page */
 .player-page {
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   background: var(--bg-primary);
 }
 
@@ -212,21 +215,24 @@
   .player-main.layout-side-by-side,
   .player-main.layout-fullscreen-sign {
     grid-template-columns: 1fr;
-    grid-template-rows: auto auto;
+    grid-template-rows: minmax(140px, 38%) minmax(0, 62%);
+    overflow: hidden;
   }
 
   .video-panel {
     border-right: none;
     border-bottom: 1px solid var(--border);
-    min-height: 220px;
+    min-height: 0;
   }
 
   .sign-panel {
-    max-height: 400px;
+    min-height: 0;
+    max-height: none;
+    overflow: hidden;
   }
 
   .mixamo-sign-panel {
-    min-height: 500px;
+    min-height: 0;
     max-height: none;
   }
 }

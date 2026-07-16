@@ -63,10 +63,23 @@ export function computeWordTimings(caption, fingerspellMode = false) {
   // window to spell out. Normal mode weights by syllable count for natural sign pacing.
   const charCounts = words.map((w) => {
     const raw = String(w);
+    const banglaTag = raw.match(/^\[BANGLA:(.+)\]$/u);
+    if (banglaTag) {
+      return Math.max(
+        1,
+        [...banglaTag[1].normalize("NFC")].filter((character) =>
+          /[\u0980-\u09FF]/u.test(character) && !["্", "়"].includes(character)
+        ).length
+      );
+    }
+
+    const spellingTag = raw.match(/^\[(?:FINGERSPELL|CONCEPT|NUMBER):(.+)\]$/i);
+    if (spellingTag) {
+      return Math.max(1, spellingTag[1].replace(/[^A-Za-z0-9]/g, "").length);
+    }
+
     if (fingerspellMode) {
-      const tag = raw.match(/^\[(?:FINGERSPELL|CONCEPT|NUMBER):(.+)\]$/i);
-      const inner = tag ? tag[1] : raw;
-      return Math.max(1, inner.replace(/[^A-Za-z0-9]/g, "").length);
+      return Math.max(1, raw.replace(/[^A-Za-z0-9]/g, "").length);
     }
     const clean = raw.replace(/[^A-Za-z]/g, "").toUpperCase();
     const syllables = clean.match(/[AEIOU]+/g);
@@ -80,7 +93,7 @@ export function computeWordTimings(caption, fingerspellMode = false) {
     cumulative += charCounts[i];
     const wordEnd = effectiveStart + (cumulative / totalChars) * duration;
     return {
-      word: String(word).toUpperCase().replace(/[^A-Z[\]:]/g, ""),
+      word: String(word),
       index: i,
       startMs: wordStart,
       endMs: wordEnd,

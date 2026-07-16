@@ -46,7 +46,7 @@ export default function LandingPage({
   }, []);
 
   const handleSubmit = async (videoUrl) => {
-    const submitUrl = videoUrl || url;
+    const submitUrl = (videoUrl || url).trim();
     if (!submitUrl.trim()) {
       setError("Please enter a YouTube URL");
       return;
@@ -58,14 +58,25 @@ export default function LandingPage({
     try {
       const res = await axios.get(`${API}/api/video/info`, {
         params: { url: submitUrl },
+        timeout: 15000,
       });
       onVideoSubmit({ ...res.data, originalUrl: submitUrl }, avatarMode);
     } catch (err) {
+      const apiError =
+        typeof err.response?.data?.error === "string"
+          ? err.response.data.error
+          : "";
+      const serviceUnavailable =
+        !err.response ||
+        err.code === "ECONNABORTED" ||
+        err.response?.status >= 500 ||
+        typeof err.response?.data === "string";
+
       setError(
-        err.response?.data?.error ||
-          (!err.response
-            ? "Backend API is unreachable. Start the backend server and try again."
-            : "Could not load video. Check the URL and try again.")
+        apiError ||
+          (serviceUnavailable
+            ? "Video service is unavailable. Start the backend server and try again."
+            : "Could not load this YouTube video. Check that it is public and try again.")
       );
     } finally {
       setLoading(false);

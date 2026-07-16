@@ -626,16 +626,11 @@ function getSignInfo(word, fingerspellMode = false) {
     return { label: s, motion: "idle", color: "#64748b", expression: "neutral" };
   }
 
-  // Normal mode: proper nouns and numbers actually fingerspell (they previously idled with
-  // just a label, so a FINGERSPELL tag spelled nothing). Concepts with no sign still pause
-  // and rely on the caption's explanation card rather than spelling out a word nobody knows.
-  if (fsMatch || numMatch) {
+  // Normal mode: proper nouns, numbers, and concepts without an authored sign
+  // fingerspell automatically so an unknown word never becomes a silent avatar pause.
+  if (fsMatch || numMatch || conceptMatch) {
     const letters = glossWordToLetters(s);
     return { label: letters, motion: "fingerspell", color: "#38bdf8", expression: "focus", letters };
-  }
-  if (conceptMatch) {
-    const label = conceptMatch[1].replace(/[^A-Za-z\s]/g, "").toUpperCase().trim();
-    return { label, motion: "idle", color: "#64748b", expression: "neutral" };
   }
 
   const upper = s.replace(/[^A-Z]/g, "");
@@ -644,8 +639,14 @@ function getSignInfo(word, fingerspellMode = false) {
   if (lemma) return lemma;
 
   // No dictionary sign available for this word (and no inflected form matched one either).
-  // The avatar pauses rather than fingerspelling or showing any text overlay.
-  return { label: upper || s.slice(0, 20), motion: "idle", color: "#64748b", expression: "neutral" };
+  // Spell it rather than pausing silently.
+  return {
+    label: upper || s.slice(0, 20),
+    motion: "fingerspell",
+    color: "#38bdf8",
+    expression: "focus",
+    letters: upper,
+  };
 }
 
 // Returns "" for bracket-tagged words so loadSignClip skips the network fetch.
