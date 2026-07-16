@@ -34,6 +34,7 @@ export default function LandingPage({
   onOpenMixamoDemo,
   onOpenMixamoYouTube,
   onOpenVrmHome,
+  onOpenHowItWorks,
   avatarMode = "vrm",
 }) {
   const [url, setUrl] = useState("");
@@ -90,6 +91,9 @@ export default function LandingPage({
       <nav className="landing-nav">
         <span className="nav-logo">SignOLight</span>
         <div className="nav-actions">
+          <button className="nav-link" onClick={onOpenHowItWorks}>
+            How it works
+          </button>
           {avatarMode === "mixamo" ? (
             <button className="nav-link" onClick={onOpenVrmHome}>
               Standard VRM

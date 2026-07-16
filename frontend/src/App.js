@@ -4,6 +4,7 @@ import PlayerPage from "./pages/PlayerPage";
 import SignDemoPage from "./pages/SignDemoPage";
 import PoseTunerPage from "./pages/PoseTunerPage";
 import MixamoDemoPage from "./pages/MixamoDemoPage";
+import HowItWorksPage from "./pages/HowItWorksPage";
 import "./styles/global.css";
 
 function initialPage() {
@@ -11,6 +12,7 @@ function initialPage() {
   if (pathname === "/sign-demo") return "sign-demo";
   if (pathname === "/pose-tuner") return "pose-tuner";
   if (pathname === "/mixamo-demo") return "mixamo-demo";
+  if (pathname === "/how-it-works") return "how-it-works";
   if (pathname === "/mixamo") return "mixamo-landing";
   return "landing";
 }
@@ -60,6 +62,12 @@ function App() {
     setVideoData(null);
   };
 
+  const handleOpenHowItWorks = () => {
+    window.history.pushState({}, "", "/how-it-works");
+    setCurrentPage("how-it-works");
+    setVideoData(null);
+  };
+
   const handleOpenMixamoYouTube = () => {
     window.history.pushState({}, "", "/mixamo");
     setAvatarMode("mixamo");
@@ -91,6 +99,7 @@ function App() {
           onOpenMixamoDemo={handleOpenMixamoDemo}
           onOpenMixamoYouTube={handleOpenMixamoYouTube}
           onOpenVrmHome={handleOpenVrmHome}
+          onOpenHowItWorks={handleOpenHowItWorks}
           avatarMode="vrm"
         />
       )}
@@ -101,6 +110,7 @@ function App() {
           onOpenMixamoDemo={handleOpenMixamoDemo}
           onOpenMixamoYouTube={handleOpenMixamoYouTube}
           onOpenVrmHome={handleOpenVrmHome}
+          onOpenHowItWorks={handleOpenHowItWorks}
           avatarMode="mixamo"
         />
       )}
@@ -119,6 +129,9 @@ function App() {
       )}
       {currentPage === "mixamo-demo" && (
         <MixamoDemoPage onBack={handleBack} />
+      )}
+      {currentPage === "how-it-works" && (
+        <HowItWorksPage onBack={handleBack} onStart={handleOpenMixamoYouTube} />
       )}
     </div>
   );
