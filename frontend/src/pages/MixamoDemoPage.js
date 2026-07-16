@@ -1,5 +1,9 @@
 import React, { useCallback, useMemo, useState } from "react";
 import MixamoAvatar from "../components/MixamoAvatar";
+import {
+  BANGLA_ALPHABET,
+  banglaGestureLabel,
+} from "../services/banglaAlphabet";
 import "./MixamoDemoPage.css";
 
 const COMMON_GESTURES = [
@@ -18,11 +22,18 @@ const VIDEO_WORDS = [
 const GROUPS = [
   { id: "common", label: "Common signs", gestures: COMMON_GESTURES },
   { id: "alphabet", label: "ASL alphabet", gestures: LETTERS },
+  {
+    id: "bangla",
+    label: "Bangla alphabet",
+    gestures: BANGLA_ALPHABET.map(({ id }) => id),
+  },
   { id: "numbers", label: "Numbers", gestures: NUMBERS },
   { id: "video", label: "Video words", gestures: VIDEO_WORDS },
 ];
 
 function gestureLabel(gesture) {
+  const banglaLabel = banglaGestureLabel(gesture);
+  if (banglaLabel) return banglaLabel;
   return gesture.startsWith("NUM_") ? gesture.slice(4) : gesture;
 }
 
@@ -141,8 +152,9 @@ export default function MixamoDemoPage({ onBack }) {
           </section>
 
           <p className="mixamo-note">
-            This page drives each thumb, index, middle, ring and pinky chain independently.
-            Dynamic J, Z and NO gestures also animate during playback.
+            {groupId === "bangla"
+              ? "Bangla letters stay in Bangla script. The avatar poses follow the supplied Bangla Sign Language alphabet chart."
+              : "This page drives each thumb, index, middle, ring and pinky chain independently. Dynamic J, Z and NO gestures also animate during playback."}
           </p>
         </aside>
       </main>

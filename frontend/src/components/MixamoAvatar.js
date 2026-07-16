@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader";
 import MOCAP_CLIPS from "./mocapClips";
+import { isBanglaGesture } from "../services/banglaAlphabet";
 import "./MixamoAvatar.css";
 
 const MODEL_URL = "/models/mixamo/Ch09_nonPBR.fbx";
@@ -53,7 +54,16 @@ const HANDSHAPES = {
   three: { thumb: 0.04, index: 0, middle: 0, ring: 1, pinky: 1, number: true },
   four: { thumb: 0.78, index: 0, middle: 0, ring: 0, pinky: 0, thumbMode: "across" },
   five: { thumb: 0, index: 0, middle: 0, ring: 0, pinky: 0 },
-  zero: { thumb: 0, index: 0, middle: 0, ring: 0, pinky: 0, contactPose: "zero" },
+  zero: {
+    thumb: 0.34,
+    index: 0.42,
+    middle: 0.44,
+    ring: 0.46,
+    pinky: 0.48,
+    number: true,
+    thumbContact: "zero",
+    spread: { Thumb: -0.08, Index: -0.08, Middle: -0.02, Ring: 0.04, Pinky: 0.1 },
+  },
   // Number forms deliberately keep their open fingers separated in a front view.
   // They are separate from alphabet forms because ASL number readability depends
   // on the thumb placement and a clean silhouette, not only the finger count.
@@ -62,15 +72,59 @@ const HANDSHAPES = {
   numberThree: { thumb: 0.03, index: 0, middle: 0, ring: 1, pinky: 1, number: true },
   numberFour: { thumb: 0.78, index: 0, middle: 0, ring: 0, pinky: 0, thumbMode: "across", number: true },
   numberFive: { thumb: 0, index: 0, middle: 0, ring: 0, pinky: 0, number: true },
-  six: { thumb: 0, index: 0, middle: 0, ring: 0, pinky: 0, contactPose: "six" },
-  seven: { thumb: 0, index: 0, middle: 0, ring: 0, pinky: 0, contactPose: "seven" },
-  eight: { thumb: 0, index: 0, middle: 0, ring: 0, pinky: 0, contactPose: "eight" },
-  nine: { thumb: 0, index: 0, middle: 0, ring: 0, pinky: 0, contactPose: "nine" },
+  six: {
+    thumb: 0.4,
+    index: 0,
+    middle: 0,
+    ring: 0,
+    pinky: 0.52,
+    number: true,
+    thumbContact: "six",
+    spread: { Thumb: 0.14, Index: -0.1, Middle: -0.03, Ring: 0.04, Pinky: 0.02 },
+  },
+  seven: {
+    thumb: 0.4,
+    index: 0,
+    middle: 0,
+    ring: 0.62,
+    pinky: 0,
+    number: true,
+    thumbContact: "seven",
+    spread: { Thumb: 0.07, Index: -0.1, Middle: -0.03, Ring: 0.02, Pinky: 0.1 },
+  },
+  eight: {
+    thumb: 0.4,
+    index: 0,
+    middle: 0.62,
+    ring: 0,
+    pinky: 0,
+    number: true,
+    thumbContact: "eight",
+    spread: { Thumb: 0, Index: -0.1, Middle: -0.02, Ring: 0.04, Pinky: 0.1 },
+  },
+  nine: {
+    thumb: 0.4,
+    index: 0.56,
+    middle: 0,
+    ring: 0,
+    pinky: 0,
+    number: true,
+    thumbContact: "nine",
+    spread: { Thumb: -0.08, Index: -0.04, Middle: -0.03, Ring: 0.04, Pinky: 0.1 },
+  },
   y: { thumb: 0, index: 1, middle: 1, ring: 1, pinky: 0 },
   l: { thumb: 0, index: 0, middle: 1, ring: 1, pinky: 1 },
   c: { thumb: 0.28, index: 0.38, middle: 0.38, ring: 0.42, pinky: 0.5 },
   o: { thumb: 0.44, index: 0.5, middle: 0.5, ring: 0.52, pinky: 0.58 },
-  f: { thumb: 0, index: 0, middle: 0, ring: 0, pinky: 0, contactPose: "f" },
+  f: {
+    thumb: 0.38,
+    index: 0.62,
+    middle: 0,
+    ring: 0,
+    pinky: 0,
+    thumbContact: "f",
+    spread: { Thumb: -0.08, Index: -0.04, Middle: -0.03, Ring: 0.04, Pinky: 0.1 },
+  },
   i: { thumb: 0.7, index: 1, middle: 1, ring: 1, pinky: 0, thumbMode: "across" },
   m: { thumb: 0.36, index: 0.94, middle: 0.94, ring: 0.94, pinky: 1, thumbMode: "underThree" },
   n: { thumb: 0.38, index: 0.94, middle: 0.94, ring: 1, pinky: 1, thumbMode: "underTwo" },
@@ -147,23 +201,199 @@ const WRIST_POSES = {
   helpRight: [-1.43452, -2.69908, -2.3862],
 };
 
-// Eased ~15% off the raw calibration on joints 1-2 (MCP/PIP) — at full
-// magnitude the curl drove fingertips through the palm and into neighboring
-// fingers when viewed from the front. Joint 3 (DIP) left as calibrated since
-// it was already modest and shapes the natural fingertip curve.
-const CLOSED_FINGER_ANGLES = {
-  Index: [1.399, 1.577, 0.20517],
-  Middle: [1.510, 1.501, 0.75136],
-  Ring: [1.526, 1.605, 0.53784],
-  Pinky: [1.523, 1.603, 0.36841],
+// Dedicated BdSL manual-alphabet poses based on the chart supplied for this
+// project. Unlike the one-handed ASL alphabet above, many Bangla letters use
+// both hands and contact between a pointing/curved hand and an open palm.
+const BANGLA_HAND_POSES = {
+  BN_AW: {
+    left: { arm: "centerLeft", wrist: [-0.66, -0.12, 1.34], shape: "open" },
+    right: { arm: "centerRight", wrist: [0.7, 0.16, -1.24], shape: "open" },
+    motion: "tap",
+  },
+  BN_AA: {
+    left: { arm: "centerLeft", wrist: [-0.7, -0.16, 1.36], shape: "open" },
+    right: { arm: "centerRight", wrist: [0.58, 0.06, -1.42], shape: "two" },
+    motion: "tap",
+  },
+  BN_I: {
+    left: { arm: "centerLeft", wrist: [-0.62, -0.12, 1.28], shape: "open" },
+    right: { arm: "centerRight", wrist: [0.82, 0.08, -1.18], shape: "open" },
+    motion: "slide",
+  },
+  BN_U: {
+    left: { arm: "centerLeft", wrist: [-0.42, -0.3, 1.08], shape: "two" },
+    right: { arm: "centerRight", wrist: [0.42, 0.3, -1.08], shape: "two" },
+    motion: "tap",
+  },
+  BN_E: {
+    left: { arm: "centerLeft", wrist: [-0.48, -0.28, 1.12], shape: "c" },
+    right: { arm: "centerRight", wrist: [0.48, 0.28, -1.12], shape: "c" },
+    motion: "tap",
+  },
+  BN_O: {
+    left: { arm: "centerLeft", wrist: [-0.44, -0.24, 1.08], shape: "f" },
+    right: { arm: "centerRight", wrist: [0.44, 0.24, -1.08], shape: "f" },
+    motion: "twist",
+  },
+  BN_KA: {
+    right: { arm: "displayRight", wrist: [0.08, -0.16, -0.08], shape: "c" },
+  },
+  BN_KHA: {
+    left: { arm: "centerLeft", wrist: [-0.52, -0.24, 1.2], shape: "c" },
+    right: { arm: "displayRight", wrist: [0.08, -0.76, 0.04], shape: "point" },
+    motion: "tap",
+  },
+  BN_GA: {
+    left: { arm: "centerLeft", wrist: [-0.2, -0.18, 1.46], shape: "point" },
+    right: { arm: "displayRight", wrist: [0.08, -0.78, 0.02], shape: "point" },
+    motion: "tap",
+  },
+  BN_GHA: {
+    right: { arm: "displayRight", wrist: [0.08, -0.1, -0.08], shape: "o" },
+    motion: "twist",
+  },
+  BN_CA: {
+    left: { arm: "centerLeft", wrist: [-0.14, -0.76, 1.5], shape: "point" },
+    right: { arm: "displayRight", wrist: [0.14, -0.22, 1.2], shape: "point" },
+    motion: "tap",
+  },
+  BN_CHA: {
+    left: { arm: "centerLeft", wrist: [-0.1, -0.72, 1.44], shape: "l" },
+    right: { arm: "displayRight", wrist: [0.08, -0.2, 1.3], shape: "l" },
+    motion: "slide",
+  },
+  BN_JA: {
+    left: { arm: "centerLeft", wrist: [-0.46, -0.26, 1.12], shape: "c" },
+    right: { arm: "centerRight", wrist: [0.46, 0.26, -1.12], shape: "c" },
+    motion: "twist",
+  },
+  BN_JHA: {
+    left: { arm: "centerLeft", wrist: [-0.16, -0.14, 1.5], shape: "open" },
+    right: { arm: "displayRight", wrist: [0.18, -0.42, 0.74], shape: "f" },
+    motion: "slide",
+  },
+  BN_TTA: {
+    left: { arm: "centerLeft", wrist: [-0.18, -0.12, 1.5], shape: "fist" },
+    right: { arm: "displayRight", wrist: [0.2, -0.26, 1.18], shape: "point" },
+    motion: "tap",
+  },
+  BN_TTHA: {
+    left: { arm: "centerLeft", wrist: [-0.16, -0.08, 1.5], shape: "open" },
+    right: { arm: "displayRight", wrist: [0.12, -0.18, 1.32], shape: "point" },
+    motion: "tap",
+  },
+  BN_DDA: {
+    left: { arm: "centerLeft", wrist: [-0.16, -0.1, 1.48], shape: "open" },
+    right: { arm: "displayRight", wrist: [0.1, -0.82, 0.04], shape: "l" },
+    motion: "tap",
+  },
+  BN_DDHA: {
+    left: { arm: "centerLeft", wrist: [-0.42, -0.36, 1.18], shape: "point" },
+    right: { arm: "centerRight", wrist: [0.42, 0.36, -1.18], shape: "point" },
+    motion: "twist",
+  },
+  BN_TA: {
+    right: { arm: "displayRight", wrist: [0.08, -0.28, -0.04], shape: "y" },
+    motion: "twist",
+  },
+  BN_THA: {
+    left: { arm: "centerLeft", wrist: [-0.1, -0.72, 1.46], shape: "point" },
+    right: { arm: "displayRight", wrist: [0.16, -0.24, 1.2], shape: "point" },
+    motion: "tap",
+  },
+  BN_DA: {
+    left: { arm: "centerLeft", wrist: [-0.12, -0.08, 1.52], shape: "thumbUp" },
+    right: { arm: "displayRight", wrist: [0.12, -0.28, 1.16], shape: "point" },
+    motion: "tap",
+  },
+  BN_DHA: {
+    left: { arm: "centerLeft", wrist: [-0.34, -0.28, 1.2], shape: "o" },
+    right: { arm: "centerRight", wrist: [0.34, 0.28, -1.2], shape: "thumbUp" },
+    motion: "tap",
+  },
+  BN_NA: {
+    left: { arm: "centerLeft", wrist: [-0.58, -0.16, 1.28], shape: "open" },
+    right: { arm: "centerRight", wrist: [0.58, 0.16, -1.28], shape: "open" },
+    motion: "slide",
+  },
+  BN_PA: {
+    left: { arm: "centerLeft", wrist: [-0.46, -0.18, 1.18], shape: "open" },
+    right: { arm: "centerRight", wrist: [0.46, 0.18, -1.18], shape: "f" },
+    motion: "tap",
+  },
+  BN_PHA: {
+    left: { arm: "centerLeft", wrist: [-0.08, -0.82, 1.48], shape: "open" },
+    right: { arm: "displayRight", wrist: [0.08, -0.06, -0.12], shape: "open" },
+    motion: "tap",
+  },
+  BN_BA: {
+    left: { arm: "centerLeft", wrist: [-0.48, -0.2, 1.16], shape: "fist" },
+    right: { arm: "centerRight", wrist: [0.48, 0.2, -1.16], shape: "open" },
+    motion: "tap",
+  },
+  BN_BHA: {
+    left: { arm: "centerLeft", wrist: [-0.44, -0.26, 1.16], shape: "c" },
+    right: { arm: "displayRight", wrist: [0.08, -0.7, 0.04], shape: "point" },
+    motion: "tap",
+  },
+  BN_MA: {
+    left: { arm: "centerLeft", wrist: [-0.58, -0.16, 1.26], shape: "open" },
+    right: { arm: "centerRight", wrist: [0.58, 0.16, -1.26], shape: "open" },
+    motion: "twist",
+  },
+  BN_YA: {
+    left: { arm: "centerLeft", wrist: [-0.44, -0.12, 1.2], shape: "open" },
+    right: { arm: "centerRight", wrist: [0.44, 0.12, -1.2], shape: "open" },
+    motion: "tap",
+  },
+  BN_RA: {
+    left: { arm: "centerLeft", wrist: [-0.38, -0.24, 1.12], shape: "open" },
+    right: { arm: "centerRight", wrist: [0.38, 0.24, -1.12], shape: "open" },
+    motion: "twist",
+  },
+  BN_LA: {
+    left: { arm: "centerLeft", wrist: [-0.52, -0.16, 1.28], shape: "open" },
+    right: { arm: "centerRight", wrist: [0.52, 0.16, -1.28], shape: "open" },
+    motion: "slide",
+  },
+  BN_SA: {
+    left: { arm: "centerLeft", wrist: [-0.12, -0.76, 1.46], shape: "point" },
+    right: { arm: "displayRight", wrist: [0.12, -0.14, -0.06], shape: "fist" },
+    motion: "tap",
+  },
+  BN_HA: {
+    left: { arm: "centerLeft", wrist: [-0.12, -0.08, 1.5], shape: "open" },
+    right: { arm: "displayRight", wrist: [0.18, -0.5, 0.7], shape: "open" },
+    motion: "slide",
+  },
+  BN_RRA: {
+    left: { arm: "centerLeft", wrist: [-0.34, -0.26, 1.18], shape: "thumbUp" },
+    right: { arm: "centerRight", wrist: [0.34, 0.26, -1.18], shape: "point" },
+    motion: "circle",
+  },
+  BN_ANUSVARA: {
+    left: { arm: "centerLeft", wrist: [-0.4, -0.24, 1.16], shape: "o" },
+    right: { arm: "centerRight", wrist: [0.4, 0.24, -1.16], shape: "two" },
+    motion: "tap",
+  },
+  BN_VISARGA: {
+    right: { arm: "displayRight", wrist: [0.08, -0.1, -0.08], shape: "o" },
+    motion: "double",
+  },
 };
 
-const THUMB_ACROSS = [
-  [-0.34548, 0.51967, 0.60546],
-  [1.08183, -0.58959, -0.58767],
-  [0.00301, 0.42939, -0.24427],
-];
+// Front-view closure limits. The original calibration was captured at an
+// oblique angle and drove fingertips through the palm when viewed head-on.
+const CLOSED_FINGER_ANGLES = {
+  Index: [0.92, 1.04, 0.58],
+  Middle: [0.98, 1.08, 0.62],
+  Ring: [1.0, 1.1, 0.62],
+  Pinky: [0.96, 1.06, 0.56],
+};
 
+// Keep the small front-safe thumb tucks that distinguish E/M/N/S/T. The old
+// full-palm "across" override stays disabled because it stretched through the
+// closed fingers in two-hand Bangla poses.
 const THUMB_TUCK_POSES = {
   under: [
     [-0.24, 0.34, 0.72],
@@ -194,9 +424,9 @@ const THUMB_TUCK_POSES = {
 const CONTACT_HAND_POSES = {
   zero: {
     Thumb: [
-      [-0.25882, -0.32284, 0.95626],
-      [0.24646, 0.02372, -0.31041],
-      [0.13208, 0.04638, 0.28903],
+      [-0.14, 0.06, 0.66],
+      [-0.18, -0.04, 0.035],
+      [0.005, 0, 0.135],
     ],
     Index: [[0, -0.37539, 0.30206], [0, 0, 1.23342], [0, 0, 1.14176]],
     Middle: [[0, -0.04, 0.5], [0, 0, 0.82], [0, 0, 0.52]],
@@ -205,9 +435,9 @@ const CONTACT_HAND_POSES = {
   },
   six: {
     Thumb: [
-      [-0.69472, -0.38974, 1.3],
-      [0.11258, -0.02514, -0.24791],
-      [-0.16823, 0.02989, 0.06988],
+      [-0.015, 0.06, 1.18],
+      [-0.145, 0.085, -0.015],
+      [-0.17, 0.035, 0.11],
     ],
     Pinky: [[0, -0.55, 0.54608], [0, 0, 1.5], [0, 0, 1.17355]],
   },
@@ -229,9 +459,9 @@ const CONTACT_HAND_POSES = {
   },
   nine: {
     Thumb: [
-      [-0.25882, -0.32284, 0.95626],
-      [0.24646, 0.02372, -0.31041],
-      [0.13208, 0.04638, 0.28903],
+      [0.14618, -0.08284, 0.71626],
+      [-0.23354, 0.02372, 0.06459],
+      [-0.06292, 0.13638, 0.18403],
     ],
     Index: [[0, -0.37539, 0.30206], [0, 0, 1.23342], [0, 0, 1.14176]],
   },
@@ -331,10 +561,9 @@ function applyFinger(rig, side, finger, curl, spread = 0) {
     ? [0.52, 0.72, 0.58]
     : [0.82, 1.02, 0.74];
 
-  // Widen lateral spread as the finger closes so adjacent curled fingers
-  // don't intersect each other — at curl 0 (open hand) this is unchanged
-  // from the original spread value; at curl 1 (full fist) spread doubles.
-  const closureSpread = spread * (1 + curl);
+  // Add only a small amount of lateral spread while closing. Larger values made
+  // curled fingers cross through one another when the palm faced the camera.
+  const closureSpread = spread * (1 + curl * 0.25);
 
   // Smoothly ramp from the small-angle linear model toward the calibrated
   // fully-closed fist angles as curl approaches 1, instead of hard-switching
@@ -352,27 +581,16 @@ function applyFinger(rig, side, finger, curl, spread = 0) {
     const linearAngle = angles[joint - 1] * curl;
     const closedAngle = CLOSED_FINGER_ANGLES[finger]?.[joint - 1] ?? linearAngle;
     const blendedAngle = linearAngle + (closedAngle - linearAngle) * closeBlend;
+    // The Ch09 finger chains flex on local X when the palm is front-facing.
+    // Rotating non-thumb curls on Z made them fold sideways across the palm.
     setBoneDelta(
       rig,
       `${side}Hand${finger}${joint}`,
-      thumbOpposition,
+      finger === "Thumb" ? thumbOpposition : blendedAngle * curlSign,
       isFirst ? closureSpread * spreadSign : 0,
-      blendedAngle * curlSign
+      finger === "Thumb" ? blendedAngle * curlSign : 0
     );
   }
-}
-
-function applyThumbAcross(rig, side) {
-  const mirror = side === "Left" ? -1 : 1;
-  THUMB_ACROSS.forEach((rotation, index) => {
-    setBoneDelta(
-      rig,
-      `${side}HandThumb${index + 1}`,
-      rotation[0],
-      rotation[1] * mirror,
-      rotation[2] * mirror
-    );
-  });
 }
 
 function applyThumbTuck(rig, side, mode) {
@@ -391,21 +609,19 @@ function applyThumbTuck(rig, side, mode) {
   });
 }
 
-function applyContactHandPose(rig, side, poseName) {
-  const pose = CONTACT_HAND_POSES[poseName];
-  if (!pose) return;
+function applyContactThumbPose(rig, side, poseName) {
+  const rotations = CONTACT_HAND_POSES[poseName]?.Thumb;
+  if (!rotations) return;
 
   const mirror = side === "Left" ? -1 : 1;
-  Object.entries(pose).forEach(([finger, rotations]) => {
-    rotations.forEach((rotation, index) => {
-      setBoneDelta(
-        rig,
-        `${side}Hand${finger}${index + 1}`,
-        rotation[0],
-        rotation[1] * mirror,
-        rotation[2] * mirror
-      );
-    });
+  rotations.forEach((rotation, index) => {
+    setBoneDelta(
+      rig,
+      `${side}HandThumb${index + 1}`,
+      rotation[0],
+      rotation[1] * mirror,
+      rotation[2] * mirror
+    );
   });
 }
 
@@ -425,9 +641,10 @@ function applyHandshape(rig, side, shapeName, overrides = {}) {
   applyFinger(rig, side, "Middle", shape.middle, spreads.Middle);
   applyFinger(rig, side, "Ring", shape.ring, spreads.Ring);
   applyFinger(rig, side, "Pinky", shape.pinky, spreads.Pinky);
-  if (shape.thumbMode === "across") applyThumbAcross(rig, side);
-  if (shape.thumbMode && shape.thumbMode !== "across") applyThumbTuck(rig, side, shape.thumbMode);
-  if (shape.contactPose) applyContactHandPose(rig, side, shape.contactPose);
+  if (shape.thumbMode && shape.thumbMode !== "across") {
+    applyThumbTuck(rig, side, shape.thumbMode);
+  }
+  if (shape.thumbContact) applyContactThumbPose(rig, side, shape.thumbContact);
 }
 
 function mixArray(a, b, t) {
@@ -495,6 +712,50 @@ function applyDisplayHand(rig, shapeName, gesture, time) {
   }
 
   applyHandshape(rig, "Right", shapeName);
+}
+
+function applyBanglaGesture(rig, gesture, time) {
+  const pose = BANGLA_HAND_POSES[gesture];
+  if (!pose) return;
+
+  if (!pose.left) applyNonDominantSupport(rig, time);
+
+  const wave = Math.sin(time * 3.4);
+  const slow = (Math.sin(time * 2.4) + 1) / 2;
+
+  for (const side of ["Left", "Right"]) {
+    const hand = pose[side.toLowerCase()];
+    if (!hand) continue;
+
+    if (pose.motion === "double" && side === "Right") {
+      applyBlendedArmPose(
+        rig,
+        side,
+        ARM_POSES.displayRight,
+        ARM_POSES.highRight,
+        slow * 0.55
+      );
+    } else {
+      applyArmPose(rig, side, ARM_POSES[hand.arm]);
+    }
+
+    const wrist = [...hand.wrist];
+    if (pose.motion === "tap") {
+      wrist[2] += (side === "Left" ? -1 : 1) * slow * 0.08;
+    } else if (pose.motion === "slide") {
+      wrist[1] += (side === "Left" ? -1 : 1) * wave * 0.09;
+    } else if (pose.motion === "twist") {
+      wrist[1] += (side === "Left" ? -1 : 1) * wave * 0.12;
+    } else if (pose.motion === "circle") {
+      wrist[0] += Math.sin(time * 3.2) * 0.08;
+      wrist[2] += Math.cos(time * 3.2) * 0.08;
+    } else if (pose.motion === "double") {
+      wrist[2] += wave * 0.08;
+    }
+
+    setBoneDelta(rig, `${side}Hand`, ...wrist);
+    applyHandshape(rig, side, hand.shape, hand.overrides);
+  }
 }
 
 function applyCommonGesture(rig, gesture, time) {
@@ -843,6 +1104,11 @@ function animateGesture(rig, gesture, time) {
 
   if (gesture === "RELAXED") return;
 
+  if (isBanglaGesture(gesture)) {
+    applyBanglaGesture(rig, gesture, time);
+    return;
+  }
+
   if (gesture.startsWith("SPELL_")) {
     const letters = gesture.slice(6).replace(/[^A-Z0-9]/g, "").split("");
     const spellRate = letters.length > 6 ? 4.8 : 3.9;
@@ -901,6 +1167,9 @@ export default function MixamoAvatar({
     gestureRef.current = gesture;
     gestureElapsedRef.current = 0;
     gestureChangedRef.current = true;
+    if (viewModeRef.current === "hands") {
+      resetViewRef.current?.();
+    }
   }, [gesture]);
 
   useEffect(() => {
@@ -964,6 +1233,10 @@ export default function MixamoAvatar({
     }
 
     function resetCameraView() {
+      const isBodyView = viewModeRef.current === "body";
+      controls.enablePan = isBodyView;
+      controls.enableZoom = isBodyView;
+      controls.enableRotate = isBodyView;
       const standard = getStandardView();
       camera.position.copy(standard.cameraPosition);
       controls.target.copy(standard.targetPosition);

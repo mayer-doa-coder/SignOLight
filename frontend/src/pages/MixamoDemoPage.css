@@ -2,7 +2,11 @@
   --mx-accent: #e0ff6b;
   --mx-panel: #101317;
   --mx-border: rgba(255, 255, 255, 0.12);
-  min-height: 100vh;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   color: #f7f8f3;
@@ -71,13 +75,20 @@
   min-height: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 370px;
+  overflow: hidden;
 }
 
 .mixamo-stage-panel {
   min-width: 0;
   min-height: 0;
   position: relative;
+  overflow: hidden;
   border-right: 1px solid var(--mx-border);
+}
+
+.mixamo-stage-panel .mixamo-avatar {
+  height: 100%;
+  min-height: 0;
 }
 
 .mixamo-stage-label {
@@ -112,6 +123,8 @@
 .mixamo-controls {
   min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
   padding: 22px;
   display: flex;
   flex-direction: column;
@@ -250,7 +263,7 @@
 
 .mixamo-group-tabs {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 7px;
   margin-top: 10px;
 }
@@ -282,6 +295,16 @@
   grid-template-columns: repeat(6, 1fr);
 }
 
+.mixamo-gesture-grid.bangla {
+  grid-template-columns: repeat(6, 1fr);
+}
+
+.mixamo-gesture-grid.bangla button {
+  font-family: "Noto Sans Bengali", "Hind Siliguri", sans-serif;
+  font-size: 18px;
+  line-height: 1;
+}
+
 .mixamo-gesture-grid button {
   min-height: 40px;
   border-radius: 9px;
@@ -307,12 +330,49 @@
 @media (max-width: 980px) {
   .mixamo-demo-main {
     grid-template-columns: 1fr;
+    grid-template-rows: minmax(260px, 55%) minmax(0, 45%);
   }
 
   .mixamo-stage-panel {
-    min-height: 480px;
+    min-height: 0;
     border-right: 0;
     border-bottom: 1px solid var(--mx-border);
+  }
+}
+
+@media (max-height: 800px) {
+  .mixamo-demo-header {
+    min-height: 64px;
+    padding-block: 9px;
+  }
+
+  .mixamo-controls {
+    gap: 14px;
+    padding: 14px;
+  }
+
+  .mixamo-rig-card {
+    padding: 12px;
+  }
+
+  .mixamo-rig-heading {
+    margin-bottom: 10px;
+  }
+
+  .mixamo-group-tabs button {
+    min-height: 36px;
+  }
+
+  .mixamo-gesture-grid {
+    gap: 6px;
+  }
+
+  .mixamo-gesture-grid button {
+    min-height: 34px;
+  }
+
+  .mixamo-note {
+    display: none;
   }
 }
 
