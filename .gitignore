@@ -5,12 +5,11 @@ node_modules/
 frontend/build/
 frontend/.env
 backend/.env
-# Runtime cache is ephemeral on Render. Keep generated files ignored, but ship
-# selected preprocessed videos so their cache survives deploys and cold starts.
+# Ship real video caches so Render can serve them before contacting YouTube.
+# Render's free runtime filesystem is ephemeral, so an ignored local cache is
+# not a deployment cache. Keep only diagnostics and mutable gap telemetry out.
 backend/cache/*
-!backend/cache/aircAruvnKk.json
-!backend/cache/1XSyyjcEHo0.json
-!backend/cache/1XSyyjcEHo0.bn.captions.json
-!backend/cache/zlLpKzPz84Q.json
-!backend/cache/zlLpKzPz84Q.bn.captions.json
-!backend/cache/CMiPYHNNg28.json
+!backend/cache/*.json
+backend/cache/long-video-probe.json
+backend/cache/probe-demo-video.json
+backend/cache/vocabulary_gaps.json
