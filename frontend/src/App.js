@@ -11,16 +11,21 @@ function initialPage() {
   if (pathname === "/sign-demo") return "sign-demo";
   if (pathname === "/pose-tuner") return "pose-tuner";
   if (pathname === "/mixamo-demo") return "mixamo-demo";
+  if (pathname === "/mixamo") return "mixamo-landing";
   return "landing";
 }
 
 function App() {
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [videoData, setVideoData] = useState(null);
+  const [avatarMode, setAvatarMode] = useState(
+    window.location.pathname.startsWith("/mixamo") ? "mixamo" : "vrm"
+  );
 
   useEffect(() => {
     const handlePopState = () => {
       setCurrentPage(initialPage());
+      setAvatarMode(window.location.pathname.startsWith("/mixamo") ? "mixamo" : "vrm");
       if (window.location.pathname !== "/") {
         setVideoData(null);
       }
@@ -30,8 +35,9 @@ function App() {
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
-  const handleVideoSubmit = (data) => {
-    window.history.pushState({}, "", "/");
+  const handleVideoSubmit = (data, mode = "vrm") => {
+    window.history.pushState({}, "", mode === "mixamo" ? "/mixamo" : "/");
+    setAvatarMode(mode);
     setVideoData(data);
     setCurrentPage("player");
   };
@@ -54,6 +60,28 @@ function App() {
     setVideoData(null);
   };
 
+  const handleOpenMixamoYouTube = () => {
+    window.history.pushState({}, "", "/mixamo");
+    setAvatarMode("mixamo");
+    setCurrentPage("mixamo-landing");
+    setVideoData(null);
+  };
+
+  const handleOpenVrmHome = () => {
+    window.history.pushState({}, "", "/");
+    setAvatarMode("vrm");
+    setCurrentPage("landing");
+    setVideoData(null);
+  };
+
+  const handlePlayerBack = () => {
+    if (avatarMode === "mixamo") {
+      handleOpenMixamoYouTube();
+    } else {
+      handleBack();
+    }
+  };
+
   return (
     <div className="app">
       {currentPage === "landing" && (
@@ -61,10 +89,27 @@ function App() {
           onVideoSubmit={handleVideoSubmit}
           onOpenSignDemo={handleOpenSignDemo}
           onOpenMixamoDemo={handleOpenMixamoDemo}
+          onOpenMixamoYouTube={handleOpenMixamoYouTube}
+          onOpenVrmHome={handleOpenVrmHome}
+          avatarMode="vrm"
+        />
+      )}
+      {currentPage === "mixamo-landing" && (
+        <LandingPage
+          onVideoSubmit={handleVideoSubmit}
+          onOpenSignDemo={handleOpenSignDemo}
+          onOpenMixamoDemo={handleOpenMixamoDemo}
+          onOpenMixamoYouTube={handleOpenMixamoYouTube}
+          onOpenVrmHome={handleOpenVrmHome}
+          avatarMode="mixamo"
         />
       )}
       {currentPage === "player" && videoData && (
-        <PlayerPage videoData={videoData} onBack={handleBack} />
+        <PlayerPage
+          videoData={videoData}
+          onBack={handlePlayerBack}
+          avatarMode={avatarMode}
+        />
       )}
       {currentPage === "sign-demo" && (
         <SignDemoPage onBack={handleBack} />

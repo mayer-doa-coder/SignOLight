@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import axios from "axios";
 import SignAvatar from "../components/SignAvatar";
+import MixamoSignAvatar from "../components/MixamoSignAvatar";
 import CaptionBar from "../components/CaptionBar";
 import YouTubePlayer from "../components/YouTubePlayer";
 import ControlPanel from "../components/ControlPanel";
@@ -16,7 +17,7 @@ const YT_BUFFERING = 3;
 
 const NEUTRAL_NMM = { type: "neutral", wordIndex: -1, headY: 0 };
 
-export default function PlayerPage({ videoData, onBack }) {
+export default function PlayerPage({ videoData, onBack, avatarMode = "vrm" }) {
   const [signedCaptions, setSignedCaptions] = useState([]);
   const [currentTime, setCurrentTime] = useState(0);
   const [currentCaption, setCurrentCaption] = useState(null);
@@ -208,15 +209,26 @@ export default function PlayerPage({ videoData, onBack }) {
         {signEnabled && (
           <div className={`sign-panel ${layout === "picture-in-picture" ? "pip" : ""}`}>
             <div className="sign-panel-header">
-              <span className="sign-badge">Sign Language</span>
+              <span className="sign-badge">
+                {avatarMode === "mixamo" ? "Mixamo Humanoid" : "VRM Avatar"}
+              </span>
             </div>
-            <SignAvatar
-              caption={currentCaption}
-              isActive={!!currentCaption && signEnabled}
-              currentTime={currentTime}
-              sentenceNMM={sentenceNMM}
-              playbackSpeed={learningMode ? playbackSpeed : 1.0}
-            />
+            {avatarMode === "mixamo" ? (
+              <MixamoSignAvatar
+                caption={currentCaption}
+                isActive={!!currentCaption && signEnabled}
+                currentTime={currentTime}
+                playbackSpeed={learningMode ? playbackSpeed : 1.0}
+              />
+            ) : (
+              <SignAvatar
+                caption={currentCaption}
+                isActive={!!currentCaption && signEnabled}
+                currentTime={currentTime}
+                sentenceNMM={sentenceNMM}
+                playbackSpeed={learningMode ? playbackSpeed : 1.0}
+              />
+            )}
           </div>
         )}
       </main>

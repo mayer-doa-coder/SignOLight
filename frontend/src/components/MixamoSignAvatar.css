@@ -1,0 +1,56 @@
+.mixamo-sign-avatar {
+  flex: 1;
+  min-height: 360px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #070809;
+}
+
+.mixamo-player-stage {
+  flex: 1;
+  min-height: 330px;
+}
+
+.mixamo-player-stage .mixamo-avatar {
+  min-height: 330px;
+}
+
+.mixamo-player-idle {
+  margin: 0;
+  padding: 12px;
+  color: var(--text-muted);
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.mixamo-player-gloss {
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  padding: 8px 12px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mixamo-player-gloss span {
+  padding: 3px 6px;
+  border-radius: 5px;
+  color: rgba(255, 255, 255, 0.42);
+  background: rgba(255, 255, 255, 0.04);
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.mixamo-player-gloss span.active {
+  color: #0a0b08;
+  background: #e0ff6b;
+}
+
+.mixamo-player-gloss span.done {
+  opacity: 0.38;
+}

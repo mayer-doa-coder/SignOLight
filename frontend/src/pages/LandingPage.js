@@ -24,6 +24,9 @@ export default function LandingPage({
   onVideoSubmit,
   onOpenSignDemo,
   onOpenMixamoDemo,
+  onOpenMixamoYouTube,
+  onOpenVrmHome,
+  avatarMode = "vrm",
 }) {
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
@@ -48,7 +51,7 @@ export default function LandingPage({
       const res = await axios.get(`${API}/api/video/info`, {
         params: { url: submitUrl },
       });
-      onVideoSubmit({ ...res.data, originalUrl: submitUrl });
+      onVideoSubmit({ ...res.data, originalUrl: submitUrl }, avatarMode);
     } catch (err) {
       setError(
         err.response?.data?.error ||
@@ -62,30 +65,67 @@ export default function LandingPage({
   };
 
   return (
-    <div className="landing">
+    <div className={`landing landing-${avatarMode}`}>
       <SignalNetworkBackground />
 
       <nav className="landing-nav">
         <span className="nav-logo">SignOLight</span>
         <div className="nav-actions">
-          <button className="nav-link" onClick={onOpenSignDemo}>
-            VRM Demo
+          {avatarMode === "mixamo" ? (
+            <button className="nav-link" onClick={onOpenVrmHome}>
+              Standard VRM
+            </button>
+          ) : (
+            <button className="nav-link" onClick={onOpenSignDemo}>
+              VRM Demo
+            </button>
+          )}
+          <button className="nav-link nav-link-accent" onClick={onOpenMixamoYouTube}>
+            Mixamo YouTube
           </button>
-          <button className="nav-link nav-link-accent" onClick={onOpenMixamoDemo}>
-            Mixamo Finger Lab
+          <button className="nav-link" onClick={onOpenMixamoDemo}>
+            Finger Lab
           </button>
         </div>
       </nav>
 
       <main className="landing-hero">
-        <p className="hero-eyebrow">For Deaf and hard-of-hearing students</p>
+        <p className="hero-eyebrow">
+          {avatarMode === "mixamo"
+            ? "FBX humanoid conversion workspace"
+            : "For Deaf and hard-of-hearing students"}
+        </p>
 
-        <h1 className="hero-title">SignOLight</h1>
+        <h1 className="hero-title">
+          {avatarMode === "mixamo" ? "Mixamo YouTube Converter" : "SignOLight"}
+        </h1>
 
-        <p className="hero-subtitle">
+        <p className="hero-subtitle" hidden={avatarMode === "mixamo"}>
           Paste a YouTube lecture and get accurate captions, simplified
           language and synchronized ASL signing — all in one place.
         </p>
+
+        {avatarMode === "mixamo" && (
+          <p className="hero-subtitle">
+            Process a captioned YouTube lecture with the articulated Ch09 FBX
+            humanoid and independent finger joints.
+          </p>
+        )}
+
+        <div className="avatar-mode-switch" aria-label="Avatar engine">
+          <button
+            className={avatarMode === "vrm" ? "active" : ""}
+            onClick={onOpenVrmHome}
+          >
+            VRM avatar
+          </button>
+          <button
+            className={avatarMode === "mixamo" ? "active" : ""}
+            onClick={onOpenMixamoYouTube}
+          >
+            Mixamo humanoid
+          </button>
+        </div>
 
         <div className="hero-input-wrapper">
           <input
@@ -112,7 +152,7 @@ export default function LandingPage({
                 Loading
               </>
             ) : (
-              "Start Learning"
+              avatarMode === "mixamo" ? "Start with Mixamo" : "Start Learning"
             )}
           </button>
         </div>

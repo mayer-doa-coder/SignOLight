@@ -373,6 +373,18 @@ function animateGesture(rig, gesture, time) {
   resetRig(rig);
   applySigningRest(rig, time);
 
+  if (gesture === "RELAXED") return;
+
+  if (gesture.startsWith("SPELL_")) {
+    const letters = gesture.slice(6).replace(/[^A-Z0-9]/g, "").split("");
+    const letter = letters.length ? letters[Math.floor(time * 2.6) % letters.length] : "A";
+    const shape = /[0-9]/.test(letter)
+      ? NUMBER_SHAPES[letter]
+      : LETTER_SHAPES[letter] || "relaxed";
+    applyDisplayHand(rig, shape, letter, time);
+    return;
+  }
+
   if (/^[A-Z]$/.test(gesture)) {
     applyDisplayHand(rig, LETTER_SHAPES[gesture] || "relaxed", gesture, time);
     return;
@@ -409,9 +421,11 @@ export default function MixamoAvatar({
   const canvasRef = useRef(null);
   const gestureRef = useRef(gesture);
   const viewModeRef = useRef(viewMode);
+  const gestureStartedAtRef = useRef(0);
 
   useEffect(() => {
     gestureRef.current = gesture;
+    gestureStartedAtRef.current = performance.now() / 1000;
   }, [gesture]);
 
   useEffect(() => {
@@ -498,15 +512,6 @@ export default function MixamoAvatar({
         });
         scene.add(model);
         rig = buildRig(model);
-        if (process.env.NODE_ENV !== "production") {
-          window.__mixamoRigDebug = {
-            rig,
-            model,
-            reset: () => resetRig(rig),
-            setBone: (name, x, y, z) => setBoneDelta(rig, name, x, y, z),
-            setHandshape: (side, shape) => applyHandshape(rig, side, shape),
-          };
-        }
         onRigReport?.({
           loaded: true,
           fingerBoneCount: rig.fingerBoneCount,
@@ -541,10 +546,12 @@ export default function MixamoAvatar({
       frameId = requestAnimationFrame(animate);
       resize();
       const time = clock.getElapsedTime();
+      const gestureTime = Math.max(
+        0,
+        performance.now() / 1000 - gestureStartedAtRef.current
+      );
 
-      if (rig && !window.__mixamoPauseDebug) {
-        animateGesture(rig, gestureRef.current, time);
-      }
+      if (rig) animateGesture(rig, gestureRef.current, gestureTime || time);
 
       if (viewModeRef.current === "body") {
         cameraGoal.set(0, 0.15, 5.8);
@@ -564,10 +571,6 @@ export default function MixamoAvatar({
 
     return () => {
       disposed = true;
-      if (process.env.NODE_ENV !== "production") {
-        delete window.__mixamoRigDebug;
-        delete window.__mixamoPauseDebug;
-      }
       cancelAnimationFrame(frameId);
       renderer.dispose();
       scene.traverse((node) => {
