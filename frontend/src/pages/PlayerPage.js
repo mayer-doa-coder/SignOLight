@@ -30,6 +30,7 @@ export default function PlayerPage({ videoData, onBack, avatarMode = "vrm" }) {
   const [captionError, setCaptionError] = useState("");
   const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
   const [learningMode, setLearningMode] = useState(false);
+  const [fingerspellMode, setFingerspellMode] = useState(false);
   // seekingRef distinguishes intentional seeks from network-stall buffering
   const seekingRef = useRef(false);
   const playerRef = useRef(null);
@@ -170,6 +171,8 @@ export default function PlayerPage({ videoData, onBack, avatarMode = "vrm" }) {
           onSpeedChange={handleSpeedChange}
           learningMode={learningMode}
           onToggleLearning={() => setLearningMode((v) => !v)}
+          fingerspellMode={fingerspellMode}
+          onToggleFingerspell={() => setFingerspellMode((v) => !v)}
         />
       </header>
 
@@ -230,6 +233,7 @@ export default function PlayerPage({ videoData, onBack, avatarMode = "vrm" }) {
                 currentTime={currentTime}
                 sentenceNMM={sentenceNMM}
                 playbackSpeed={learningMode ? playbackSpeed : 1.0}
+                fingerspellMode={fingerspellMode}
               />
             )}
           </div>

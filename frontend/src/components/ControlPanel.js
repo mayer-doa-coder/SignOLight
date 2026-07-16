@@ -22,6 +22,8 @@ export default function ControlPanel({
   onSpeedChange,
   learningMode = false,
   onToggleLearning,
+  fingerspellMode = false,
+  onToggleFingerspell,
 }) {
   return (
     <div className="control-panel">
@@ -64,6 +66,18 @@ export default function ControlPanel({
         >
           <span className="toggle-label">{learningMode ? "Learning" : "Learn"}</span>
           <span className={`toggle-dot ${learningMode ? "active" : ""}`} />
+        </button>
+      )}
+
+      {/* Fingerspell toggle — spell every word letter-by-letter for verification */}
+      {onToggleFingerspell && (
+        <button
+          className={`mode-toggle ${fingerspellMode ? "on" : ""}`}
+          onClick={onToggleFingerspell}
+          title={fingerspellMode ? "Exit fingerspell mode" : "Fingerspell mode: spell every word letter by letter"}
+        >
+          <span className="toggle-label">{fingerspellMode ? "Fingerspelling" : "Fingerspell"}</span>
+          <span className={`toggle-dot ${fingerspellMode ? "active" : ""}`} />
         </button>
       )}
 
