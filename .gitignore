@@ -5,4 +5,11 @@ node_modules/
 frontend/build/
 frontend/.env
 backend/.env
-backend/cache/
+# Runtime cache is ephemeral on Render. Keep generated files ignored, but ship
+# selected preprocessed videos so their cache survives deploys and cold starts.
+backend/cache/*
+!backend/cache/aircAruvnKk.json
+!backend/cache/1XSyyjcEHo0.json
+!backend/cache/1XSyyjcEHo0.bn.captions.json
+!backend/cache/zlLpKzPz84Q.json
+!backend/cache/zlLpKzPz84Q.bn.captions.json
