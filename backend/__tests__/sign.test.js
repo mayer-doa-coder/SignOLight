@@ -106,9 +106,12 @@ describe("buildGlossPrompt", () => {
     expect(prompt).toContain("The student is learning mathematics");
   });
 
-  it("mentions SOV word order", () => {
+  // Was "mentions SOV word order". SOV is BdSL's rule; this pipeline targets ASL, whose
+  // signature ordering is topic-comment with WH-words final (asserted below and in the
+  // "mentions topic-comment structure" case).
+  it("mentions WH-final word order (ASL-specific rule)", () => {
     const prompt = buildGlossPrompt("any text");
-    expect(prompt.toLowerCase()).toContain("sov");
+    expect(prompt.toLowerCase()).toMatch(/wh.{0,30}end/);
   });
 
   it("mentions topic-comment structure", () => {
@@ -127,9 +130,22 @@ describe("buildGlossPrompt", () => {
     expect(prompt.toLowerCase()).toMatch(/article|a, an, the/);
   });
 
-  it("does not mention ASL (wrong language)", () => {
+  // Inverted from "does not mention ASL (wrong language)". That assertion dates from when
+  // this pipeline targeted BdSL; it now targets ASL, so naming ASL is the correct behaviour.
+  it("targets ASL", () => {
     const prompt = buildGlossPrompt("any text");
-    expect(prompt).not.toMatch(/\bASL\b/);
+    expect(prompt).toMatch(/\bASL\b/);
+  });
+
+  it("offers the LLM the avatar's full signable vocabulary", () => {
+    // Any word absent from the prompt's vocabulary list gets glossed as [CONCEPT:x], which
+    // the avatar renders as a silent pause. The list is generated from SIGN_MOTIONS, so the
+    // prompt must carry every signable word — this catches a prompt that stops embedding it.
+    const prompt = buildGlossPrompt("any text");
+    const vocabulary = require("../data/sign-vocabulary.json").vocabulary;
+    const missing = vocabulary.filter((word) => !prompt.includes(word));
+    expect(missing).toEqual([]);
+    expect(vocabulary.length).toBeGreaterThan(300);
   });
 });
 

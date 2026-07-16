@@ -2165,6 +2165,26 @@ function SignAvatar3D({ signInfo, signClip, wordProgress, active, activeNMM, sna
 
 const NEUTRAL_NMM = { type: "neutral", wordIndex: -1, headY: 0 };
 
+// Primitives shared with the dev-only pose tuner (pages/PoseTunerPage.js). The tuner MUST
+// drive bones through these exact functions so that a clip authored in it renders identically
+// during playback — the previous clip set was disabled precisely because it was authored
+// against a different rest-pose assumption than playback used. Keep this the single code path.
+export const tunerApi = {
+  VRM_MODEL_URL,
+  createVrmParts,
+  setBone,
+  resetVrmPose,
+  setVrmFingerPose,
+  applyVrmExpression,
+  fitVrmToScene,
+  tintVrmClothing,
+  CLOTHING_COLOR,
+  // Bones a clip keyframe addresses, and the finger/expression vocabularies the tuner offers.
+  CLIP_BONES: ["rightUpperArm", "rightLowerArm", "rightHand", "leftUpperArm", "leftLowerArm", "leftHand", "head"],
+  FINGER_POSES: ["relaxed", "flat", "fist", "point", "thumb", "y", "spell", "two", "three", "five", "six", "seven", "eight", "nine"],
+  EXPRESSIONS: ["neutral", "smile", "soft", "sad", "firm", "question", "focus"],
+};
+
 // playbackSpeed < 1 activates learning mode: word timing windows are stretched so the
 // avatar signs slower than the video — driven by applySlowPlayback from timelineScheduler.
 export default function SignAvatar({ caption, isActive, currentTime = 0, sentenceNMM = NEUTRAL_NMM, playbackSpeed = 1.0 }) {

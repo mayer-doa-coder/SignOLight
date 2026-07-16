@@ -1,4 +1,10 @@
-import React, { useEffect, useRef, forwardRef, useImperativeHandle } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  forwardRef,
+} from "react";
 import "./YouTubePlayer.css";
 
 let ytApiLoaded = false;
@@ -7,43 +13,45 @@ const YouTubePlayer = forwardRef(({ videoId, onTimeUpdate, onStateChange }, ref)
   const containerRef = useRef(null);
   const playerRef = useRef(null);
   const intervalRef = useRef(null);
+  const onTimeUpdateRef = useRef(onTimeUpdate);
+  const onStateChangeRef = useRef(onStateChange);
+
+  useEffect(() => {
+    onTimeUpdateRef.current = onTimeUpdate;
+  }, [onTimeUpdate]);
+
+  useEffect(() => {
+    onStateChangeRef.current = onStateChange;
+  }, [onStateChange]);
 
   useImperativeHandle(ref, () => ({
     seekTo: (seconds) => {
       playerRef.current?.seekTo(seconds, true);
     },
-    getCurrentTime: () => {
-      return playerRef.current?.getCurrentTime() || 0;
-    },
+    getCurrentTime: () => playerRef.current?.getCurrentTime() || 0,
     pause: () => playerRef.current?.pauseVideo(),
     play: () => playerRef.current?.playVideo(),
-  }));
+    setPlaybackRate: (rate) => playerRef.current?.setPlaybackRate?.(rate),
+  }), []);
 
-  useEffect(() => {
-    if (!window.YT) {
-      if (!ytApiLoaded) {
-        ytApiLoaded = true;
-        const tag = document.createElement("script");
-        tag.src = "https://www.youtube.com/iframe_api";
-        document.head.appendChild(tag);
+  const destroyPlayer = useCallback(() => {
+    clearInterval(intervalRef.current);
+    intervalRef.current = null;
+
+    if (playerRef.current) {
+      try {
+        playerRef.current.destroy();
+      } catch {
+        // Ignore iframe cleanup issues from stale instances.
       }
-
-      const onReady = () => initPlayer();
-      window.onYouTubeIframeAPIReady = onReady;
-    } else {
-      initPlayer();
+      playerRef.current = null;
     }
+  }, []);
 
-    return () => {
-      clearInterval(intervalRef.current);
-      if (playerRef.current) {
-        try { playerRef.current.destroy(); } catch {}
-      }
-    };
-  }, [videoId]);
+  const initPlayer = useCallback(() => {
+    if (!containerRef.current || !window.YT?.Player) return;
 
-  function initPlayer() {
-    if (!containerRef.current) return;
+    destroyPlayer();
 
     playerRef.current = new window.YT.Player(containerRef.current, {
       videoId,
@@ -58,21 +66,46 @@ const YouTubePlayer = forwardRef(({ videoId, onTimeUpdate, onStateChange }, ref)
       },
       events: {
         onReady: () => {
-          // Poll time every 100ms — reduces max avatar lag from 250ms to 100ms
           intervalRef.current = setInterval(() => {
             if (playerRef.current?.getCurrentTime) {
-              const t = playerRef.current.getCurrentTime();
-              if (onTimeUpdate) onTimeUpdate(t);
+              onTimeUpdateRef.current?.(playerRef.current.getCurrentTime());
             }
           }, 100);
         },
-        onStateChange: (e) => {
-          // YT.PlayerState: ENDED=0, PLAYING=1, PAUSED=2, BUFFERING=3, CUED=5
-          if (onStateChange) onStateChange(e.data);
+        onStateChange: (event) => {
+          onStateChangeRef.current?.(event.data);
         },
       },
     });
-  }
+  }, [destroyPlayer, videoId]);
+
+  useEffect(() => {
+    if (window.YT?.Player) {
+      initPlayer();
+      return destroyPlayer;
+    }
+
+    if (!ytApiLoaded) {
+      ytApiLoaded = true;
+      const tag = document.createElement("script");
+      tag.src = "https://www.youtube.com/iframe_api";
+      document.head.appendChild(tag);
+    }
+
+    const previousReady = window.onYouTubeIframeAPIReady;
+    const readyHandler = () => {
+      previousReady?.();
+      initPlayer();
+    };
+    window.onYouTubeIframeAPIReady = readyHandler;
+
+    return () => {
+      destroyPlayer();
+      if (window.onYouTubeIframeAPIReady === readyHandler) {
+        window.onYouTubeIframeAPIReady = previousReady;
+      }
+    };
+  }, [destroyPlayer, initPlayer]);
 
   return (
     <div className="yt-wrapper">

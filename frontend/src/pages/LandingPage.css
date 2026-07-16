@@ -53,6 +53,17 @@
   background: rgba(255, 255, 255, 0.06);
 }
 
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.nav-link-accent {
+  border-color: rgba(224, 255, 107, 0.5);
+  color: #e0ff6b;
+}
+
 /* Hero */
 .landing-hero {
   position: relative;
@@ -283,6 +294,15 @@
 @media (max-width: 640px) {
   .landing-nav {
     padding: 18px 20px;
+  }
+
+  .nav-actions {
+    gap: 6px;
+  }
+
+  .nav-link {
+    padding: 8px 11px;
+    font-size: 11px;
   }
 
   .hero-input-wrapper {

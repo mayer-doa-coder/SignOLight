@@ -3,7 +3,7 @@ import axios from "axios";
 import SignalNetworkBackground from "../components/SignalNetworkBackground";
 import "./LandingPage.css";
 
-const API = process.env.REACT_APP_API_URL || "http://localhost:5000";
+const API = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
 
 const SAMPLE_VIDEOS = [
   {
@@ -20,7 +20,11 @@ const SAMPLE_VIDEOS = [
   },
 ];
 
-export default function LandingPage({ onVideoSubmit, onOpenSignDemo }) {
+export default function LandingPage({
+  onVideoSubmit,
+  onOpenSignDemo,
+  onOpenMixamoDemo,
+}) {
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -48,7 +52,9 @@ export default function LandingPage({ onVideoSubmit, onOpenSignDemo }) {
     } catch (err) {
       setError(
         err.response?.data?.error ||
-          "Could not load video. Check the URL and try again."
+          (!err.response
+            ? "Backend API is unreachable. Start the backend server and try again."
+            : "Could not load video. Check the URL and try again.")
       );
     } finally {
       setLoading(false);
@@ -61,9 +67,14 @@ export default function LandingPage({ onVideoSubmit, onOpenSignDemo }) {
 
       <nav className="landing-nav">
         <span className="nav-logo">SignOLight</span>
-        <button className="nav-link" onClick={onOpenSignDemo}>
-          Sign Demo
-        </button>
+        <div className="nav-actions">
+          <button className="nav-link" onClick={onOpenSignDemo}>
+            VRM Demo
+          </button>
+          <button className="nav-link nav-link-accent" onClick={onOpenMixamoDemo}>
+            Mixamo Finger Lab
+          </button>
+        </div>
       </nav>
 
       <main className="landing-hero">

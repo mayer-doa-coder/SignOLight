@@ -108,8 +108,13 @@ describe("BdSL prompt grammar rules (buildGlossPrompt)", () => {
     expect(prompt).toMatch(/NEURAL/);
   });
 
-  it("cites arXiv:2511.08507 (Bangla-SGP dataset)", () => {
-    expect(prompt).toContain("2511.08507");
+  // Removed: "cites arXiv:2511.08507 (Bangla-SGP dataset)". That citation belonged to the
+  // BdSL prompt; the ASL prompt has no reason to reference a Bangla sign-gloss dataset.
+  // The Bangla path still exists for code-switched captions — covered by detectBangla tests
+  // in sign.test.js — but it translates Bengali to English before applying ASL rules.
+
+  it("instructs to prefer words the avatar can actually sign", () => {
+    expect(prompt.toLowerCase()).toMatch(/available asl signs|avatar can only sign/);
   });
 
   it("instructs to remove prepositions", () => {

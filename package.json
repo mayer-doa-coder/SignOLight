@@ -7,7 +7,10 @@
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd frontend && npm start",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "build:frontend": "cd frontend && npm run build"
+    "build:frontend": "cd frontend && npm run build",
+    "sync:vocab": "node scripts/sync-sign-vocabulary.js",
+    "vrm:verify": "node scripts/verify-vrm.js frontend/public/models/sign.vrm",
+    "vrm:add-brows": "node scripts/add-brows.js frontend/public/models/sign.vrm"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

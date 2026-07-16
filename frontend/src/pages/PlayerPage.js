@@ -7,7 +7,7 @@ import ControlPanel from "../components/ControlPanel";
 import { findCaption, computeNMM } from "../utils/sync";
 import "./PlayerPage.css";
 
-const API = process.env.REACT_APP_API_URL || "http://localhost:5000";
+const API = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
 
 // YT.PlayerState constants
 const YT_PLAYING = 1;
@@ -113,7 +113,9 @@ export default function PlayerPage({ videoData, onBack }) {
     } catch (err) {
       const msg =
         err.response?.data?.error ||
-        "Failed to process captions. Try another video with CC enabled.";
+        (!err.response
+          ? "Backend API is unreachable. Start the backend server and try again."
+          : "Failed to process captions. Try another video with CC enabled.");
       setCaptionError(msg);
       console.error("Caption processing error:", err);
     } finally {

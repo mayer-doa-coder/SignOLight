@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const Groq = require("groq-sdk");
+const { enforceSignability } = require("../lib/signability");
 
 const GROQ_MODEL = process.env.GROQ_MODEL || "llama-3.1-8b-instant";
 const groq = process.env.GROQ_API_KEY
@@ -10,28 +11,14 @@ const groq = process.env.GROQ_API_KEY
 // ASL (American Sign Language) gloss prompt.
 // Grammar rules follow standard ASL glossing conventions (topic-comment,
 // WH-word sentence-final, negation sentence-final, dropped articles/auxiliaries).
-// The vocabulary the avatar can actually sign.
-// Included in the LLM prompt so the model prefers words it knows exist as signs.
-const SIGN_VOCAB = [
-  "HELLO", "THANK", "YOU", "ME", "YES", "NO", "LEARN", "KNOW", "UNDERSTAND",
-  "GOOD", "BAD", "HELP", "PLEASE", "SORRY", "WHAT", "WHERE", "WHEN", "HOW",
-  "WHY", "BECAUSE", "SIGN", "ASL",
-  "NETWORK", "NEURON", "LAYER", "TRAIN", "MODEL", "WEIGHT", "GRADIENT", "LOSS",
-  "FUNCTION", "ACTIVATE", "DATA", "INPUT", "OUTPUT", "ERROR", "PREDICT",
-  "CALCULATE", "MATRIX", "VECTOR", "PATTERN", "IMAGE", "CLASSIFY", "ACCURACY",
-  "PROBABILITY", "DEEP", "CONNECT", "NODE", "SIGNAL", "PIXEL", "EXAMPLE",
-  "PROCESS", "STEP", "RESULT", "PROBLEM", "SOLUTION", "COMPUTER", "PROGRAM",
-  "I", "WE", "THEY", "HE", "SHE", "IT", "WANT", "LIKE", "THINK", "GO", "COME",
-  "MAKE", "USE", "WORK", "NEED", "START", "STOP", "CHANGE", "SHOW", "EXPLAIN",
-  "ASK", "ANSWER", "TEACH", "STUDY", "WRITE", "READ", "LOOK", "SEE", "FIND",
-  "GIVE", "TAKE", "PUT", "KEEP", "TRY", "CALL", "TIME", "DAY", "YEAR", "PEOPLE",
-  "THING", "WAY", "PART", "PLACE", "WORD", "IDEA", "QUESTION", "REASON", "TYPE",
-  "GROUP", "LEVEL", "SYSTEM", "WORLD", "NUMBER", "BIG", "SMALL", "MANY", "MORE",
-  "LESS", "SAME", "DIFFERENT", "NEW", "OLD", "IMPORTANT", "EASY", "HARD",
-  "TRUE", "RIGHT", "WRONG", "AND", "BUT", "OR", "IF", "SO", "NOW", "HERE",
-  "THERE", "ALSO", "VERY", "ALWAYS", "AGAIN", "ADD", "REMEMBER", "BUILD",
-  "CONTINUE", "FINISH",
-].join(" ");
+//
+// The vocabulary the avatar can actually sign, generated from SIGN_MOTIONS in
+// frontend/src/components/SignAvatar.js by scripts/sync-sign-vocabulary.js.
+// Telling the LLM the true dictionary matters: any word missing from this list gets
+// glossed as [CONCEPT:x], which the avatar renders as a silent pause. This list was
+// previously hand-maintained and had drifted to 143 words against the avatar's 332,
+// so 57% of the dictionary was unreachable. __tests__/vocabulary.test.js guards the drift.
+const SIGN_VOCAB = require("../data/sign-vocabulary.json").vocabulary.join(" ");
 
 // Detects Bangla/Bengali script (Unicode block U+0980–U+09FF).
 // Used for Phase B1 code-switching: mixed Bangla-English lecture captions.
@@ -114,7 +101,14 @@ function glossResult(gloss, fallbackText, confidence) {
   const cleaned = normalizeGloss(gloss);
   if (!cleaned) return simpleGloss(fallbackText);
 
-  const words = cleaned.split(/\s+/).slice(0, 10).map(wrapUnsignable);
+  // enforceSignability drops leaked function words and wraps unknown content words as
+  // [CONCEPT:x] so the avatar never receives a bare word it can only render as a silent
+  // pause. wrapUnsignable still catches raw non-Latin script that slips through.
+  const rawWords = cleaned.split(/\s+/).slice(0, 10).map(wrapUnsignable);
+  const words = enforceSignability(rawWords);
+  // A caption that reduces to nothing signable (all function words / all dropped) is not a
+  // useful frame — fall back to the heuristic gloss of the original text.
+  if (words.length === 0) return simpleGloss(fallbackText);
   return { gloss: words.join(" "), words, confidence: confidence ?? 0.9 };
 }
 
@@ -125,19 +119,23 @@ async function textToSignGloss(text) {
   }
 
   try {
-    const response = await groq.chat.completions.create({
-      model: GROQ_MODEL,
-      messages: [
-        {
-          role: "system",
-          content:
-            "You convert English captions into concise ASL (American Sign Language) gloss for a sign language avatar. ASL uses topic-comment structure — not English word order.",
-        },
-        { role: "user", content: buildGlossPrompt(text) },
-      ],
-      temperature: 0,
-      max_tokens: 80,
-    });
+    const response = await withRetry(
+      () =>
+        groq.chat.completions.create({
+          model: GROQ_MODEL,
+          messages: [
+            {
+              role: "system",
+              content:
+                "You convert English captions into concise ASL (American Sign Language) gloss for a sign language avatar. ASL uses topic-comment structure — not English word order.",
+            },
+            { role: "user", content: buildGlossPrompt(text) },
+          ],
+          temperature: 0,
+          max_tokens: 80,
+        }),
+      "single gloss"
+    );
 
     return glossResult(response.choices[0]?.message?.content, text, 0.9);
   } catch (err) {
@@ -146,12 +144,121 @@ async function textToSignGloss(text) {
   }
 }
 
-// Simplify academic English to secondary-school reading level.
-// This is the "educational scaffolding" step: captions → simplified → gloss.
-// Returns the original text unchanged if Groq is unavailable.
-async function simplifyBatch(captions) {
+// ---------------------------------------------------------------------------
+// Groq call resilience and scheduling
+// ---------------------------------------------------------------------------
+
+const DEFAULT_MAX_RETRIES = 3;
+// Batches run concurrently rather than one after another. Groq's free tier enforces a
+// requests-per-minute cap, so this is bounded — unbounded Promise.all over a long video
+// trips 429s that the old sequential loop never hit.
+const GROQ_CONCURRENCY = Math.max(1, Number(process.env.GROQ_CONCURRENCY || 1));
+const MAX_GROQ_CAPTIONS = Math.max(1, Number(process.env.SIGNOLIGHT_MAX_GROQ_CAPTIONS || 60));
+
+function retryableStatus(err) {
+  const status = err?.status ?? err?.response?.status;
+  return status === 429 || (status >= 500 && status < 600);
+}
+
+function shouldUseHeuristicPipeline(captions) {
+  return !groq || captions.length > MAX_GROQ_CAPTIONS;
+}
+
+function extractRetryAfterMs(err) {
+  const headerValue = Number(
+    err?.headers?.["retry-after"] ?? err?.response?.headers?.["retry-after"]
+  );
+  if (Number.isFinite(headerValue)) return headerValue * 1000;
+
+  const message = String(err?.message ?? err?.error?.message ?? "");
+  const match = message.match(/try again in\s+([\d.]+)s/i);
+  if (match) return Number(match[1]) * 1000;
+
+  return null;
+}
+
+/** Retries a Groq call on rate limits and transient 5xx, honouring Retry-After when sent. */
+async function withRetry(fn, label, { maxRetries = DEFAULT_MAX_RETRIES } = {}) {
+  let lastErr;
+  for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      if (!retryableStatus(err) || attempt === maxRetries) break;
+      const retryAfterMs = extractRetryAfterMs(err);
+      const backoff = Number.isFinite(retryAfterMs)
+        ? retryAfterMs
+        : 2 ** attempt * 500 + Math.random() * 250; // jitter avoids thundering herd across batches
+      console.warn(`[groq] ${label} attempt ${attempt + 1} failed (${err.status ?? err.message}) — retrying in ${Math.round(backoff)}ms`);
+      await new Promise((resolve) => setTimeout(resolve, backoff));
+    }
+  }
+  throw lastErr;
+}
+
+/** Runs fn over items with at most `limit` in flight, preserving input order in the output. */
+async function mapWithConcurrency(items, limit, fn) {
+  const results = new Array(items.length);
+  let cursor = 0;
+  async function worker() {
+    for (;;) {
+      const index = cursor;
+      cursor += 1;
+      if (index >= items.length) return;
+      results[index] = await fn(items[index], index);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return results;
+}
+
+/**
+ * Pulls the per-caption {simplified, gloss} pairs out of whatever shape the model returned.
+ * Accepts the requested `{results:[{simplified,gloss}]}` plus the parallel-array shapes
+ * (`{glosses:[], simplified:[]}`) and bare arrays, because JSON mode constrains syntax but
+ * not schema — a model that renames the wrapper key should not blank the whole batch.
+ */
+function parseBatchResponse(parsed, count) {
+  const rows = Array.isArray(parsed)
+    ? parsed
+    : parsed.results || parsed.captions || parsed.translations || null;
+
+  if (Array.isArray(rows)) {
+    return Array.from({ length: count }, (_, i) => {
+      const row = rows[i];
+      if (typeof row === "string") return { gloss: row, simplified: null };
+      return {
+        gloss: row?.gloss ?? row?.asl_gloss ?? row?.translation ?? row?.text ?? null,
+        simplified: row?.simplified ?? row?.simple ?? null,
+      };
+    });
+  }
+
+  // Parallel-array shape: {glosses:[...], simplified:[...]}
+  const glosses = parsed.glosses || [];
+  const simplified = parsed.simplified || [];
+  if (!Array.isArray(glosses)) throw new Error("Groq returned a non-array gloss list");
+  return Array.from({ length: count }, (_, i) => ({
+    gloss: typeof glosses[i] === "string" ? glosses[i] : glosses[i]?.gloss ?? null,
+    simplified: typeof simplified[i] === "string" ? simplified[i] : null,
+  }));
+}
+
+/**
+ * Simplify + gloss in a single Groq call.
+ *
+ * These were two sequential passes (simplify every batch, then gloss every batch), which
+ * doubled both request count and wall-clock latency. Asking for both in one completion also
+ * improves the gloss: the model writes the simplified sentence first and glosses the text it
+ * just produced, so the gloss is conditioned on the simplification instead of being a
+ * separate round-trip that has to re-read it.
+ *
+ * Never throws — falls back to the offline heuristic gloss so one bad batch cannot fail a video.
+ */
+async function simplifyAndGlossBatch(captions) {
   if (!groq) {
-    return captions.map((cap) => cap.text);
+    return captions.map((cap) => ({ simplified: cap.text, ...simpleGloss(cap.text) }));
   }
 
   const numbered = captions
@@ -159,113 +266,74 @@ async function simplifyBatch(captions) {
     .join("\n");
 
   try {
-    const response = await groq.chat.completions.create({
-      model: GROQ_MODEL,
-      messages: [
-        {
-          role: "system",
-          content:
-            "Simplify academic English sentences to secondary-school reading level. " +
-            "Keep technical terms (they will be signed). Remove jargon and long phrases. " +
-            "Make sentences shorter and clearer. Return JSON only: {\"simplified\":[\"s1\",\"s2\"]}",
-        },
-        { role: "user", content: numbered },
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0,
-      max_tokens: Math.min(800, captions.length * 80),
-    });
+    const response = await withRetry(
+      () =>
+        groq.chat.completions.create({
+          model: GROQ_MODEL,
+          messages: [
+            {
+              role: "system",
+              content:
+                "You prepare English lecture captions for a sign language avatar. For each caption you do two things: simplify the English to secondary-school reading level, then convert that simplified sentence to ASL gloss. ASL uses topic-comment structure — NOT English word order. Return valid JSON only.",
+            },
+            {
+              role: "user",
+              content: `For each caption below, produce BOTH:
+  1. "simplified" — the caption rewritten at secondary-school reading level. Keep technical terms (they will be signed). Shorter, clearer sentences. Plain English, normal capitalization.
+  2. "gloss" — that simplified sentence converted to ASL gloss.
 
-    const parsed = JSON.parse(response.choices[0]?.message?.content || "{}");
-    const list = parsed.simplified || [];
-    return captions.map((cap, i) => list[i] || cap.text);
-  } catch (err) {
-    console.error("Groq simplify error:", err.message);
-    return captions.map((cap) => cap.text);
-  }
-}
-
-// Batch ASL gloss — converts multiple captions in one Groq call.
-async function batchTextToSignGloss(captions) {
-  if (!groq) {
-    return captions.map((caption) => simpleGloss(caption.text));
-  }
-
-  const numberedCaptions = captions
-    .map((caption, index) => `${index + 1}. ${caption.text.replace(/\s+/g, " ")}`)
-    .join("\n");
-
-  try {
-    const response = await groq.chat.completions.create({
-      model: GROQ_MODEL,
-      messages: [
-        {
-          role: "system",
-          content:
-            "You convert English captions into concise ASL (American Sign Language) gloss. ASL uses topic-comment structure — NOT English word order. Return valid JSON only.",
-        },
-        {
-          role: "user",
-          content: `Convert each caption to ASL gloss notation.
-
-AVAILABLE ASL SIGNS — prefer these words when meaning is preserved:
+AVAILABLE ASL SIGNS — the avatar can only sign these words. Strongly prefer them whenever meaning is preserved; a word outside this list becomes a silent pause:
 ${SIGN_VOCAB}
 
-MANDATORY ASL RULES:
+MANDATORY ASL RULES for "gloss":
 - Topic-comment structure: topic FIRST, verb LAST
 - Remove all articles (a, an, the) — always
 - Remove auxiliary verbs (is, are, was, were) unless negated
+- WH-words (WHAT, WHERE, WHEN, HOW, WHY, WHO) go at the END
+- Negation (NOT, CANNOT) goes at the END
 - Use BASE FORM of all verbs: TAKE not TAKES, LEARN not LEARNS, GO not WENT/GOES
 - Drop filler pronouns "it"/"this"/"that" when they refer to nothing specific
 - Capitalize all words, max 8 words per gloss
 - For proper nouns, names, abbreviations → [FINGERSPELL:WORD]
-- For concepts with no available sign → [CONCEPT:word]
+- For concepts with NO word in the available list → [CONCEPT:word]
 - Use [NUMBER:X] for digits
 
-ASL EXAMPLES:
-"The neural network learns patterns"     → NETWORK PATTERN LEARN
-"What does a compiler do?"               → [CONCEPT:compiler] WHAT DO
-"I cannot understand this concept"       → EXAMPLE ME UNDERSTAND CANNOT
-"The winner takes it all"                → WINNER ALL TAKE
-"DNA carries genetic information"        → [FINGERSPELL:DNA] [CONCEPT:genetic] DATA CONNECT
+EXAMPLES:
+caption: "The neural network learns patterns from data"
+  → simplified: "A neural network learns patterns from data." gloss: "NEURAL NETWORK DATA PATTERN LEARN"
+caption: "What does a compiler do?"
+  → simplified: "What does a compiler do?" gloss: "[CONCEPT:compiler] DO WHAT"
+caption: "I cannot understand this concept"
+  → simplified: "I do not understand this idea." gloss: "ME IDEA UNDERSTAND NOT"
+caption: "DNA carries genetic information"
+  → simplified: "DNA carries genetic information." gloss: "[FINGERSPELL:DNA] [CONCEPT:genetic] DATA CONNECT"
 
-Return JSON: {"glosses":["GLOSS ONE","GLOSS TWO"]}
-The glosses array must have exactly ${captions.length} items.
+Return JSON: {"results":[{"simplified":"...","gloss":"..."}]}
+The results array must have exactly ${captions.length} items, in the same order.
 
 Captions:
-${numberedCaptions}`,
-        },
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0,
-      max_tokens: Math.min(600, captions.length * 60),
-    });
+${numbered}`,
+            },
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0,
+          // Budgets both fields per caption; the old gloss-only call used 60.
+          max_tokens: Math.min(2000, Math.max(300, captions.length * 130)),
+        }),
+      `simplify+gloss batch of ${captions.length}`,
+      { maxRetries: 0 }
+    );
 
-    const content = response.choices[0]?.message?.content || "";
-    const parsed = JSON.parse(content);
-    const list =
-      (Array.isArray(parsed) && parsed) ||
-      parsed.glosses ||
-      parsed.results ||
-      parsed.translations ||
-      parsed.captions ||
-      [];
+    const parsed = JSON.parse(response.choices[0]?.message?.content || "{}");
+    const rows = parseBatchResponse(parsed, captions.length);
 
-    if (!Array.isArray(list)) {
-      throw new Error("Groq returned a non-array gloss list");
-    }
-
-    return captions.map((caption, index) => {
-      const item = list[index];
-      const gloss =
-        typeof item === "string"
-          ? item
-          : item?.gloss || item?.asl_gloss || item?.translation || item?.text;
-      return glossResult(gloss, caption.text, 0.9);
-    });
+    return captions.map((cap, i) => ({
+      simplified: rows[i]?.simplified || cap.text,
+      ...glossResult(rows[i]?.gloss, cap.text, 0.9),
+    }));
   } catch (err) {
     console.error("Groq batch API error:", err.message);
-    return captions.map((caption) => simpleGloss(caption.text));
+    return captions.map((cap) => ({ simplified: cap.text, ...simpleGloss(cap.text) }));
   }
 }
 
@@ -347,21 +415,26 @@ async function enrichConceptCards(results) {
   const numbered = wordList.map((w, i) => `${i + 1}. ${w}`).join("\n");
 
   try {
-    const response = await groq.chat.completions.create({
-      model: GROQ_MODEL,
-      messages: [
-        {
-          role: "system",
-          content:
-            "Give a 5-10 word plain-language definition for each word, suitable for a secondary-school student. " +
-            'Return JSON only: {"definitions":["def1","def2"]}',
-        },
-        { role: "user", content: numbered },
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0,
-      max_tokens: Math.min(600, wordList.length * 35),
-    });
+    const response = await withRetry(
+      () =>
+        groq.chat.completions.create({
+          model: GROQ_MODEL,
+          messages: [
+            {
+              role: "system",
+              content:
+                "Give a 5-10 word plain-language definition for each word, suitable for a secondary-school student. " +
+                'Return JSON only: {"definitions":["def1","def2"]}',
+            },
+            { role: "user", content: numbered },
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0,
+          max_tokens: Math.min(600, wordList.length * 35),
+        }),
+      `concept cards for ${wordList.length} words`,
+      { maxRetries: 0 }
+    );
     const parsed = JSON.parse(response.choices[0]?.message?.content || "{}");
     const defs = parsed.definitions || [];
     const explanations = {};
@@ -459,43 +532,59 @@ router.post("/batch", async (req, res) => {
       return res.status(400).json({ error: "captions array is required" });
     }
 
-    const batchSize = Number(process.env.GROQ_BATCH_SIZE || 10);
-    const results = [];
+    if (captions.length === 0) {
+      return res.json({ results: [], count: 0, model: groq ? GROQ_MODEL : "fallback" });
+    }
+
+    if (shouldUseHeuristicPipeline(captions)) {
+      const results = captions.map((caption) => ({
+        ...caption,
+        simplified: caption.text,
+        ...simpleGloss(caption.text),
+      }));
+
+      if (req.app.locals.recordVocabularyGaps) {
+        req.app.locals.recordVocabularyGaps(results);
+      }
+      if (videoId && req.app.locals.videoCache) {
+        req.app.locals.videoCache.set(videoId, results);
+      }
+      if (videoId && req.app.locals.writeFileCache) {
+        req.app.locals.writeFileCache(videoId, results);
+      }
+
+      return res.json({
+        results,
+        count: results.length,
+        model: groq ? `${GROQ_MODEL}-heuristic-fallback` : "fallback",
+      });
+    }
+
+    const batchSize = Math.max(1, Number(process.env.GROQ_BATCH_SIZE || 5));
 
     // Kick off WhisperX timestamp extraction in parallel with Groq processing.
     // This runs concurrently — on a 10-minute video it takes ~60-90s (CPU),
-    // which overlaps with the 30-60s Groq simplify + gloss pipeline.
+    // which overlaps with the Groq simplify + gloss pipeline.
     // If NLP_SERVICE_URL is unset or the call fails, timestampsPromise resolves null
     // and the frontend gracefully falls back to syllable-weighted timing.
     const timestampsPromise = videoId ? fetchWordTimestamps(videoId) : Promise.resolve(null);
 
-    // Step 1: Simplify all captions (educational scaffolding layer).
-    // Run simplification in batches to match gloss batch size.
-    const simplifiedTexts = [];
+    // Simplify and gloss every caption. Each chunk is one Groq call producing both fields,
+    // and chunks run GROQ_CONCURRENCY-at-a-time instead of strictly one after another.
+    // Was: 2 sequential passes over every chunk (a 200-caption video meant 40 serial calls).
+    const chunks = [];
     for (let i = 0; i < captions.length; i += batchSize) {
-      const batch = captions.slice(i, i + batchSize);
-      const simplified = await simplifyBatch(batch);
-      simplifiedTexts.push(...simplified);
+      chunks.push(captions.slice(i, i + batchSize));
     }
+    const processed = await mapWithConcurrency(chunks, GROQ_CONCURRENCY, (chunk) =>
+      simplifyAndGlossBatch(chunk)
+    );
 
-    // Step 2: Translate simplified text to ASL gloss.
-    for (let i = 0; i < captions.length; i += batchSize) {
-      const batch = captions.slice(i, i + batchSize).map((cap, idx) => ({
-        ...cap,
-        textForGloss: simplifiedTexts[i + idx] || cap.text,
-      }));
-      const captionsForGloss = batch.map((cap) => ({
-        ...cap,
-        text: cap.textForGloss, // gloss pipeline reads cap.text
-      }));
-      const signs = await batchTextToSignGloss(captionsForGloss);
-      const translated = batch.map((cap, index) => ({
-        ...captions[i + index],
-        simplified: simplifiedTexts[i + index] || captions[i + index].text,
-        ...signs[index],
-      }));
-      results.push(...translated);
-    }
+    // Re-join in caption order — mapWithConcurrency preserves chunk order, so a flat
+    // concat lines up 1:1 with the input captions.
+    const results = chunks.flatMap((chunk, chunkIndex) =>
+      chunk.map((caption, i) => ({ ...caption, ...processed[chunkIndex][i] }))
+    );
 
     // Attach WhisperX word-level timestamps to each caption (Phase B2).
     // spokenTimings gives the frontend accurate speech boundaries so word windows
@@ -551,4 +640,7 @@ router.post("/batch", async (req, res) => {
 
 module.exports = router;
 // Exported for unit tests only
-module.exports._test = { simpleGloss, buildGlossPrompt, normalizeGloss, glossResult, detectBangla };
+module.exports._test = {
+  simpleGloss, buildGlossPrompt, normalizeGloss, glossResult, detectBangla,
+  mapWithConcurrency, parseBatchResponse, retryableStatus, SIGN_VOCAB,
+};
