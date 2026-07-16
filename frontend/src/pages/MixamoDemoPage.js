@@ -1,8 +1,8 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import MixamoAvatar from "../components/MixamoAvatar";
 import "./MixamoDemoPage.css";
 
-const COMMON_GESTURES = ["HELLO", "THANK", "YOU", "YES", "NO", "HELP", "PLEASE"];
+const COMMON_GESTURES = ["HELLO", "THANK", "YOU", "YES", "NO", "HELP", "PLEASE", "GOOD", "OK", "LOVE", "MORE"];
 const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 const NUMBERS = Array.from({ length: 10 }, (_, index) => `NUM_${index}`);
 
@@ -12,8 +12,42 @@ const GROUPS = [
   { id: "numbers", label: "Numbers", gestures: NUMBERS },
 ];
 
+// How long each step holds before advancing. Words with a real mocap-backed
+// sign (see mocapClips.js) get roughly their real captured duration; anything
+// spelled out letter-by-letter gets a shorter fixed hold per letter/digit —
+// there's no real timing data for individual fingerspelled characters.
+const WORD_SIGN_MS = 1300;
+const LETTER_HOLD_MS = 600;
+
 function gestureLabel(gesture) {
   return gesture.startsWith("NUM_") ? gesture.slice(4) : gesture;
+}
+
+// Turns free text into a sequence of playable steps: known words become a
+// single common-sign gesture, anything else falls back to fingerspelling
+// letter-by-letter (digits map to NUM_<d>). Unspellable characters are
+// dropped rather than silently guessed at.
+function buildSignSequence(text) {
+  const words = text
+    .toUpperCase()
+    .split(/[^A-Z0-9']+/)
+    .filter(Boolean);
+
+  const steps = [];
+  for (const word of words) {
+    if (COMMON_GESTURES.includes(word)) {
+      steps.push({ gesture: word, word, label: word, fingerspelled: false, duration: WORD_SIGN_MS });
+      continue;
+    }
+    for (const ch of word.replace(/'/g, "")) {
+      if (/[A-Z]/.test(ch)) {
+        steps.push({ gesture: ch, word, label: ch, fingerspelled: true, duration: LETTER_HOLD_MS });
+      } else if (/[0-9]/.test(ch)) {
+        steps.push({ gesture: `NUM_${ch}`, word, label: ch, fingerspelled: true, duration: LETTER_HOLD_MS });
+      }
+    }
+  }
+  return steps;
 }
 
 export default function MixamoDemoPage({ onBack }) {
@@ -22,14 +56,54 @@ export default function MixamoDemoPage({ onBack }) {
   const [viewMode, setViewMode] = useState("hands");
   const [rigReport, setRigReport] = useState(null);
 
+  const [sentenceInput, setSentenceInput] = useState("");
+  const [sequence, setSequence] = useState([]);
+  const [sequenceIndex, setSequenceIndex] = useState(-1);
+  const advanceTimer = useRef(null);
+
+  const isPlayingSentence = sequenceIndex >= 0 && sequenceIndex < sequence.length;
+  const currentStep = isPlayingSentence ? sequence[sequenceIndex] : null;
+
   const group = useMemo(
     () => GROUPS.find((item) => item.id === groupId) || GROUPS[0],
     [groupId]
   );
 
+  const stopSentence = useCallback(() => {
+    clearTimeout(advanceTimer.current);
+    setSequence([]);
+    setSequenceIndex(-1);
+  }, []);
+
+  const handlePlaySentence = useCallback(() => {
+    const steps = buildSignSequence(sentenceInput);
+    if (!steps.length) return;
+    clearTimeout(advanceTimer.current);
+    setSequence(steps);
+    setSequenceIndex(0);
+  }, [sentenceInput]);
+
+  // Drives playback: show the current step's gesture, hold it for its
+  // duration, then advance. Cleans up on unmount/interruption so a stale
+  // timer can't fire after the sequence was stopped or replaced.
+  useEffect(() => {
+    if (sequenceIndex < 0 || sequenceIndex >= sequence.length) return undefined;
+    setGesture(sequence[sequenceIndex].gesture);
+    advanceTimer.current = setTimeout(() => {
+      setSequenceIndex((i) => i + 1);
+    }, sequence[sequenceIndex].duration);
+    return () => clearTimeout(advanceTimer.current);
+  }, [sequenceIndex, sequence]);
+
   const handleGroupChange = (nextGroup) => {
+    stopSentence();
     setGroupId(nextGroup.id);
     setGesture(nextGroup.gestures[0]);
+  };
+
+  const handleManualGesture = (item) => {
+    stopSentence();
+    setGesture(item);
   };
 
   const handleRigReport = useCallback((report) => {
@@ -71,8 +145,13 @@ export default function MixamoDemoPage({ onBack }) {
           />
 
           <div className="mixamo-stage-label">
-            <span>Current gesture</span>
+            <span>{isPlayingSentence ? (currentStep.fingerspelled ? "Fingerspelling" : "Signing") : "Current gesture"}</span>
             <strong>{gestureLabel(gesture)}</strong>
+            {isPlayingSentence && (
+              <em className="mixamo-sentence-progress">
+                "{currentStep.word}" &middot; step {sequenceIndex + 1} of {sequence.length}
+              </em>
+            )}
           </div>
         </section>
 
@@ -96,6 +175,33 @@ export default function MixamoDemoPage({ onBack }) {
             {rigReport?.error && <p className="mixamo-rig-error">{rigReport.error}</p>}
           </section>
 
+          <section className="mixamo-sentence-card">
+            <p className="mixamo-section-label">Sign a word or sentence</p>
+            <div className="mixamo-sentence-input-row">
+              <input
+                type="text"
+                className="mixamo-sentence-input"
+                placeholder="e.g. hello thank you good"
+                value={sentenceInput}
+                onChange={(e) => setSentenceInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handlePlaySentence()}
+              />
+              {isPlayingSentence ? (
+                <button className="mixamo-sentence-btn stop" onClick={stopSentence}>
+                  Stop
+                </button>
+              ) : (
+                <button className="mixamo-sentence-btn" onClick={handlePlaySentence}>
+                  Play
+                </button>
+              )}
+            </div>
+            <p className="mixamo-note">
+              Known words ({COMMON_GESTURES.join(", ")}) play their own sign; anything
+              else is fingerspelled letter by letter.
+            </p>
+          </section>
+
           <section>
             <p className="mixamo-section-label">Gesture set</p>
             <div className="mixamo-group-tabs">
@@ -117,8 +223,8 @@ export default function MixamoDemoPage({ onBack }) {
               {group.gestures.map((item) => (
                 <button
                   key={item}
-                  className={item === gesture ? "active" : ""}
-                  onClick={() => setGesture(item)}
+                  className={!isPlayingSentence && item === gesture ? "active" : ""}
+                  onClick={() => handleManualGesture(item)}
                 >
                   {gestureLabel(item)}
                 </button>
