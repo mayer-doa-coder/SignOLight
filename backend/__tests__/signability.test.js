@@ -26,13 +26,14 @@ function buildFrontendResolver() {
 
 describe("signability enforcement", () => {
   it("wraps unknown content words as [CONCEPT:x] instead of leaving a silent pause", () => {
-    // These four were emitted as bare tokens by the live Groq API and had no sign.
+    // These were emitted as bare tokens by the live Groq API and had no sign. ADJUST was
+    // one of them too, until the physics/biology vocabulary expansion added it as a real sign.
     const out = enforceSignability(["GRADIENT", "BACKPROPAGATION", "ADJUST", "CALCULABLE", "UNDEFINED"]);
     expect(out).toContain("[CONCEPT:backpropagation]");
-    expect(out).toContain("[CONCEPT:adjust]");
     expect(out).toContain("[CONCEPT:calculable]");
     expect(out).toContain("[CONCEPT:undefined]");
     expect(out).toContain("GRADIENT"); // GRADIENT is signable — kept as-is
+    expect(out).toContain("ADJUST"); // now signable too — kept as-is
   });
 
   it("drops leaked function words rather than pausing on them", () => {

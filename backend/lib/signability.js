@@ -24,6 +24,10 @@ const DROP_WORDS = new Set([
   "HAS", "HAVE", "HAD", "WILL", "SHALL", "WOULD",
   "OF", "TO", "IN", "ON", "AT", "FROM", "WITH", "BY", "AS",
   "THAT", "THIS", "THESE", "THOSE",
+  // Generic filler with no distinct ASL sign — real interpreters drop these rather than
+  // inventing a gesture, so treat them the same way instead of pausing on a concept card.
+  "YET", "ALREADY", "UNLESS", "NONE", "MATTERS", "FOREVER", "SOMETHING", "SOMEONE",
+  "BASED", "CASUAL",
 ]);
 
 /**

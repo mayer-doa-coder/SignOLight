@@ -388,7 +388,12 @@ function simpleGloss(text) {
   const lemmatized = words.map((w) => lemmatizeVerb(w) || w);
   const verbs = lemmatized.filter((w) => verbSet.has(w));
   const nonVerbs = lemmatized.filter((w) => !verbSet.has(w));
-  const ordered = [...nonVerbs, ...verbs].map(wrapUnsignable);
+  // wrapUnsignable only catches raw non-Latin script; enforceSignability then checks every
+  // remaining bare word against the real vocabulary. Without this second pass, a heuristic
+  // (Groq-unavailable/rate-limited) word outside the dictionary rendered as a silent idle
+  // pause with no explanation card — the exact failure mode this pipeline exists to prevent
+  // on the Groq path. Both paths must give the same guarantee.
+  const ordered = enforceSignability([...nonVerbs, ...verbs].map(wrapUnsignable));
 
   return { gloss: ordered.join(" "), words: ordered, confidence: 0.5 };
 }
