@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import * as THREE from "three";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader";
 import MOCAP_CLIPS from "./mocapClips";
 import "./MixamoAvatar.css";
@@ -43,23 +44,38 @@ const HANDSHAPES = {
   relaxed: { thumb: 0.22, index: 0.12, middle: 0.16, ring: 0.2, pinky: 0.24 },
   open: { thumb: 0.08, index: 0, middle: 0, ring: 0, pinky: 0 },
   a: { thumb: 0.16, index: 1, middle: 1, ring: 1, pinky: 1 },
-  b: { thumb: 1.05, index: 0, middle: 0, ring: 0, pinky: 0 },
+  b: { thumb: 0.34, index: 0, middle: 0, ring: 0, pinky: 0, thumbMode: "across" },
+  d: { thumb: 0.46, index: 0, middle: 0.92, ring: 1, pinky: 1, thumbMode: "across" },
+  e: { thumb: 0.48, index: 0.82, middle: 0.84, ring: 0.86, pinky: 0.88, thumbMode: "under" },
   fist: { thumb: 0.72, index: 1, middle: 1, ring: 1, pinky: 1, thumbMode: "across" },
   point: { thumb: 0.55, index: 0, middle: 1, ring: 1, pinky: 1, thumbMode: "across" },
   two: { thumb: 0.58, index: 0, middle: 0, ring: 1, pinky: 1, thumbMode: "across" },
-  three: { thumb: 0.04, index: 0, middle: 0, ring: 1, pinky: 1 },
+  three: { thumb: 0.04, index: 0, middle: 0, ring: 1, pinky: 1, number: true },
   four: { thumb: 0.78, index: 0, middle: 0, ring: 0, pinky: 0, thumbMode: "across" },
   five: { thumb: 0, index: 0, middle: 0, ring: 0, pinky: 0 },
-  six: { thumb: 0.48, index: 0, middle: 0, ring: 0, pinky: 0.8 },
-  seven: { thumb: 0.5, index: 0, middle: 0, ring: 0.78, pinky: 0 },
-  eight: { thumb: 0.5, index: 0, middle: 0.78, ring: 0, pinky: 0 },
-  nine: { thumb: 0.5, index: 0.78, middle: 0, ring: 0, pinky: 0 },
+  zero: { thumb: 0, index: 0, middle: 0, ring: 0, pinky: 0, contactPose: "zero" },
+  // Number forms deliberately keep their open fingers separated in a front view.
+  // They are separate from alphabet forms because ASL number readability depends
+  // on the thumb placement and a clean silhouette, not only the finger count.
+  numberOne: { thumb: 0.72, index: 0, middle: 1, ring: 1, pinky: 1, thumbMode: "across", number: true },
+  numberTwo: { thumb: 0.66, index: 0, middle: 0, ring: 1, pinky: 1, thumbMode: "across", number: true },
+  numberThree: { thumb: 0.03, index: 0, middle: 0, ring: 1, pinky: 1, number: true },
+  numberFour: { thumb: 0.78, index: 0, middle: 0, ring: 0, pinky: 0, thumbMode: "across", number: true },
+  numberFive: { thumb: 0, index: 0, middle: 0, ring: 0, pinky: 0, number: true },
+  six: { thumb: 0, index: 0, middle: 0, ring: 0, pinky: 0, contactPose: "six" },
+  seven: { thumb: 0, index: 0, middle: 0, ring: 0, pinky: 0, contactPose: "seven" },
+  eight: { thumb: 0, index: 0, middle: 0, ring: 0, pinky: 0, contactPose: "eight" },
+  nine: { thumb: 0, index: 0, middle: 0, ring: 0, pinky: 0, contactPose: "nine" },
   y: { thumb: 0, index: 1, middle: 1, ring: 1, pinky: 0 },
   l: { thumb: 0, index: 0, middle: 1, ring: 1, pinky: 1 },
   c: { thumb: 0.28, index: 0.38, middle: 0.38, ring: 0.42, pinky: 0.5 },
   o: { thumb: 0.44, index: 0.5, middle: 0.5, ring: 0.52, pinky: 0.58 },
-  f: { thumb: 0.42, index: 0.55, middle: 0, ring: 0, pinky: 0 },
+  f: { thumb: 0, index: 0, middle: 0, ring: 0, pinky: 0, contactPose: "f" },
   i: { thumb: 0.7, index: 1, middle: 1, ring: 1, pinky: 0, thumbMode: "across" },
+  m: { thumb: 0.36, index: 0.94, middle: 0.94, ring: 0.94, pinky: 1, thumbMode: "underThree" },
+  n: { thumb: 0.38, index: 0.94, middle: 0.94, ring: 1, pinky: 1, thumbMode: "underTwo" },
+  s: { thumb: 0.62, index: 1, middle: 1, ring: 1, pinky: 1, thumbMode: "under" },
+  t: { thumb: 0.35, index: 0.98, middle: 0.95, ring: 1, pinky: 1, thumbMode: "betweenIndexMiddle" },
   x: { thumb: 0.62, index: 0.58, middle: 1, ring: 1, pinky: 1, thumbMode: "across" },
   r: { thumb: 0.62, index: 0, middle: 0, ring: 1, pinky: 1, cross: true, thumbMode: "across" },
   k: { thumb: 0.08, index: 0, middle: 0, ring: 1, pinky: 1, split: true },
@@ -67,16 +83,16 @@ const HANDSHAPES = {
 };
 
 const LETTER_SHAPES = {
-  A: "a", B: "b", C: "c", D: "point", E: "fist", F: "f",
+  A: "a", B: "b", C: "c", D: "d", E: "e", F: "f",
   G: "point", H: "two", I: "i", J: "i", K: "k", L: "l",
-  M: "fist", N: "fist", O: "o", P: "k", Q: "point", R: "r",
-  S: "fist", T: "fist", U: "two", V: "two", W: "three", X: "x",
+  M: "m", N: "n", O: "o", P: "k", Q: "point", R: "r",
+  S: "s", T: "t", U: "two", V: "two", W: "three", X: "x",
   Y: "y", Z: "point",
 };
 
 const NUMBER_SHAPES = {
-  "0": "o", "1": "point", "2": "two", "3": "three", "4": "four",
-  "5": "five", "6": "six", "7": "seven", "8": "eight", "9": "nine",
+  "0": "zero", "1": "numberOne", "2": "numberTwo", "3": "numberThree", "4": "numberFour",
+  "5": "numberFive", "6": "six", "7": "seven", "8": "eight", "9": "nine",
 };
 
 // Calibrated against Ch09_nonPBR.fbx. Each pose stores local Euler deltas for
@@ -115,10 +131,15 @@ const ARM_POSES = {
     upper: [1.81866, 0.27034, -1.83316],
     lower: [-0.78667, 0.87106, 1.90025],
   },
+  displayRight: {
+    upper: [1.03, 0.32, -1.36],
+    lower: [-0.1, 0.24, -0.38],
+  },
 };
 
 const WRIST_POSES = {
   highRight: [0.02, 0.04, 0.12],
+  displayRight: [0.08, -0.12, -0.08],
   centerRight: [0.77562, -0.39664, -1.63696],
   centerLeft: [-0.95641, -0.12687, 1.63146],
   forwardRight: [-0.30317, 0.59282, 0.30059],
@@ -142,6 +163,87 @@ const THUMB_ACROSS = [
   [1.08183, -0.58959, -0.58767],
   [0.00301, 0.42939, -0.24427],
 ];
+
+const THUMB_TUCK_POSES = {
+  under: [
+    [-0.24, 0.34, 0.72],
+    [0.84, -0.43, -0.48],
+    [0.03, 0.2, -0.12],
+  ],
+  underTwo: [
+    [-0.2, 0.43, 0.78],
+    [0.86, -0.44, -0.5],
+    [0.04, 0.22, -0.13],
+  ],
+  underThree: [
+    [-0.18, 0.5, 0.82],
+    [0.9, -0.47, -0.52],
+    [0.04, 0.24, -0.14],
+  ],
+  betweenIndexMiddle: [
+    [-0.12, 0.58, 0.7],
+    [0.84, -0.5, -0.46],
+    [0.02, 0.18, -0.1],
+  ],
+};
+
+// Calibrated directly against the Ch09 finger-end bones. The thumb tip meets
+// the correct fingertip for ASL 6-9 instead of using a generic curl that can
+// look reversed from the front. Zero reuses the index contact and rounds the
+// remaining fingers into a readable O.
+const CONTACT_HAND_POSES = {
+  zero: {
+    Thumb: [
+      [-0.25882, -0.32284, 0.95626],
+      [0.24646, 0.02372, -0.31041],
+      [0.13208, 0.04638, 0.28903],
+    ],
+    Index: [[0, -0.37539, 0.30206], [0, 0, 1.23342], [0, 0, 1.14176]],
+    Middle: [[0, -0.04, 0.5], [0, 0, 0.82], [0, 0, 0.52]],
+    Ring: [[0, 0.02, 0.56], [0, 0, 0.86], [0, 0, 0.54]],
+    Pinky: [[0, 0.08, 0.62], [0, 0, 0.9], [0, 0, 0.56]],
+  },
+  six: {
+    Thumb: [
+      [-0.69472, -0.38974, 1.3],
+      [0.11258, -0.02514, -0.24791],
+      [-0.16823, 0.02989, 0.06988],
+    ],
+    Pinky: [[0, -0.55, 0.54608], [0, 0, 1.5], [0, 0, 1.17355]],
+  },
+  seven: {
+    Thumb: [
+      [-0.24251, -0.07654, 1.3],
+      [0.02391, -0.05366, -0.24248],
+      [-0.17612, -0.06078, 0.00771],
+    ],
+    Ring: [[0, 0.55, 0.31279], [0, 0, 1.5], [0, 0, 1.19853]],
+  },
+  eight: {
+    Thumb: [
+      [-0.0428, 0.00847, 1.15729],
+      [-0.08138, -0.0624, -0.34178],
+      [0.04747, -0.02189, 0.11186],
+    ],
+    Middle: [[0, 0.55, 0.34878], [0, 0, 1.44959], [0, 0, 1.00245]],
+  },
+  nine: {
+    Thumb: [
+      [-0.25882, -0.32284, 0.95626],
+      [0.24646, 0.02372, -0.31041],
+      [0.13208, 0.04638, 0.28903],
+    ],
+    Index: [[0, -0.37539, 0.30206], [0, 0, 1.23342], [0, 0, 1.14176]],
+  },
+  f: {
+    Thumb: [
+      [-0.25882, -0.32284, 0.95626],
+      [0.24646, 0.02372, -0.31041],
+      [0.13208, 0.04638, 0.28903],
+    ],
+    Index: [[0, -0.37539, 0.30206], [0, 0, 1.23342], [0, 0, 1.14176]],
+  },
+};
 
 function cleanBoneName(name) {
   return String(name || "")
@@ -263,14 +365,49 @@ function applyThumbAcross(rig, side) {
   });
 }
 
+function applyThumbTuck(rig, side, mode) {
+  const pose = THUMB_TUCK_POSES[mode];
+  if (!pose) return;
+
+  const mirror = side === "Left" ? -1 : 1;
+  pose.forEach((rotation, index) => {
+    setBoneDelta(
+      rig,
+      `${side}HandThumb${index + 1}`,
+      rotation[0],
+      rotation[1] * mirror,
+      rotation[2] * mirror
+    );
+  });
+}
+
+function applyContactHandPose(rig, side, poseName) {
+  const pose = CONTACT_HAND_POSES[poseName];
+  if (!pose) return;
+
+  const mirror = side === "Left" ? -1 : 1;
+  Object.entries(pose).forEach(([finger, rotations]) => {
+    rotations.forEach((rotation, index) => {
+      setBoneDelta(
+        rig,
+        `${side}Hand${finger}${index + 1}`,
+        rotation[0],
+        rotation[1] * mirror,
+        rotation[2] * mirror
+      );
+    });
+  });
+}
+
 function applyHandshape(rig, side, shapeName, overrides = {}) {
   const shape = { ...(HANDSHAPES[shapeName] || HANDSHAPES.relaxed), ...overrides };
   const spreads = {
     Thumb: -0.22,
-    Index: shape.cross ? 0.11 : shape.split ? -0.12 : -0.045,
-    Middle: shape.cross ? -0.11 : shape.split ? 0.12 : -0.012,
-    Ring: 0.02,
-    Pinky: 0.06,
+    Index: shape.cross ? 0.11 : shape.split ? -0.12 : shape.number ? -0.09 : -0.045,
+    Middle: shape.cross ? -0.11 : shape.split ? 0.12 : shape.number ? -0.025 : -0.012,
+    Ring: shape.number ? 0.035 : 0.02,
+    Pinky: shape.number ? 0.1 : 0.06,
+    ...(shape.spread || {}),
   };
 
   applyFinger(rig, side, "Thumb", shape.thumb, spreads.Thumb);
@@ -279,6 +416,8 @@ function applyHandshape(rig, side, shapeName, overrides = {}) {
   applyFinger(rig, side, "Ring", shape.ring, spreads.Ring);
   applyFinger(rig, side, "Pinky", shape.pinky, spreads.Pinky);
   if (shape.thumbMode === "across") applyThumbAcross(rig, side);
+  if (shape.thumbMode && shape.thumbMode !== "across") applyThumbTuck(rig, side, shape.thumbMode);
+  if (shape.contactPose) applyContactHandPose(rig, side, shape.contactPose);
 }
 
 function mixArray(a, b, t) {
@@ -311,10 +450,25 @@ function applySigningRest(rig, time) {
   applyHandshape(rig, "Right", "relaxed");
 }
 
+function applyNonDominantSupport(rig, time) {
+  // One-handed ASL signs keep the non-dominant hand available but neutral. A
+  // small counterbalance motion makes the humanoid feel alive without turning
+  // a one-handed sign or number into an incorrect two-handed sign.
+  const sway = Math.sin(time * 1.8) * 0.055;
+  const support = 0.17;
+  applyBlendedArmPose(rig, "Left", ARM_POSES.restLeft, ARM_POSES.centerLeft, support);
+  setBoneDelta(rig, "LeftHand", 0.05 + sway * 0.32, 0.01 - sway * 0.14, -0.08 + sway);
+  applyHandshape(rig, "Left", "relaxed", {
+    thumb: 0.2 + Math.sin(time * 1.8) * 0.025,
+    index: 0.1 + Math.cos(time * 1.8) * 0.02,
+  });
+}
+
 function applyDisplayHand(rig, shapeName, gesture, time) {
   const pulse = Math.sin(time * 2.8);
-  applyArmPose(rig, "Right", ARM_POSES.highRight);
-  setBoneDelta(rig, "RightHand", ...WRIST_POSES.highRight);
+  applyNonDominantSupport(rig, time);
+  applyArmPose(rig, "Right", ARM_POSES.displayRight);
+  setBoneDelta(rig, "RightHand", ...WRIST_POSES.displayRight);
 
   if (["G", "H"].includes(gesture)) {
     setBoneDelta(rig, "RightHand", 0.1, -0.82, 0.05);
@@ -324,6 +478,10 @@ function applyDisplayHand(rig, shapeName, gesture, time) {
     setBoneDelta(rig, "RightHand", 0.08, pulse * 0.22, 0.12 + pulse * 0.2);
   } else if (gesture === "Z") {
     setBoneDelta(rig, "RightHand", 0.02, pulse * 0.34, pulse * 0.12);
+  } else if (/^[0-9]$/.test(gesture)) {
+    setBoneDelta(rig, "RightHand", 0.04, -0.08, -0.16);
+  } else if (["A", "E", "M", "N", "S", "T"].includes(gesture)) {
+    setBoneDelta(rig, "RightHand", 0.08, -0.08, -0.2);
   }
 
   applyHandshape(rig, "Right", shapeName);
@@ -332,6 +490,10 @@ function applyDisplayHand(rig, shapeName, gesture, time) {
 function applyCommonGesture(rig, gesture, time) {
   const wave = Math.sin(time * 6.2);
   const slow = (Math.sin(time * 2.8) + 1) / 2;
+  const circle = Math.sin(time * 4.2);
+  const cosine = Math.cos(time * 4.2);
+
+  applyNonDominantSupport(rig, time);
 
   switch (gesture) {
     case "HELLO":
@@ -365,6 +527,12 @@ function applyCommonGesture(rig, gesture, time) {
       setBoneDelta(rig, "RightHand", ...WRIST_POSES.forwardRight);
       applyMocapOrHandshape(rig, "Right", "YOU", "point", time);
       break;
+    case "ME":
+    case "I":
+      applyArmPose(rig, "Right", ARM_POSES.centerRight);
+      setBoneDelta(rig, "RightHand", 0.46, -0.12, -1.35);
+      applyMocapOrHandshape(rig, "Right", gesture, "point", time);
+      break;
     case "YES":
       applyArmPose(rig, "Right", ARM_POSES.centerRight);
       setBoneDelta(
@@ -380,6 +548,40 @@ function applyCommonGesture(rig, gesture, time) {
       applyArmPose(rig, "Right", ARM_POSES.centerRight);
       setBoneDelta(rig, "RightHand", ...WRIST_POSES.centerRight);
       applyMocapOrHandshape(rig, "Right", "NO", "two", time);
+      break;
+    case "WHAT":
+      applyArmPose(rig, "Left", ARM_POSES.centerLeft);
+      applyArmPose(rig, "Right", ARM_POSES.centerRight);
+      setBoneDelta(rig, "LeftHand", -0.72, -0.18, 1.38 + wave * 0.08);
+      setBoneDelta(rig, "RightHand", 0.72, 0.18, -1.38 - wave * 0.08);
+      applyMocapOrHandshape(rig, "Left", "WHAT", "open", time);
+      applyMocapOrHandshape(rig, "Right", "WHAT", "open", time);
+      break;
+    case "WHERE":
+      applyArmPose(rig, "Right", ARM_POSES.centerRight);
+      setBoneDelta(rig, "RightHand", 0.18, -0.28 + wave * 0.16, -0.92);
+      applyMocapOrHandshape(rig, "Right", "WHERE", "point", time);
+      break;
+    case "WHEN":
+      applyArmPose(rig, "Left", ARM_POSES.centerLeft);
+      applyArmPose(rig, "Right", ARM_POSES.centerRight);
+      setBoneDelta(rig, "LeftHand", ...WRIST_POSES.centerLeft);
+      setBoneDelta(rig, "RightHand", 0.34 + circle * 0.1, -0.25, -1.28 + Math.cos(time * 4.2) * 0.1);
+      applyMocapOrHandshape(rig, "Left", "WHEN", "point", time);
+      applyMocapOrHandshape(rig, "Right", "WHEN", "point", time);
+      break;
+    case "WHY":
+      applyArmPose(rig, "Right", ARM_POSES.highRight);
+      setBoneDelta(rig, "RightHand", 0.08, -0.16, -0.16 + wave * 0.05);
+      applyMocapOrHandshape(rig, "Right", "WHY", "y", time);
+      break;
+    case "HOW":
+      applyArmPose(rig, "Left", ARM_POSES.centerLeft);
+      applyArmPose(rig, "Right", ARM_POSES.centerRight);
+      setBoneDelta(rig, "LeftHand", -0.82, -0.1 + circle * 0.1, 1.24);
+      setBoneDelta(rig, "RightHand", 0.82, 0.1 - circle * 0.1, -1.24);
+      applyMocapOrHandshape(rig, "Left", "HOW", "fist", time);
+      applyMocapOrHandshape(rig, "Right", "HOW", "fist", time);
       break;
     case "HELP":
       applyArmPose(rig, "Left", ARM_POSES.helpLeft);
@@ -400,6 +602,17 @@ function applyCommonGesture(rig, gesture, time) {
       );
       applyMocapOrHandshape(rig, "Right", "PLEASE", "open", time);
       break;
+    case "SORRY":
+      applyArmPose(rig, "Right", ARM_POSES.centerRight);
+      setBoneDelta(
+        rig,
+        "RightHand",
+        WRIST_POSES.centerRight[0] + circle * 0.1,
+        WRIST_POSES.centerRight[1],
+        WRIST_POSES.centerRight[2] + Math.cos(time * 4.2) * 0.1
+      );
+      applyMocapOrHandshape(rig, "Right", "SORRY", "fist", time);
+      break;
     case "GOOD":
       applyArmPose(rig, "Right", ARM_POSES.centerRight);
       setBoneDelta(
@@ -415,6 +628,171 @@ function applyCommonGesture(rig, gesture, time) {
       applyArmPose(rig, "Right", ARM_POSES.centerRight);
       setBoneDelta(rig, "RightHand", ...WRIST_POSES.centerRight);
       applyMocapOrHandshape(rig, "Right", "OK", "f", time);
+      break;
+    case "BAD":
+      applyBlendedArmPose(rig, "Right", ARM_POSES.highRight, ARM_POSES.centerRight, slow);
+      setBoneDelta(rig, "RightHand", 0.2 + slow * 0.55, -0.18, -0.35 - slow * 1.15);
+      applyMocapOrHandshape(rig, "Right", "BAD", "open", time);
+      break;
+    case "KNOW":
+    case "THINK":
+      applyArmPose(rig, "Right", ARM_POSES.highRight);
+      setBoneDelta(rig, "RightHand", 0.05, -0.18, -0.1);
+      applyMocapOrHandshape(rig, "Right", gesture, "point", time);
+      break;
+    case "LEARN":
+      applyArmPose(rig, "Left", ARM_POSES.centerLeft);
+      applyBlendedArmPose(rig, "Right", ARM_POSES.centerRight, ARM_POSES.highRight, slow);
+      setBoneDelta(rig, "LeftHand", ...WRIST_POSES.centerLeft);
+      setBoneDelta(rig, "RightHand", 0.08, -0.12, -0.2);
+      applyMocapOrHandshape(rig, "Left", "LEARN", "open", time);
+      applyMocapOrHandshape(rig, "Right", "LEARN", "f", time);
+      break;
+    case "SIGN":
+    case "ASL":
+      applyArmPose(rig, "Left", ARM_POSES.centerLeft);
+      applyArmPose(rig, "Right", ARM_POSES.centerRight);
+      setBoneDelta(rig, "LeftHand", -0.45 + circle * 0.12, -0.2, 1.08);
+      setBoneDelta(rig, "RightHand", 0.45 - circle * 0.12, 0.2, -1.08);
+      applyMocapOrHandshape(rig, "Left", gesture, "point", time);
+      applyMocapOrHandshape(rig, "Right", gesture, "point", time);
+      break;
+    case "WANT":
+      applyArmPose(rig, "Left", ARM_POSES.centerLeft);
+      applyArmPose(rig, "Right", ARM_POSES.centerRight);
+      setBoneDelta(rig, "LeftHand", -0.5, -0.18 - slow * 0.12, 1.2);
+      setBoneDelta(rig, "RightHand", 0.5, 0.18 + slow * 0.12, -1.2);
+      applyMocapOrHandshape(rig, "Left", "WANT", "open", time, { index: slow * 0.32, middle: slow * 0.32, ring: slow * 0.32, pinky: slow * 0.32 });
+      applyMocapOrHandshape(rig, "Right", "WANT", "open", time, { index: slow * 0.32, middle: slow * 0.32, ring: slow * 0.32, pinky: slow * 0.32 });
+      break;
+    case "SEE":
+    case "LOOK":
+      applyArmPose(rig, "Right", ARM_POSES.forwardRight);
+      setBoneDelta(rig, "RightHand", 0.12, -0.46, 0.02);
+      applyMocapOrHandshape(rig, "Right", gesture, "two", time);
+      break;
+    case "GO":
+    case "COME":
+    case "GIVE":
+    case "SHOW":
+    case "EXPLAIN":
+      applyArmPose(rig, "Left", ARM_POSES.centerLeft);
+      applyBlendedArmPose(rig, "Right", ARM_POSES.centerRight, ARM_POSES.forwardRight, slow);
+      setBoneDelta(rig, "LeftHand", ...WRIST_POSES.centerLeft);
+      setBoneDelta(rig, "RightHand", ...mixArray(WRIST_POSES.centerRight, WRIST_POSES.forwardRight, slow));
+      applyMocapOrHandshape(rig, "Left", gesture, gesture === "EXPLAIN" ? "open" : "relaxed", time);
+      applyMocapOrHandshape(rig, "Right", gesture, gesture === "SHOW" || gesture === "EXPLAIN" ? "open" : "point", time);
+      break;
+    case "AREA":
+    case "GRAPH":
+    case "RECTANGLE":
+    case "RECTANGLES":
+    case "CIRCLE":
+    case "SHAPE":
+      applyArmPose(rig, "Left", ARM_POSES.centerLeft);
+      applyArmPose(rig, "Right", ARM_POSES.centerRight);
+      setBoneDelta(rig, "LeftHand", -0.7 + circle * 0.08, -0.15, 1.34);
+      setBoneDelta(rig, "RightHand", 0.7 - circle * 0.08, 0.15, -1.34);
+      applyMocapOrHandshape(rig, "Left", gesture, "open", time);
+      applyMocapOrHandshape(rig, "Right", gesture, "open", time);
+      break;
+    case "FUNCTION":
+    case "FORMULA":
+    case "RULE":
+    case "CALCULUS":
+    case "DERIVATIVE":
+    case "DERIVATIVES":
+    case "DX":
+    case "DR":
+      applyArmPose(rig, "Left", ARM_POSES.centerLeft);
+      applyArmPose(rig, "Right", ARM_POSES.displayRight);
+      setBoneDelta(rig, "LeftHand", ...WRIST_POSES.centerLeft);
+      setBoneDelta(rig, "RightHand", 0.1 + circle * 0.12, -0.22, -0.1 + cosine * 0.1);
+      applyMocapOrHandshape(rig, "Left", gesture, "open", time);
+      applyMocapOrHandshape(rig, "Right", gesture, "point", time);
+      break;
+    case "SUM":
+    case "TOTAL":
+    case "ADD":
+    case "COMBINE":
+    case "TOGETHER":
+    case "PRODUCT":
+    case "TIMES":
+      applyBlendedArmPose(rig, "Left", ARM_POSES.centerLeft, ARM_POSES.helpLeft, slow * 0.45);
+      applyBlendedArmPose(rig, "Right", ARM_POSES.centerRight, ARM_POSES.helpRight, slow * 0.45);
+      setBoneDelta(rig, "LeftHand", -0.72, -0.14, 1.26 + slow * 0.16);
+      setBoneDelta(rig, "RightHand", 0.72, 0.14, -1.26 - slow * 0.16);
+      applyMocapOrHandshape(rig, "Left", gesture, "open", time);
+      applyMocapOrHandshape(rig, "Right", gesture, "open", time);
+      break;
+    case "POINT":
+    case "HERE":
+    case "THERE":
+    case "WAY":
+    case "PLACE":
+      applyArmPose(rig, "Right", ARM_POSES.forwardRight);
+      setBoneDelta(rig, "RightHand", ...WRIST_POSES.forwardRight);
+      applyMocapOrHandshape(rig, "Right", gesture, "point", time);
+      break;
+    case "SMALL":
+    case "SMALLER":
+    case "TINY":
+    case "LITTLE":
+    case "LESS":
+      applyArmPose(rig, "Left", ARM_POSES.centerLeft);
+      applyArmPose(rig, "Right", ARM_POSES.centerRight);
+      setBoneDelta(rig, "LeftHand", -0.52, -0.18, 1.18);
+      setBoneDelta(rig, "RightHand", 0.52, 0.18, -1.18);
+      applyMocapOrHandshape(rig, "Left", gesture, "open", time, { index: 0.2, middle: 0.2, ring: 0.2, pinky: 0.2 });
+      applyMocapOrHandshape(rig, "Right", gesture, "open", time, { index: 0.2, middle: 0.2, ring: 0.2, pinky: 0.2 });
+      break;
+    case "BIG":
+    case "MANY":
+    case "ALL":
+    case "SOME":
+    case "EACH":
+    case "BETWEEN":
+    case "UNDER":
+      applyArmPose(rig, "Left", ARM_POSES.centerLeft);
+      applyArmPose(rig, "Right", ARM_POSES.centerRight);
+      setBoneDelta(rig, "LeftHand", -0.75 - slow * 0.12, -0.12, 1.22);
+      setBoneDelta(rig, "RightHand", 0.75 + slow * 0.12, 0.12, -1.22);
+      applyMocapOrHandshape(rig, "Left", gesture, "open", time);
+      applyMocapOrHandshape(rig, "Right", gesture, "open", time);
+      break;
+    case "CHANGE":
+    case "DIFFERENT":
+    case "DIFFERENCE":
+    case "IF":
+    case "OR":
+      applyArmPose(rig, "Left", ARM_POSES.centerLeft);
+      applyArmPose(rig, "Right", ARM_POSES.centerRight);
+      setBoneDelta(rig, "LeftHand", -0.42, -0.28 + wave * 0.08, 1.08);
+      setBoneDelta(rig, "RightHand", 0.42, 0.28 - wave * 0.08, -1.08);
+      applyMocapOrHandshape(rig, "Left", gesture, "point", time);
+      applyMocapOrHandshape(rig, "Right", gesture, "point", time);
+      break;
+    case "FIND":
+    case "GET":
+    case "TAKE":
+    case "MAKE":
+    case "USE":
+    case "WORK":
+    case "NEED":
+    case "CAN":
+      applyArmPose(rig, "Right", ARM_POSES.centerRight);
+      setBoneDelta(rig, "RightHand", 0.62, -0.22, -1.18 + wave * 0.08);
+      applyMocapOrHandshape(rig, "Right", gesture, gesture === "CAN" ? "fist" : "f", time);
+      break;
+    case "START":
+    case "STOP":
+    case "FINISH":
+    case "RIGHT":
+    case "WRONG":
+    case "TRUE":
+      applyArmPose(rig, "Right", ARM_POSES.centerRight);
+      setBoneDelta(rig, "RightHand", 0.7, -0.22, -1.35 + wave * 0.09);
+      applyMocapOrHandshape(rig, "Right", gesture, ["RIGHT", "TRUE"].includes(gesture) ? "thumbUp" : "fist", time);
       break;
     case "LOVE":
       applyArmPose(rig, "Left", ARM_POSES.helpLeft);
@@ -457,7 +835,8 @@ function animateGesture(rig, gesture, time) {
 
   if (gesture.startsWith("SPELL_")) {
     const letters = gesture.slice(6).replace(/[^A-Z0-9]/g, "").split("");
-    const letter = letters.length ? letters[Math.floor(time * 2.6) % letters.length] : "A";
+    const spellRate = letters.length > 6 ? 4.8 : 3.9;
+    const letter = letters.length ? letters[Math.floor((time + 0.18) * spellRate) % letters.length] : "A";
     const shape = /[0-9]/.test(letter)
       ? NUMBER_SHAPES[letter]
       : LETTER_SHAPES[letter] || "relaxed";
@@ -496,21 +875,32 @@ function fitModel(root) {
 export default function MixamoAvatar({
   gesture = "HELLO",
   viewMode = "hands",
+  isPlaying = true,
   onRigReport,
 }) {
   const canvasRef = useRef(null);
   const gestureRef = useRef(gesture);
   const viewModeRef = useRef(viewMode);
-  const gestureStartedAtRef = useRef(0);
+  const isPlayingRef = useRef(isPlaying);
+  const gestureElapsedRef = useRef(0);
+  const gestureChangedRef = useRef(true);
+  const cameraModeChangedRef = useRef(true);
+  const resetViewRef = useRef(null);
 
   useEffect(() => {
     gestureRef.current = gesture;
-    gestureStartedAtRef.current = performance.now() / 1000;
+    gestureElapsedRef.current = 0;
+    gestureChangedRef.current = true;
   }, [gesture]);
 
   useEffect(() => {
     viewModeRef.current = viewMode;
+    cameraModeChangedRef.current = true;
   }, [viewMode]);
+
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -532,11 +922,47 @@ export default function MixamoAvatar({
     scene.fog = new THREE.Fog("#090b0d", 5.5, 10);
 
     const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 20);
-    camera.position.set(0, 0.45, 4.8);
+    camera.position.set(0, 0.06, 6.5);
 
-    const target = new THREE.Vector3(0, 0.35, 0);
     const cameraGoal = new THREE.Vector3();
     const targetGoal = new THREE.Vector3();
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.enablePan = true;
+    controls.enableZoom = true;
+    controls.enableRotate = true;
+    controls.minDistance = 2.4;
+    controls.maxDistance = 8.5;
+    controls.minPolarAngle = Math.PI * 0.18;
+    controls.maxPolarAngle = Math.PI * 0.72;
+    controls.rotateSpeed = 0.65;
+    controls.zoomSpeed = 0.8;
+    controls.panSpeed = 0.45;
+
+    function getStandardView() {
+      if (viewModeRef.current === "body") {
+        return {
+          cameraPosition: cameraGoal.set(0, 0.06, 6.5).clone(),
+          targetPosition: targetGoal.set(0, -0.14, 0).clone(),
+        };
+      }
+      return {
+        cameraPosition: cameraGoal.set(0, 0.34, 3.9).clone(),
+        targetPosition: targetGoal.set(0, 0.24, 0).clone(),
+      };
+    }
+
+    function resetCameraView() {
+      const standard = getStandardView();
+      camera.position.copy(standard.cameraPosition);
+      controls.target.copy(standard.targetPosition);
+      camera.lookAt(controls.target);
+      controls.update();
+    }
+
+    resetViewRef.current = resetCameraView;
+    resetCameraView();
 
     const key = new THREE.DirectionalLight("#fff7e8", 3.3);
     key.position.set(2.6, 4.2, 3.4);
@@ -625,24 +1051,30 @@ export default function MixamoAvatar({
     function animate() {
       frameId = requestAnimationFrame(animate);
       resize();
-      const time = clock.getElapsedTime();
-      const gestureTime = Math.max(
-        0,
-        performance.now() / 1000 - gestureStartedAtRef.current
-      );
-
-      if (rig) animateGesture(rig, gestureRef.current, gestureTime || time);
+      const delta = Math.min(clock.getDelta(), 0.1);
+      if (rig && isPlayingRef.current) {
+        gestureElapsedRef.current += delta;
+        animateGesture(rig, gestureRef.current, gestureElapsedRef.current);
+        gestureChangedRef.current = false;
+      } else if (rig && gestureChangedRef.current) {
+        // A seek while paused may select a new word. Apply that static pose once,
+        // then keep every bone frozen until playback resumes.
+        animateGesture(rig, gestureRef.current, gestureElapsedRef.current);
+        gestureChangedRef.current = false;
+      }
 
       if (viewModeRef.current === "body") {
-        cameraGoal.set(0, 0.15, 5.8);
-        targetGoal.set(0, -0.05, 0);
+        cameraGoal.set(0, 0.06, 6.5);
+        targetGoal.set(0, -0.14, 0);
       } else {
         cameraGoal.set(0, 0.34, 3.9);
         targetGoal.set(0, 0.24, 0);
       }
-      camera.position.lerp(cameraGoal, 0.075);
-      target.lerp(targetGoal, 0.075);
-      camera.lookAt(target);
+      if (cameraModeChangedRef.current) {
+        resetCameraView();
+        cameraModeChangedRef.current = false;
+      }
+      controls.update();
 
       renderer.render(scene, camera);
     }
@@ -652,6 +1084,8 @@ export default function MixamoAvatar({
     return () => {
       disposed = true;
       cancelAnimationFrame(frameId);
+      resetViewRef.current = null;
+      controls.dispose();
       renderer.dispose();
       scene.traverse((node) => {
         node.geometry?.dispose?.();
@@ -668,6 +1102,14 @@ export default function MixamoAvatar({
         className="mixamo-avatar-canvas"
         aria-label="Mixamo humanoid demonstrating articulated finger gestures"
       />
+      <button
+        type="button"
+        className="mixamo-reset-view"
+        onClick={() => resetViewRef.current?.()}
+        title="Reset 3D view"
+      >
+        Reset view
+      </button>
       <div className="mixamo-floor-glow" />
     </div>
   );

@@ -6,6 +6,7 @@ import CaptionBar from "../components/CaptionBar";
 import YouTubePlayer from "../components/YouTubePlayer";
 import ControlPanel from "../components/ControlPanel";
 import { findCaption, computeNMM } from "../utils/sync";
+import { shouldAvatarAnimate } from "../services/timelineScheduler";
 import "./PlayerPage.css";
 
 const API = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
@@ -145,6 +146,7 @@ export default function PlayerPage({ videoData, onBack, avatarMode = "vrm" }) {
     () => computeNMM(currentCaption?.gloss, currentCaption?.text) ?? NEUTRAL_NMM,
     [currentCaption]
   );
+  const avatarIsPlaying = shouldAvatarAnimate(playerState, currentCaption) && signEnabled;
 
   return (
     <div className="player-page">
@@ -207,7 +209,7 @@ export default function PlayerPage({ videoData, onBack, avatarMode = "vrm" }) {
         </div>
 
         {signEnabled && (
-          <div className={`sign-panel ${layout === "picture-in-picture" ? "pip" : ""}`}>
+          <div className={`sign-panel ${avatarMode === "mixamo" ? "mixamo-sign-panel" : ""} ${layout === "picture-in-picture" ? "pip" : ""}`}>
             <div className="sign-panel-header">
               <span className="sign-badge">
                 {avatarMode === "mixamo" ? "Mixamo Humanoid" : "VRM Avatar"}
@@ -219,6 +221,7 @@ export default function PlayerPage({ videoData, onBack, avatarMode = "vrm" }) {
                 isActive={!!currentCaption && signEnabled}
                 currentTime={currentTime}
                 playbackSpeed={learningMode ? playbackSpeed : 1.0}
+                isPlaying={avatarIsPlaying}
               />
             ) : (
               <SignAvatar
