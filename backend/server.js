@@ -219,7 +219,11 @@ app.get("/api/cache/:videoId", (req, res) => {
 
 // Health check
 app.get("/health", (req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
+  res.json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    deploymentCommit: process.env.RENDER_GIT_COMMIT || null,
+  });
 });
 
 // Pre-warm the demo lecture cache 3 seconds after startup.
