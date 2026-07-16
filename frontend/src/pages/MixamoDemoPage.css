@@ -189,6 +189,65 @@
   font-size: 12px;
 }
 
+.mixamo-sentence-progress {
+  margin-top: 4px;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 11px;
+  font-style: normal;
+}
+
+.mixamo-sentence-card {
+  padding: 16px;
+  border: 1px solid var(--mx-border);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.mixamo-sentence-input-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.mixamo-sentence-input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--mx-border);
+  border-radius: 9px;
+  background: rgba(0, 0, 0, 0.3);
+  color: #f7f8f3;
+  font: inherit;
+  font-size: 13px;
+}
+
+.mixamo-sentence-input:focus {
+  outline: none;
+  border-color: var(--mx-accent);
+}
+
+.mixamo-sentence-btn {
+  padding: 0 16px;
+  border: 1px solid var(--mx-accent);
+  border-radius: 9px;
+  background: var(--mx-accent);
+  color: #0a0b08;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.mixamo-sentence-btn.stop {
+  border-color: rgba(255, 141, 141, 0.65);
+  background: transparent;
+  color: #ff8d8d;
+}
+
+.mixamo-sentence-card .mixamo-note {
+  margin: 12px 0 0;
+}
+
 .mixamo-group-tabs {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

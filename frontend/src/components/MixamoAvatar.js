@@ -1,10 +1,43 @@
 import React, { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader";
+import MOCAP_CLIPS from "./mocapClips";
 import "./MixamoAvatar.css";
 
 const MODEL_URL = "/models/mixamo/Ch09_nonPBR.fbx";
 const FINGERS = ["Thumb", "Index", "Middle", "Ring", "Pinky"];
+
+// Loops a real captured curl curve (see mocapClips.js) over its own real
+// duration and linearly interpolates between the 24 captured samples.
+function sampleMocapCurl(samples, phase) {
+  const t = ((phase % 1) + 1) % 1;
+  const pos = t * (samples.length - 1);
+  const lo = Math.floor(pos);
+  const hi = Math.min(lo + 1, samples.length - 1);
+  const frac = pos - lo;
+  return samples[lo] * (1 - frac) + samples[hi] * frac;
+}
+
+// Applies real mocap-captured curl for (gesture, side) if we have it, looped at
+// the real signer's own pace; otherwise falls back to the static hand-authored
+// handshape. Either way, spread/thumbMode still come from `fallbackShape` — mocap
+// only supplies real curl, not the full handshape recipe.
+function applyMocapOrHandshape(rig, side, gesture, fallbackShape, time, overrides = {}) {
+  const clip = MOCAP_CLIPS[gesture]?.[side];
+  if (!clip) {
+    applyHandshape(rig, side, fallbackShape, overrides);
+    return;
+  }
+  const phase = time / clip.seconds;
+  applyHandshape(rig, side, fallbackShape, {
+    thumb: sampleMocapCurl(clip.Thumb, phase),
+    index: sampleMocapCurl(clip.Index, phase),
+    middle: sampleMocapCurl(clip.Middle, phase),
+    ring: sampleMocapCurl(clip.Ring, phase),
+    pinky: sampleMocapCurl(clip.Pinky, phase),
+    ...overrides,
+  });
+}
 
 const HANDSHAPES = {
   relaxed: { thumb: 0.22, index: 0.12, middle: 0.16, ring: 0.2, pinky: 0.24 },
@@ -93,11 +126,15 @@ const WRIST_POSES = {
   helpRight: [-1.43452, -2.69908, -2.3862],
 };
 
+// Eased ~15% off the raw calibration on joints 1-2 (MCP/PIP) — at full
+// magnitude the curl drove fingertips through the palm and into neighboring
+// fingers when viewed from the front. Joint 3 (DIP) left as calibrated since
+// it was already modest and shapes the natural fingertip curve.
 const CLOSED_FINGER_ANGLES = {
-  Index: [1.64597, 1.85473, 0.20517],
-  Middle: [1.7764, 1.76649, 0.75136],
-  Ring: [1.79465, 1.8887, 0.53784],
-  Pinky: [1.79134, 1.88608, 0.36841],
+  Index: [1.399, 1.577, 0.20517],
+  Middle: [1.510, 1.501, 0.75136],
+  Ring: [1.526, 1.605, 0.53784],
+  Pinky: [1.523, 1.603, 0.36841],
 };
 
 const THUMB_ACROSS = [
@@ -195,6 +232,11 @@ function applyFinger(rig, side, finger, curl, spread = 0) {
     ? [0.52, 0.72, 0.58]
     : [0.82, 1.02, 0.74];
 
+  // Widen lateral spread as the finger closes so adjacent curled fingers
+  // don't intersect each other — at curl 0 (open hand) this is unchanged
+  // from the original spread value; at curl 1 (full fist) spread doubles.
+  const closureSpread = spread * (1 + curl);
+
   for (let joint = 1; joint <= 3; joint += 1) {
     const isFirst = joint === 1;
     const thumbOpposition = finger === "Thumb" && isFirst ? curl * 0.5 : 0;
@@ -202,7 +244,7 @@ function applyFinger(rig, side, finger, curl, spread = 0) {
       rig,
       `${side}Hand${finger}${joint}`,
       thumbOpposition,
-      isFirst ? spread * spreadSign : 0,
+      isFirst ? closureSpread * spreadSign : 0,
       (closed?.[joint - 1] ?? angles[joint - 1] * curl) * curlSign
     );
   }
@@ -301,7 +343,7 @@ function applyCommonGesture(rig, gesture, time) {
         WRIST_POSES.highRight[1],
         WRIST_POSES.highRight[2] + wave * 0.28
       );
-      applyHandshape(rig, "Right", "open");
+      applyMocapOrHandshape(rig, "Right", "HELLO", "open", time);
       break;
     case "THANK":
       applyBlendedArmPose(
@@ -316,12 +358,12 @@ function applyCommonGesture(rig, gesture, time) {
         "RightHand",
         ...mixArray(WRIST_POSES.highRight, WRIST_POSES.forwardRight, slow)
       );
-      applyHandshape(rig, "Right", "open");
+      applyMocapOrHandshape(rig, "Right", "THANK", "open", time);
       break;
     case "YOU":
       applyArmPose(rig, "Right", ARM_POSES.forwardRight);
       setBoneDelta(rig, "RightHand", ...WRIST_POSES.forwardRight);
-      applyHandshape(rig, "Right", "point");
+      applyMocapOrHandshape(rig, "Right", "YOU", "point", time);
       break;
     case "YES":
       applyArmPose(rig, "Right", ARM_POSES.centerRight);
@@ -332,26 +374,20 @@ function applyCommonGesture(rig, gesture, time) {
         WRIST_POSES.centerRight[1],
         WRIST_POSES.centerRight[2] + wave * 0.1
       );
-      applyHandshape(rig, "Right", "fist");
+      applyMocapOrHandshape(rig, "Right", "YES", "fist", time);
       break;
-    case "NO": {
-      const pinch = Math.max(0, Math.sin(time * 5.8));
+    case "NO":
       applyArmPose(rig, "Right", ARM_POSES.centerRight);
       setBoneDelta(rig, "RightHand", ...WRIST_POSES.centerRight);
-      applyHandshape(rig, "Right", "two", {
-        index: pinch * 0.58,
-        middle: pinch * 0.58,
-        thumb: 0.3 + pinch * 0.25,
-      });
+      applyMocapOrHandshape(rig, "Right", "NO", "two", time);
       break;
-    }
     case "HELP":
       applyArmPose(rig, "Left", ARM_POSES.helpLeft);
       applyArmPose(rig, "Right", ARM_POSES.helpRight);
       setBoneDelta(rig, "LeftHand", ...WRIST_POSES.helpLeft);
       setBoneDelta(rig, "RightHand", ...WRIST_POSES.helpRight);
-      applyHandshape(rig, "Left", "open");
-      applyHandshape(rig, "Right", "thumbUp");
+      applyMocapOrHandshape(rig, "Left", "HELP", "open", time);
+      applyMocapOrHandshape(rig, "Right", "HELP", "thumbUp", time);
       break;
     case "PLEASE":
       applyArmPose(rig, "Right", ARM_POSES.centerRight);
@@ -362,7 +398,51 @@ function applyCommonGesture(rig, gesture, time) {
         WRIST_POSES.centerRight[1],
         WRIST_POSES.centerRight[2] + wave * 0.08
       );
-      applyHandshape(rig, "Right", "open");
+      applyMocapOrHandshape(rig, "Right", "PLEASE", "open", time);
+      break;
+    case "GOOD":
+      applyArmPose(rig, "Right", ARM_POSES.centerRight);
+      setBoneDelta(
+        rig,
+        "RightHand",
+        WRIST_POSES.centerRight[0],
+        WRIST_POSES.centerRight[1],
+        WRIST_POSES.centerRight[2] + wave * 0.1
+      );
+      applyMocapOrHandshape(rig, "Right", "GOOD", "thumbUp", time);
+      break;
+    case "OK":
+      applyArmPose(rig, "Right", ARM_POSES.centerRight);
+      setBoneDelta(rig, "RightHand", ...WRIST_POSES.centerRight);
+      applyMocapOrHandshape(rig, "Right", "OK", "f", time);
+      break;
+    case "LOVE":
+      applyArmPose(rig, "Left", ARM_POSES.helpLeft);
+      applyArmPose(rig, "Right", ARM_POSES.helpRight);
+      setBoneDelta(rig, "LeftHand", ...WRIST_POSES.helpLeft);
+      setBoneDelta(rig, "RightHand", ...WRIST_POSES.helpRight);
+      applyMocapOrHandshape(rig, "Left", "LOVE", "fist", time);
+      applyMocapOrHandshape(rig, "Right", "LOVE", "fist", time);
+      break;
+    case "MORE":
+      applyArmPose(rig, "Left", ARM_POSES.centerLeft);
+      applyArmPose(rig, "Right", ARM_POSES.centerRight);
+      setBoneDelta(
+        rig,
+        "LeftHand",
+        WRIST_POSES.centerLeft[0],
+        WRIST_POSES.centerLeft[1],
+        WRIST_POSES.centerLeft[2] + wave * 0.06
+      );
+      setBoneDelta(
+        rig,
+        "RightHand",
+        WRIST_POSES.centerRight[0],
+        WRIST_POSES.centerRight[1],
+        WRIST_POSES.centerRight[2] + wave * 0.06
+      );
+      applyMocapOrHandshape(rig, "Left", "MORE", "o", time);
+      applyMocapOrHandshape(rig, "Right", "MORE", "o", time);
       break;
     default:
       break;
