@@ -8,6 +8,22 @@ const { YoutubeTranscript } = require("youtube-transcript");
 const TRANSLATION_CACHE_DIR =
   process.env.SIGNOLIGHT_CACHE_DIR || path.resolve(__dirname, "../cache");
 
+// The regular YouTube watch page is frequently consent-gated or rate-limited on
+// cloud-hosting IP ranges such as Render. The Android InnerTube client returns
+// the same public caption tracks without relying on watch-page HTML.
+const INNERTUBE_API_KEY =
+  process.env.YOUTUBE_INNERTUBE_API_KEY ||
+  "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8";
+const INNERTUBE_ANDROID_VERSION =
+  process.env.YOUTUBE_ANDROID_CLIENT_VERSION || "20.10.38";
+const INNERTUBE_ANDROID_USER_AGENT =
+  `com.google.android.youtube/${INNERTUBE_ANDROID_VERSION} ` +
+  "(Linux; U; Android 11) gzip";
+const PREFER_INNERTUBE =
+  process.env.YOUTUBE_PREFER_INNERTUBE == null
+    ? process.env.NODE_ENV === "production"
+    : /^true$/i.test(process.env.YOUTUBE_PREFER_INNERTUBE);
+
 const YOUTUBE_HEADERS = {
   "User-Agent":
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
@@ -221,9 +237,11 @@ function extractJsonObjectAfter(html, marker) {
 }
 
 async function getCaptionTracksFromWatchPage(videoId) {
-  const response = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
-    headers: YOUTUBE_HEADERS,
-  });
+  const response = await fetchWithTimeout(
+    `https://www.youtube.com/watch?v=${videoId}`,
+    { headers: YOUTUBE_HEADERS },
+    10000
+  );
 
   if (!response.ok) return [];
 
@@ -263,9 +281,10 @@ function parseTrackListXml(xml) {
 }
 
 async function getCaptionTracksFromTimedText(videoId) {
-  const response = await fetch(
+  const response = await fetchWithTimeout(
     `https://www.youtube.com/api/timedtext?type=list&v=${videoId}`,
-    { headers: YOUTUBE_HEADERS }
+    { headers: YOUTUBE_HEADERS },
+    10000
   );
 
   if (!response.ok) return [];
@@ -282,6 +301,63 @@ async function getCaptionTracksFromTimedText(videoId) {
     kind: track.kind,
     isTranslatable: true,
   }));
+}
+
+async function getCaptionTracksFromInnertube(videoId) {
+  try {
+    const response = await fetchWithTimeout(
+      `https://www.youtube.com/youtubei/v1/player?key=${INNERTUBE_API_KEY}&prettyPrint=false`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "User-Agent": INNERTUBE_ANDROID_USER_AGENT,
+          "X-YouTube-Client-Name": "3",
+          "X-YouTube-Client-Version": INNERTUBE_ANDROID_VERSION,
+        },
+        body: JSON.stringify({
+          context: {
+            client: {
+              clientName: "ANDROID",
+              clientVersion: INNERTUBE_ANDROID_VERSION,
+              androidSdkVersion: 30,
+              hl: "en",
+              gl: "US",
+            },
+          },
+          videoId,
+          contentCheckOk: true,
+          racyCheckOk: true,
+        }),
+      },
+      15000
+    );
+
+    if (!response.ok) {
+      console.warn(`[captions] InnerTube returned ${response.status} for ${videoId}`);
+      return [];
+    }
+
+    const player = await response.json();
+    const status = player?.playabilityStatus?.status;
+    const tracks =
+      player?.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
+
+    if (!tracks.length) {
+      console.warn(
+        `[captions] InnerTube returned no tracks for ${videoId} (status=${status || "unknown"})`
+      );
+      return [];
+    }
+
+    return tracks.map((track) => ({
+      ...track,
+      _source: "innertube-android",
+    }));
+  } catch (err) {
+    console.warn(`[captions] InnerTube fallback failed for ${videoId}: ${err.message}`);
+    return [];
+  }
 }
 
 function chooseCaptionTrack(tracks) {
@@ -306,7 +382,21 @@ async function fetchCaptionTextFromTrack(track, targetLanguage = "en") {
     ...(wantsTranslation ? { tlang: targetLanguage } : {}),
   });
 
-  const response = await fetch(url, { headers: YOUTUBE_HEADERS });
+  const response = await fetchWithTimeout(
+    url,
+    {
+      headers:
+        track._source === "innertube-android"
+          ? {
+              ...YOUTUBE_HEADERS,
+              "User-Agent": INNERTUBE_ANDROID_USER_AGENT,
+              "X-YouTube-Client-Name": "3",
+              "X-YouTube-Client-Version": INNERTUBE_ANDROID_VERSION,
+            }
+          : YOUTUBE_HEADERS,
+    },
+    15000
+  );
   if (!response.ok) return "";
 
   return response.text();
@@ -323,20 +413,38 @@ async function fetchDirectCaptionText(videoId, targetLanguage = "en") {
     `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&kind=asr&fmt=srv3${translation}`,
   ];
 
-  for (const url of urls) {
-    const response = await fetch(url, { headers: YOUTUBE_HEADERS });
-    if (!response.ok) continue;
+  const responses = await Promise.all(
+    urls.map(async (url) => {
+      try {
+        const response = await fetchWithTimeout(
+          url,
+          { headers: YOUTUBE_HEADERS },
+          8000
+        );
+        if (!response.ok) return "";
+        const text = await response.text();
+        return text.trim().length > 20 ? text : "";
+      } catch {
+        return "";
+      }
+    })
+  );
 
-    const text = await response.text();
-    if (text.trim().length > 20) return text;
-  }
-
-  return "";
+  return responses.find(Boolean) || "";
 }
 
 async function fetchCaptionsFromLibrary(videoId) {
+  let timeout;
   try {
-    const rows = await YoutubeTranscript.fetchTranscript(videoId, { lang: "en" });
+    const rows = await Promise.race([
+      YoutubeTranscript.fetchTranscript(videoId, { lang: "en" }),
+      new Promise((_, reject) => {
+        timeout = setTimeout(
+          () => reject(new Error("youtube-transcript timed out")),
+          15000
+        );
+      }),
+    ]);
     return rows
       .map((row) => ({
         start: Math.round(row.offset),
@@ -350,6 +458,8 @@ async function fetchCaptionsFromLibrary(videoId) {
   } catch (err) {
     console.error("youtube-transcript fallback error:", err.message);
     return [];
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
@@ -362,7 +472,10 @@ function parseTimedText(xml) {
   while ((match = textRegex.exec(xml)) !== null) {
     const start = parseFloat(match[1]) * 1000;
     const duration = parseFloat(match[2]) * 1000;
-    const text = decodeEntities(match[3]).replace(/<[^>]+>/g, "").trim();
+    const text = decodeEntities(match[3])
+      .replace(/<[^>]+>/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
 
     if (text) {
       segments.push({
@@ -376,7 +489,10 @@ function parseTimedText(xml) {
   while ((match = srv3Regex.exec(xml)) !== null) {
     const start = Number(match[1]);
     const duration = Number(match[2]);
-    const text = decodeEntities(match[3]).replace(/<[^>]+>/g, "").trim();
+    const text = decodeEntities(match[3])
+      .replace(/<[^>]+>/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
 
     if (text) segments.push({ start, end: start + duration, text });
   }
@@ -429,6 +545,30 @@ function parseCaptions(captionText) {
   return parseTimedText(captionText);
 }
 
+async function fetchParsedCaptionTrack(track, targetLanguage) {
+  if (!track) return { text: "", captions: [] };
+
+  let text = await fetchCaptionTextFromTrack(track, targetLanguage);
+  let captions = parseCaptions(text);
+
+  // Some YouTube clients advertise translation but return an empty body when
+  // tlang is requested. Keep the source transcript and translate it through
+  // the free text fallback later instead of discarding a valid caption track.
+  if (
+    !captions.length &&
+    targetLanguage &&
+    targetLanguage !== track.languageCode
+  ) {
+    text = await fetchCaptionTextFromTrack(
+      track,
+      track.languageCode || "en"
+    );
+    captions = parseCaptions(text);
+  }
+
+  return { text, captions };
+}
+
 // GET /api/captions?videoId=xxx
 router.get("/", async (req, res) => {
   try {
@@ -450,24 +590,47 @@ router.get("/", async (req, res) => {
       }
     }
 
-    const pageTracks = await getCaptionTracksFromWatchPage(id);
-    const listTracks = pageTracks.length
-      ? []
-      : await getCaptionTracksFromTimedText(id);
-    const track = chooseCaptionTrack([...pageTracks, ...listTracks]);
+    const [pageResult, listResult, innertubeResult] = await Promise.allSettled([
+      getCaptionTracksFromWatchPage(id),
+      getCaptionTracksFromTimedText(id),
+      getCaptionTracksFromInnertube(id),
+    ]);
+    const pageTracks = pageResult.status === "fulfilled" ? pageResult.value : [];
+    const listTracks = listResult.status === "fulfilled" ? listResult.value : [];
+    const innertubeTracks =
+      innertubeResult.status === "fulfilled" ? innertubeResult.value : [];
+    const standardTrack = chooseCaptionTrack([...pageTracks, ...listTracks]);
+    const innertubeTrack = chooseCaptionTrack(innertubeTracks);
+    const candidateTracks = PREFER_INNERTUBE
+      ? [innertubeTrack, standardTrack]
+      : [standardTrack, innertubeTrack];
 
-    let captionText = track
-      ? await fetchCaptionTextFromTrack(track, targetLanguage)
-      : "";
-    let source = track ? "captionTracks" : "direct";
+    let track = null;
+    let captionText = "";
+    let captions = [];
+    let source = "direct";
 
-    if (!captionText.trim()) {
-      captionText = await fetchDirectCaptionText(id, targetLanguage);
-      source = "direct";
+    for (const candidate of candidateTracks.filter(Boolean)) {
+      const result = await fetchParsedCaptionTrack(candidate, targetLanguage);
+      if (!result.captions.length) continue;
+      track = candidate;
+      captionText = result.text;
+      captions = result.captions;
+      source = candidate._source || "captionTracks";
+      break;
     }
 
-    let captions = parseCaptions(captionText);
     let usedLibraryFallback = false;
+
+    if (!captions.length) {
+      const directText = await fetchDirectCaptionText(id, targetLanguage);
+      const directCaptions = parseCaptions(directText);
+      if (directCaptions.length) {
+        captions = directCaptions;
+        captionText = directText;
+        source = "direct";
+      }
+    }
 
     if (!captions.length) {
       captions = await fetchCaptionsFromLibrary(id);
@@ -478,9 +641,16 @@ router.get("/", async (req, res) => {
     if (!captions.length) {
       return res.status(404).json({
         error:
-          "No captions available from YouTube for this video. Try a public video with CC enabled.",
+          "YouTube did not return a usable caption track for this video.",
         hint:
-          "Use videos from 3Blue1Brown, TED-Ed, Khan Academy, or official YouTube education channels.",
+          "Confirm the video is public and that CC or automatic captions are available, then try again.",
+        attemptedSources: [
+          "watch-page",
+          "timed-text",
+          "direct-caption-url",
+          "innertube-android",
+          "transcript-library",
+        ],
       });
     }
 
@@ -544,4 +714,9 @@ module.exports = router;
 module.exports._test = {
   containsBangla,
   makeTranslationChunks,
+  parseCaptions,
+  chooseCaptionTrack,
+  getCaptionTracksFromInnertube,
+  fetchCaptionTextFromTrack,
+  fetchParsedCaptionTrack,
 };
