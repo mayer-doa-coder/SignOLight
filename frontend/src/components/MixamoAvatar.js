@@ -327,9 +327,6 @@ function resetRig(rig) {
 function applyFinger(rig, side, finger, curl, spread = 0) {
   const curlSign = side === "Left" ? -1 : 1;
   const spreadSign = side === "Left" ? -1 : 1;
-  const closed = finger !== "Thumb" && curl >= 0.75
-    ? CLOSED_FINGER_ANGLES[finger]
-    : null;
   const angles = finger === "Thumb"
     ? [0.52, 0.72, 0.58]
     : [0.82, 1.02, 0.74];
@@ -339,15 +336,28 @@ function applyFinger(rig, side, finger, curl, spread = 0) {
   // from the original spread value; at curl 1 (full fist) spread doubles.
   const closureSpread = spread * (1 + curl);
 
+  // Smoothly ramp from the small-angle linear model toward the calibrated
+  // fully-closed fist angles as curl approaches 1, instead of hard-switching
+  // at a fixed threshold. A hard cutoff (curl >= 0.75) caused a visible
+  // snap/pop — real mocap-captured curl varies continuously frame to frame
+  // and crosses a fixed threshold constantly, unlike the old hand-authored
+  // presets which mostly sat clearly on one side of it.
+  const closeBlend = finger !== "Thumb"
+    ? Math.max(0, Math.min(1, (curl - 0.55) / 0.4))
+    : 0;
+
   for (let joint = 1; joint <= 3; joint += 1) {
     const isFirst = joint === 1;
     const thumbOpposition = finger === "Thumb" && isFirst ? curl * 0.5 : 0;
+    const linearAngle = angles[joint - 1] * curl;
+    const closedAngle = CLOSED_FINGER_ANGLES[finger]?.[joint - 1] ?? linearAngle;
+    const blendedAngle = linearAngle + (closedAngle - linearAngle) * closeBlend;
     setBoneDelta(
       rig,
       `${side}Hand${finger}${joint}`,
       thumbOpposition,
       isFirst ? closureSpread * spreadSign : 0,
-      (closed?.[joint - 1] ?? angles[joint - 1] * curl) * curlSign
+      blendedAngle * curlSign
     );
   }
 }
