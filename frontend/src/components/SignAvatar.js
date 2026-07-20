@@ -84,7 +84,7 @@ const SIGN_MOTIONS = {
   NODE:        { label: "Node",        motion: "point-self",    color: "#6366f1", expression: "focus" },
   SIGNAL:      { label: "Signal",      motion: "wave",          color: "#22d3ee", expression: "focus" },
   PIXEL:       { label: "Pixel",       motion: "snap",          color: "#a78bfa", expression: "focus" },
-  EXAMPLE:     { label: "Example",     motion: "point-out",     color: "#7c3aed", expression: "focus" },
+  EXAMPLE:     { label: "Example",     motion: "teach",         color: "#7c3aed", expression: "focus" },
   PROCESS:     { label: "Process",     motion: "circle-chest",  color: "#22d3ee", expression: "focus" },
   STEP:        { label: "Step",        motion: "index-temple",  color: "#f59e0b", expression: "focus" },
   RESULT:      { label: "Result",      motion: "chin-forward",  color: "#10b981", expression: "smile" },
@@ -123,7 +123,7 @@ const SIGN_MOTIONS = {
   READ:        { label: "Read",        motion: "flat-hand",     color: "#22d3ee", expression: "focus" },
   LOOK:        { label: "Look",        motion: "asl-see",       color: "#6366f1", expression: "focus" },
   SEE:         { label: "See",         motion: "asl-see",       color: "#6366f1", expression: "focus" },
-  FIND:        { label: "Find",        motion: "snap",          color: "#22d3ee", expression: "focus" },
+  FIND:        { label: "Find",        motion: "picture",       color: "#22d3ee", expression: "focus" },
   GIVE:        { label: "Give",        motion: "lift",          color: "#10b981", expression: "soft" },
   TAKE:        { label: "Take",        motion: "point-self",    color: "#f59e0b", expression: "focus" },
   PUT:         { label: "Put",         motion: "flat-hand",     color: "#6366f1", expression: "focus" },
@@ -145,7 +145,7 @@ const SIGN_MOTIONS = {
   TYPE:        { label: "Type",        motion: "flat-hand",     color: "#6366f1", expression: "focus" },
   GROUP:       { label: "Group",       motion: "circle-chest",  color: "#22d3ee", expression: "focus" },
   LEVEL:       { label: "Level",       motion: "flat-hand",     color: "#a78bfa", expression: "focus" },
-  SYSTEM:      { label: "System",      motion: "spread-hands",  color: "#6366f1", expression: "focus" },
+  SYSTEM:      { label: "System",      motion: "circle-wrist",  color: "#6366f1", expression: "focus" },
   WORLD:       { label: "World",       motion: "circle-chest",  color: "#10b981", expression: "focus" },
   NUMBER:      { label: "Number",      motion: "asl-number",    color: "#f59e0b", expression: "focus" },
   BIG:         { label: "Big",         motion: "spread-hands",  color: "#10b981", expression: "focus" },
@@ -243,7 +243,7 @@ const SIGN_MOTIONS = {
   STRUCTURE:   { label: "Structure",   motion: "knuckles",      color: "#6366f1", expression: "focus" },
   CLOSE:       { label: "Close",       motion: "knuckles",      color: "#22d3ee", expression: "focus" },
   DO:          { label: "Do",          motion: "knuckles",      color: "#6366f1", expression: "focus" },
-  DID:         { label: "Did",         motion: "knuckles",      color: "#6366f1", expression: "focus" },
+  DID:         { label: "Did",         motion: "shrug",         color: "#6366f1", expression: "focus" },
   NEURAL:      { label: "Neural",      motion: "tap-head",      color: "#22d3ee", expression: "focus" },
   BRAIN:       { label: "Brain",       motion: "asl-know",      color: "#22d3ee", expression: "focus" },
   RECOGNIZE:   { label: "Recognize",   motion: "asl-know",      color: "#7c3aed", expression: "focus" },
@@ -252,7 +252,7 @@ const SIGN_MOTIONS = {
   SAY:         { label: "Say",         motion: "chin-forward",  color: "#00d4ff", expression: "focus" },
   TELL:        { label: "Tell",        motion: "chin-forward",  color: "#00d4ff", expression: "focus" },
   FEED:        { label: "Feed",        motion: "chin-forward",  color: "#10b981", expression: "focus" },
-  NEXT:        { label: "Next",        motion: "chin-forward",  color: "#22d3ee", expression: "focus" },
+  NEXT:        { label: "Next",        motion: "out",  color: "#22d3ee", expression: "focus" },
   THEN:        { label: "Then",        motion: "chin-forward",  color: "#64748b", expression: "focus" },
   WHO:         { label: "Who",         motion: "chin-forward",  color: "#f59e0b", expression: "question" },
   WELL:        { label: "Well",        motion: "spread-hands",  color: "#64748b", expression: "focus" },
@@ -278,7 +278,7 @@ const SIGN_MOTIONS = {
   MAYBE:       { label: "Maybe",       motion: "shrug",         color: "#f59e0b", expression: "question" },
   VALUE:       { label: "Value",       motion: "thumbs",        color: "#f59e0b", expression: "focus" },
   ABLE:        { label: "Able",        motion: "thumbs",        color: "#10b981", expression: "focus" },
-  VIDEO:       { label: "Video",       motion: "picture",       color: "#f59e0b", expression: "focus" },
+  VIDEO:       { label: "Video",       motion: "computer",      color: "#f59e0b", expression: "focus" },
   IM:          { label: "I'm",         motion: "point-self",    color: "#f59e0b", expression: "focus" },
   ILL:         { label: "I'll",        motion: "point-self",    color: "#f59e0b", expression: "focus" },
   OWN:         { label: "Own",         motion: "point-self",    color: "#f59e0b", expression: "focus" },
@@ -288,7 +288,7 @@ const SIGN_MOTIONS = {
   VARIOUS:     { label: "Various",     motion: "waggle",        color: "#a78bfa", expression: "focus" },
   LETS:        { label: "Let's",       motion: "lift",          color: "#10b981", expression: "focus" },
   HOLD:        { label: "Hold",        motion: "lift",          color: "#f59e0b", expression: "focus" },
-  GET:         { label: "Get",         motion: "lift",          color: "#10b981", expression: "focus" },
+  GET:         { label: "Get",         motion: "index-temple",  color: "#10b981", expression: "focus" },
   GIVEN:       { label: "Given",       motion: "lift",          color: "#10b981", expression: "soft"  },
   TOP:         { label: "Top",         motion: "up",            color: "#10b981", expression: "focus" },
   LOW:         { label: "Low",         motion: "down",          color: "#ef4444", expression: "focus" },
@@ -309,7 +309,7 @@ const SIGN_MOTIONS = {
 
   // === Batch 4: remaining common words from the transcript (jargon/names stay fingerspelled).
   MACHINE:     { label: "Machine",     motion: "knuckles",      color: "#a78bfa", expression: "focus" },
-  MATH:        { label: "Math",        motion: "knuckles",      color: "#a78bfa", expression: "focus" },
+  MATH:        { label: "Math",        motion: "tap-head",      color: "#a78bfa", expression: "focus" },
   FEEL:        { label: "Feel",        motion: "circle-chest",  color: "#10b981", expression: "focus" },
   COMPONENT:   { label: "Component",   motion: "flat-hand",     color: "#6366f1", expression: "focus" },
   END:         { label: "End",         motion: "chin-forward",  color: "#64748b", expression: "focus" },
@@ -321,7 +321,7 @@ const SIGN_MOTIONS = {
   LIGHT:       { label: "Light",       motion: "snap",          color: "#f59e0b", expression: "smile" },
   BRING:       { label: "Bring",       motion: "lift",          color: "#10b981", expression: "focus" },
   LET:         { label: "Let",         motion: "lift",          color: "#10b981", expression: "focus" },
-  AFTER:       { label: "After",       motion: "point-out",     color: "#64748b", expression: "focus" },
+  AFTER:       { label: "After",       motion: "up",            color: "#64748b", expression: "focus" },
   TALK:        { label: "Talk",        motion: "chin-forward",  color: "#00d4ff", expression: "focus" },
   EXPECT:      { label: "Expect",      motion: "point-out",     color: "#f59e0b", expression: "focus" },
   MIDDLE:      { label: "Middle",      motion: "flat-hand",     color: "#a78bfa", expression: "focus" },
@@ -349,9 +349,9 @@ const SIGN_MOTIONS = {
   DETERMINE:   { label: "Determine",   motion: "knuckles",      color: "#6366f1", expression: "focus" },
   MECHANISM:   { label: "Mechanism",   motion: "knuckles",      color: "#a78bfa", expression: "focus" },
   BEHAVE:      { label: "Behave",      motion: "circle-chest",  color: "#22d3ee", expression: "focus" },
-  CHOICE:      { label: "Choice",      motion: "point-out",     color: "#f59e0b", expression: "focus" },
-  CHOSE:       { label: "Chose",       motion: "point-out",     color: "#f59e0b", expression: "focus" },
-  CHOOSE:      { label: "Choose",      motion: "point-out",     color: "#f59e0b", expression: "focus" },
+  CHOICE:      { label: "Choice",      motion: "thumbs",        color: "#f59e0b", expression: "focus" },
+  CHOSE:       { label: "Chose",       motion: "thumbs",        color: "#f59e0b", expression: "focus" },
+  CHOOSE:      { label: "Choose",      motion: "thumbs",        color: "#f59e0b", expression: "focus" },
   NICE:        { label: "Nice",        motion: "flat-hand",     color: "#10b981", expression: "smile" },
   EXPERIMENT:  { label: "Experiment",  motion: "knuckles",      color: "#a78bfa", expression: "focus" },
   WRAP:        { label: "Wrap",        motion: "circle-wrist",  color: "#22d3ee", expression: "focus" },
@@ -381,6 +381,172 @@ const SIGN_MOTIONS = {
   ANALOGY:     { label: "Analogy",     motion: "connect",       color: "#22d3ee", expression: "focus" },
   YOUVE:       { label: "You've",      motion: "point-out",     color: "#22d3ee", expression: "focus" },
   YOURE:       { label: "You're",      motion: "point-out",     color: "#22d3ee", expression: "focus" },
+
+  // === Physics / mechanics domain vocabulary (lecture caption expansion) ===
+  FORCE: { label: "Force", motion: "knuckles", color: "#3b82f6", expression: "focus" },
+  MOTION: { label: "Motion", motion: "circle-wrist", color: "#3b82f6", expression: "focus" },
+  OBJECT: { label: "Object", motion: "flat-hand", color: "#3b82f6", expression: "focus" },
+  MOVE: { label: "Move", motion: "waggle", color: "#3b82f6", expression: "focus" },
+  PUSH: { label: "Push", motion: "out", color: "#3b82f6", expression: "focus" },
+  PULL: { label: "Pull", motion: "into", color: "#3b82f6", expression: "focus" },
+  PRESSURE: { label: "Pressure", motion: "problem", color: "#3b82f6", expression: "focus" },
+  AREA: { label: "Area", motion: "spread-hands", color: "#3b82f6", expression: "focus" },
+  VELOCITY: { label: "Velocity", motion: "snap", color: "#3b82f6", expression: "focus" },
+  SPEED: { label: "Speed", motion: "snap", color: "#3b82f6", expression: "focus" },
+  ACCELERATE: { label: "Accelerate", motion: "up", color: "#3b82f6", expression: "focus" },
+  MASS: { label: "Mass", motion: "spread-hands", color: "#3b82f6", expression: "focus" },
+  INERTIA: { label: "Inertia", motion: "problem", color: "#ef4444", expression: "firm" },
+  FRICTION: { label: "Friction", motion: "waggle", color: "#ef4444", expression: "firm" },
+  RESISTANCE: { label: "Resistance", motion: "shake", color: "#ef4444", expression: "firm" },
+  RESIST: { label: "Resist", motion: "shake", color: "#ef4444", expression: "firm" },
+  GRAVITY: { label: "Gravity", motion: "down", color: "#3b82f6", expression: "focus" },
+  BALANCE: { label: "Balance", motion: "flat-hand", color: "#3b82f6", expression: "focus" },
+  STATIONARY: { label: "Stationary", motion: "point-self", color: "#3b82f6", expression: "focus" },
+  REST: { label: "Rest", motion: "point-self", color: "#3b82f6", expression: "focus" },
+  UNIFORM: { label: "Uniform", motion: "flat-hand", color: "#3b82f6", expression: "focus" },
+  CONSTANT: { label: "Constant", motion: "flat-hand", color: "#3b82f6", expression: "focus" },
+  INCREASE: { label: "Increase", motion: "up", color: "#3b82f6", expression: "focus" },
+  DECREASE: { label: "Decrease", motion: "down", color: "#3b82f6", expression: "focus" },
+  NORMAL: { label: "Normal", motion: "flat-hand", color: "#3b82f6", expression: "focus" },
+  DIRECTION: { label: "Direction", motion: "point-out", color: "#3b82f6", expression: "focus" },
+  MAGNITUDE: { label: "Magnitude", motion: "spread-hands", color: "#3b82f6", expression: "focus" },
+  DISPLACEMENT: { label: "Displacement", motion: "y-hand", color: "#3b82f6", expression: "focus" },
+  SURFACE: { label: "Surface", motion: "circle-chest", color: "#3b82f6", expression: "focus" },
+  GROUND: { label: "Ground", motion: "down", color: "#3b82f6", expression: "focus" },
+  WALL: { label: "Wall", motion: "flat-hand", color: "#3b82f6", expression: "focus" },
+  NAIL: { label: "Nail", motion: "point-out", color: "#3b82f6", expression: "focus" },
+  HAMMER: { label: "Hammer", motion: "knuckles", color: "#3b82f6", expression: "focus" },
+  TIP: { label: "Tip", motion: "y-hand", color: "#3b82f6", expression: "focus" },
+  SHARP: { label: "Sharp", motion: "snap", color: "#3b82f6", expression: "focus" },
+  FLAT: { label: "Flat", motion: "combine", color: "#3b82f6", expression: "focus" },
+  CONTACT: { label: "Contact", motion: "connect", color: "#3b82f6", expression: "focus" },
+  APPLY: { label: "Apply", motion: "circle-wrist", color: "#3b82f6", expression: "focus" },
+  ACT: { label: "Act", motion: "fist-circle", color: "#3b82f6", expression: "focus" },
+  EXERT: { label: "Exert", motion: "circle-wrist", color: "#3b82f6", expression: "focus" },
+  INTERACT: { label: "Interact", motion: "connect", color: "#3b82f6", expression: "focus" },
+  CAR: { label: "Car", motion: "circle-chest", color: "#3b82f6", expression: "focus" },
+  ENGINE: { label: "Engine", motion: "computer", color: "#3b82f6", expression: "focus" },
+  WHEEL: { label: "Wheel", motion: "circle-wrist", color: "#3b82f6", expression: "focus" },
+  TRACK: { label: "Track", motion: "picture", color: "#3b82f6", expression: "focus" },
+  SHIP: { label: "Ship", motion: "circle-chest", color: "#3b82f6", expression: "focus" },
+  SPACESHIP: { label: "Spaceship", motion: "circle-chest", color: "#3b82f6", expression: "focus" },
+  PLANE: { label: "Plane", motion: "circle-chest", color: "#3b82f6", expression: "focus" },
+  BALL: { label: "Ball", motion: "circle-chest", color: "#3b82f6", expression: "focus" },
+  PUCK: { label: "Puck", motion: "one", color: "#3b82f6", expression: "focus" },
+  ICE: { label: "Ice", motion: "flat-hand", color: "#3b82f6", expression: "focus" },
+  SNOW: { label: "Snow", motion: "picture", color: "#3b82f6", expression: "focus" },
+  SLIPPERY: { label: "Slippery", motion: "waggle", color: "#3b82f6", expression: "focus" },
+  GLIDE: { label: "Glide", motion: "waggle", color: "#3b82f6", expression: "focus" },
+  ROLL: { label: "Roll", motion: "circle-wrist", color: "#3b82f6", expression: "focus" },
+  THROW: { label: "Throw", motion: "out", color: "#3b82f6", expression: "focus" },
+  KICK: { label: "Kick", motion: "out", color: "#3b82f6", expression: "focus" },
+  KNIFE: { label: "Knife", motion: "knuckles", color: "#3b82f6", expression: "focus" },
+  AXE: { label: "Axe", motion: "knuckles", color: "#3b82f6", expression: "focus" },
+  DRILL: { label: "Drill", motion: "knuckles", color: "#3b82f6", expression: "focus" },
+  PENETRATE: { label: "Penetrate", motion: "into", color: "#3b82f6", expression: "focus" },
+  PIERCE: { label: "Pierce", motion: "into", color: "#3b82f6", expression: "focus" },
+  CUT: { label: "Cut", motion: "into", color: "#3b82f6", expression: "focus" },
+  VACUUM: { label: "Vacuum", motion: "circle-chest", color: "#3b82f6", expression: "focus" },
+  PLANET: { label: "Planet", motion: "spread-hands", color: "#3b82f6", expression: "focus" },
+  STAR: { label: "Star", motion: "spread-hands", color: "#3b82f6", expression: "focus" },
+  ASTEROID: { label: "Asteroid", motion: "spread-hands", color: "#3b82f6", expression: "focus" },
+  SATELLITE: { label: "Satellite", motion: "spread-hands", color: "#3b82f6", expression: "focus" },
+  SPACE: { label: "Space", motion: "spread-hands", color: "#3b82f6", expression: "focus" },
+  FLOOR: { label: "Floor", motion: "flat-hand", color: "#3b82f6", expression: "focus" },
+  TABLE: { label: "Table", motion: "flat-hand", color: "#3b82f6", expression: "focus" },
+  HORIZONTAL: { label: "Horizontal", motion: "flat-hand", color: "#3b82f6", expression: "focus" },
+  STRAIGHT: { label: "Straight", motion: "flat-hand", color: "#3b82f6", expression: "focus" },
+  PATH: { label: "Path", motion: "point-out", color: "#3b82f6", expression: "focus" },
+  REFERENCE: { label: "Reference", motion: "circle-chest", color: "#3b82f6", expression: "focus" },
+  FRAME: { label: "Frame", motion: "combine", color: "#3b82f6", expression: "focus" },
+  CRASH: { label: "Crash", motion: "problem", color: "#ef4444", expression: "firm" },
+  IMPACT: { label: "Impact", motion: "problem", color: "#ef4444", expression: "firm" },
+  ACCIDENT: { label: "Accident", motion: "problem", color: "#ef4444", expression: "firm" },
+  RUN: { label: "Run", motion: "out", color: "#3b82f6", expression: "focus" },
+  LEFT: { label: "Left", motion: "point-out", color: "#3b82f6", expression: "focus" },
+  SIDE: { label: "Side", motion: "point-out", color: "#3b82f6", expression: "focus" },
+  TOUCH: { label: "Touch", motion: "connect", color: "#3b82f6", expression: "focus" },
+  STRONG: { label: "Strong", motion: "knuckles", color: "#3b82f6", expression: "focus" },
+  HIT: { label: "Hit", motion: "knuckles", color: "#3b82f6", expression: "firm" },
+  METER: { label: "Meter", motion: "asl-number", color: "#3b82f6", expression: "focus" },
+  CASE: { label: "Case", motion: "circle-chest", color: "#3b82f6", expression: "focus" },
+  HAPPEN: { label: "Happen", motion: "waggle", color: "#3b82f6", expression: "focus" },
+
+  // === Biology domain vocabulary (lecture caption expansion) ===
+  PLANT: { label: "Plant", motion: "up", color: "#22c55e", expression: "focus" },
+  ENERGY: { label: "Energy", motion: "wave", color: "#22c55e", expression: "focus" },
+  CYCLE: { label: "Cycle", motion: "circle-wrist", color: "#22c55e", expression: "focus" },
+  INDEPENDENT: { label: "Independent", motion: "point-self", color: "#22c55e", expression: "focus" },
+  ADAPTATION: { label: "Adaptation", motion: "waggle", color: "#22c55e", expression: "focus" },
+  ANIMAL: { label: "Animal", motion: "circle-chest", color: "#22c55e", expression: "focus" },
+  HUMAN: { label: "Human", motion: "circle-chest", color: "#22c55e", expression: "focus" },
+  ORGANISM: { label: "Organism", motion: "circle-chest", color: "#22c55e", expression: "focus" },
+  WATER: { label: "Water", motion: "flat-hand", color: "#22c55e", expression: "focus" },
+  LEAF: { label: "Leaf", motion: "flat-hand", color: "#22c55e", expression: "focus" },
+  FLY: { label: "Fly", motion: "up", color: "#22c55e", expression: "focus" },
+  ABILITY: { label: "Ability", motion: "thumbs", color: "#22c55e", expression: "smile" },
+  BENEFIT: { label: "Benefit", motion: "thumbs", color: "#22c55e", expression: "smile" },
+  GREATLY: { label: "Greatly", motion: "knuckles", color: "#22c55e", expression: "focus" },
+  BODY: { label: "Body", motion: "circle-chest", color: "#22c55e", expression: "focus" },
+  EARTH: { label: "Earth", motion: "spread-hands", color: "#22c55e", expression: "focus" },
+  WIND: { label: "Wind", motion: "waggle", color: "#22c55e", expression: "focus" },
+  ATMOSPHERE: { label: "Atmosphere", motion: "some", color: "#22c55e", expression: "focus" },
+
+  // === AI/LLM + general vocabulary (lecture caption expansion) ===
+  TEXT: { label: "Text", motion: "flat-hand", color: "#6366f1", expression: "focus" },
+  TRANSFORMER: { label: "Transformer", motion: "spread-hands", color: "#6366f1", expression: "focus" },
+  ATTENTION: { label: "Attention", motion: "point-out", color: "#6366f1", expression: "focus" },
+  PREFER: { label: "Prefer", motion: "thumbs", color: "#6366f1", expression: "smile" },
+  LARGE: { label: "Large", motion: "spread-hands", color: "#6366f1", expression: "focus" },
+  USEFUL: { label: "Useful", motion: "thumbs", color: "#6366f1", expression: "smile" },
+  LANGUAGE: { label: "Language", motion: "sign", color: "#6366f1", expression: "focus" },
+  GENERATE: { label: "Generate", motion: "snap", color: "#6366f1", expression: "focus" },
+  POWER: { label: "Power", motion: "knuckles", color: "#6366f1", expression: "focus" },
+  FEEDBACK: { label: "Feedback", motion: "chin-forward", color: "#6366f1", expression: "focus" },
+  CHIP: { label: "Chip", motion: "flat-hand", color: "#6366f1", expression: "focus" },
+  PERSON: { label: "Person", motion: "point-out", color: "#6366f1", expression: "focus" },
+  ASSISTANT: { label: "Assistant", motion: "lift", color: "#6366f1", expression: "focus" },
+  AI: { label: "AI", motion: "sign", color: "#6366f1", expression: "focus" },
+  CHATBOT: { label: "Chatbot", motion: "computer", color: "#6366f1", expression: "focus" },
+  INTERNET: { label: "Internet", motion: "spread-hands", color: "#6366f1", expression: "focus" },
+  SCRIPT: { label: "Script", motion: "flat-hand", color: "#6366f1", expression: "focus" },
+  LIST: { label: "List", motion: "flat-hand", color: "#6366f1", expression: "focus" },
+  THOUSAND: { label: "Thousand", motion: "asl-number", color: "#6366f1", expression: "focus" },
+  BILLION: { label: "Billion", motion: "asl-number", color: "#6366f1", expression: "focus" },
+  FEW: { label: "Few", motion: "some", color: "#6366f1", expression: "focus" },
+  GAVE: { label: "Gave", motion: "lift", color: "#6366f1", expression: "focus" },
+  ONLY: { label: "Only", motion: "point-self", color: "#6366f1", expression: "focus" },
+  BOTH: { label: "Both", motion: "combine", color: "#6366f1", expression: "focus" },
+  THROUGH: { label: "Through", motion: "into", color: "#6366f1", expression: "focus" },
+
+  // Common general-content verbs (simpleGloss's verbSet lists these for SOV reordering,
+  // so a real sign must exist or they fall to [CONCEPT:x] — WINNER etc. lemmatize to these).
+  WIN: { label: "Win", motion: "thumbs", color: "#6366f1", expression: "smile" },
+  LOSE: { label: "Lose", motion: "thumbs-down", color: "#6366f1", expression: "firm" },
+  PLAY: { label: "Play", motion: "snap", color: "#6366f1", expression: "smile" },
+  LIVE: { label: "Live", motion: "point-self", color: "#6366f1", expression: "focus" },
+  LOVE: { label: "Love", motion: "circle-chest", color: "#6366f1", expression: "smile" },
+  HATE: { label: "Hate", motion: "thumbs-down", color: "#6366f1", expression: "firm" },
+  SING: { label: "Sing", motion: "chin-forward", color: "#6366f1", expression: "smile" },
+  BUY: { label: "Buy", motion: "lift", color: "#6366f1", expression: "focus" },
+  SPEAK: { label: "Speak", motion: "chin-forward", color: "#6366f1", expression: "focus" },
+  OPEN: { label: "Open", motion: "out", color: "#6366f1", expression: "focus" },
+  WATCH: { label: "Watch", motion: "asl-see", color: "#6366f1", expression: "focus" },
+
+  // Remaining verbSet entries missing a real sign (same reasoning as above) plus DESCENT,
+  // the noun half of "gradient descent" — core to the project's own neural-network demo.
+  DEFINE: { label: "Define", motion: "y-hand", color: "#6366f1", expression: "focus" },
+  MINIMIZE: { label: "Minimize", motion: "down", color: "#6366f1", expression: "focus" },
+  MAXIMIZE: { label: "Maximize", motion: "up", color: "#6366f1", expression: "focus" },
+  OPTIMIZE: { label: "Optimize", motion: "knuckles", color: "#6366f1", expression: "focus" },
+  ADJUST: { label: "Adjust", motion: "waggle", color: "#6366f1", expression: "focus" },
+  UPDATE: { label: "Update", motion: "snap", color: "#6366f1", expression: "focus" },
+  CONVERT: { label: "Convert", motion: "waggle", color: "#6366f1", expression: "focus" },
+  PRODUCE: { label: "Produce", motion: "knuckles", color: "#6366f1", expression: "focus" },
+  BECOME: { label: "Become", motion: "waggle", color: "#6366f1", expression: "focus" },
+  ALLOW: { label: "Allow", motion: "thumbs", color: "#6366f1", expression: "smile" },
+  PASS: { label: "Pass", motion: "out", color: "#6366f1", expression: "focus" },
+  DESCENT: { label: "Descent", motion: "down", color: "#6366f1", expression: "focus" },
 };
 
 const FINGER_NAMES = ["thumb", "index", "middle", "ring", "pinky"];
@@ -430,7 +596,17 @@ function lemmatizeForDictionary(word) {
   return null;
 }
 
-function getSignInfo(word) {
+// Extract the spellable characters from any gloss token, for fingerspelling.
+// [FINGERSPELL:GPT] -> "GPT", [NUMBER:42] -> "42", [CONCEPT:mathematics] -> "MATHEMATICS",
+// HELLO -> "HELLO". Returns "" when nothing spellable remains.
+function glossWordToLetters(word) {
+  const s = String(word || "").trim().toUpperCase();
+  const tag = s.match(/^\[(?:FINGERSPELL|CONCEPT|NUMBER):(.+)\]$/);
+  const inner = tag ? tag[1] : s;
+  return inner.replace(/[^A-Z0-9]/g, "");
+}
+
+function getSignInfo(word, fingerspellMode = false) {
   const s = String(word || "").trim().toUpperCase();
   if (!s) {
     return { label: "Ready", motion: "idle", color: "#64748b", expression: "neutral" };
@@ -439,15 +615,22 @@ function getSignInfo(word) {
   const fsMatch = s.match(/^\[FINGERSPELL:([A-Z0-9]+)\]$/);
   const conceptMatch = s.match(/^\[CONCEPT:(.+)\]$/);
   const numMatch = s.match(/^\[NUMBER:(\d+)\]$/);
-  if (fsMatch || conceptMatch || numMatch) {
-    // Proper noun / no-sign concept / raw number — no dictionary sign exists for these.
-    // The avatar pauses rather than fingerspelling or overlaying explanatory text on screen.
-    const label = fsMatch
-      ? fsMatch[1]
-      : conceptMatch
-        ? conceptMatch[1].replace(/[^A-Za-z\s]/g, "").toUpperCase().trim()
-        : "#" + numMatch[1];
-    return { label, motion: "idle", color: "#64748b", expression: "neutral" };
+
+  // Fingerspell mode: every word is spelled out letter-by-letter so the viewer can
+  // verify each handshape. Even concept/number tags are spelled by their inner text.
+  if (fingerspellMode) {
+    const letters = glossWordToLetters(s);
+    if (letters) {
+      return { label: letters, motion: "fingerspell", color: "#38bdf8", expression: "focus", letters };
+    }
+    return { label: s, motion: "idle", color: "#64748b", expression: "neutral" };
+  }
+
+  // Normal mode: proper nouns, numbers, and concepts without an authored sign
+  // fingerspell automatically so an unknown word never becomes a silent avatar pause.
+  if (fsMatch || numMatch || conceptMatch) {
+    const letters = glossWordToLetters(s);
+    return { label: letters, motion: "fingerspell", color: "#38bdf8", expression: "focus", letters };
   }
 
   const upper = s.replace(/[^A-Z]/g, "");
@@ -456,8 +639,14 @@ function getSignInfo(word) {
   if (lemma) return lemma;
 
   // No dictionary sign available for this word (and no inflected form matched one either).
-  // The avatar pauses rather than fingerspelling or showing any text overlay.
-  return { label: upper || s.slice(0, 20), motion: "idle", color: "#64748b", expression: "neutral" };
+  // Spell it rather than pausing silently.
+  return {
+    label: upper || s.slice(0, 20),
+    motion: "fingerspell",
+    color: "#38bdf8",
+    expression: "focus",
+    letters: upper,
+  };
 }
 
 // Returns "" for bracket-tagged words so loadSignClip skips the network fetch.
@@ -769,7 +958,29 @@ const NUMBER_HANDSHAPES = {
   9: { pose: "nine",  wristX: 0, wristY: 0, wristZ: 0 },
 };
 
-function applyMotion(parts, signInfo, time) {
+// Map a word's progress (0→1 across its time window) to the current fingerspelled letter.
+// Using progress instead of global animation time guarantees EVERY letter is shown within
+// the window, evenly spaced — the old `Math.floor(time * 3)` cycling dropped letters whenever
+// a word's window was shorter than letters/3 seconds, so long words never fully spelled out.
+// Returns [letterIndex, intraLetterPhase(0→1), handshape].
+function fingerspellFrame(signInfo, progress) {
+  const letters = (signInfo.letters || "A")
+    .toUpperCase()
+    .split("")
+    .filter((l) => /[A-Z0-9]/.test(l));
+  const n = letters.length || 1;
+  const clamped = Math.max(0, Math.min(0.999999, progress || 0));
+  const raw = clamped * n;
+  const idx = Math.min(n - 1, Math.floor(raw));
+  const intra = raw - Math.floor(raw);
+  const ch = letters[idx] || "A";
+  const shape =
+    (/[0-9]/.test(ch) ? NUMBER_HANDSHAPES[ch] : FINGERSPELL_HANDSHAPES[ch]) ||
+    FINGERSPELL_HANDSHAPES.A;
+  return [idx, intra, shape];
+}
+
+function applyMotion(parts, signInfo, time, progress = 0) {
   const motion = signInfo.motion;
   const wave = Math.sin(time * 7);
   const slow = Math.sin(time * 2.6);
@@ -1212,12 +1423,11 @@ function applyMotion(parts, signInfo, time) {
       break;
     }
     case "fingerspell": {
-      const letters = (signInfo.letters || "A").toUpperCase().split("").filter((l) => /[A-Z0-9]/.test(l));
-      const letterIndex = letters.length ? Math.floor(time * 3) % letters.length : 0;
-      const currentChar = letters[letterIndex];
-      const shape = (/[0-9]/.test(currentChar) ? NUMBER_HANDSHAPES[currentChar] : FINGERSPELL_HANDSHAPES[currentChar]) || FINGERSPELL_HANDSHAPES.A;
+      const [, intra, shape] = fingerspellFrame(signInfo, progress);
       setEuler(parts.right.shoulder, -0.95, -0.08, -0.55);
-      setEuler(parts.right.elbow, -0.82, 0.0, 0.12);
+      // Small forward "press" at each letter's onset visually separates consecutive letters.
+      const press = Math.sin(Math.min(1, intra * 3) * Math.PI) * 0.08;
+      setEuler(parts.right.elbow, -0.82 - press, 0.0, 0.12);
       parts.right.hand.rotation.set(shape.wristX, shape.wristY, shape.wristZ);
       setFingerPose(parts.right.hand, shape.pose);
       setFingerPose(parts.left.hand, "open");
@@ -1776,7 +1986,7 @@ function applyAuthenticSign(bones, motion, time) {
   }
 }
 
-function applyVrmMotion(parts, signInfo, time) {
+function applyVrmMotion(parts, signInfo, time, progress = 0) {
   const { bones, vrm } = parts;
   const motion = signInfo.motion;
 
@@ -1790,14 +2000,14 @@ function applyVrmMotion(parts, signInfo, time) {
   if (motion === "nod") { setBone(bones, "head", Math.sin(time * 8) * 0.16, 0, 0); return; }
   if (motion === "shake") { setBone(bones, "head", 0, Math.sin(time * 9) * 0.22, 0); return; }
 
-  // Fingerspelling / number handshapes cycle letters on the right hand.
+  // Fingerspelling / number handshapes step through letters on the right hand.
   if (motion === "fingerspell") {
-    const letters = (signInfo.letters || "A").toUpperCase().split("").filter((l) => /[A-Z0-9]/.test(l));
-    const idx = letters.length ? Math.floor(time * 3) % letters.length : 0;
-    const ch = letters[idx];
-    const shape = (/[0-9]/.test(ch) ? NUMBER_HANDSHAPES[ch] : FINGERSPELL_HANDSHAPES[ch]) || FINGERSPELL_HANDSHAPES.A;
+    const [, intra, shape] = fingerspellFrame(signInfo, progress);
     setArmAnchor(bones, "right", ARM_RAISE);
-    setBone(bones, "rightHand", shape.wristX, shape.wristY, shape.wristZ);
+    // A small forward "press" at each letter's onset gives visible separation between
+    // consecutive letters — and between repeated letters — so the viewer can count them.
+    const press = Math.sin(Math.min(1, intra * 3) * Math.PI) * 0.05;
+    setBone(bones, "rightHand", shape.wristX - press, shape.wristY, shape.wristZ);
     setVrmFingerPose(bones, "right", shape.pose);
     return;
   }
@@ -2059,7 +2269,7 @@ function SignAvatar3D({ signInfo, signClip, wordProgress, active, activeNMM, sna
 
         // Apply current sign motion — this sets bones to the target pose.
         if (!clip || !applyVrmClip(vrmParts, clip, progress, time)) {
-          applyVrmMotion(vrmParts, info, time);
+          applyVrmMotion(vrmParts, info, time, progress);
         }
 
         // Cross-sign transition: lerp from the snapshotted previous pose toward the
@@ -2127,7 +2337,7 @@ function SignAvatar3D({ signInfo, signClip, wordProgress, active, activeNMM, sna
           : info.expression;
 
         applyExpression(fallbackParts, nmmExpression, time);
-        applyMotion(fallbackParts, info, time);
+        applyMotion(fallbackParts, info, time, progress);
 
         if (nmmType === "negation") {
           fallbackParts.head.rotation.y = Math.sin(time * 9) * (nmm?.headY ?? 0.22);
@@ -2165,9 +2375,29 @@ function SignAvatar3D({ signInfo, signClip, wordProgress, active, activeNMM, sna
 
 const NEUTRAL_NMM = { type: "neutral", wordIndex: -1, headY: 0 };
 
+// Primitives shared with the dev-only pose tuner (pages/PoseTunerPage.js). The tuner MUST
+// drive bones through these exact functions so that a clip authored in it renders identically
+// during playback — the previous clip set was disabled precisely because it was authored
+// against a different rest-pose assumption than playback used. Keep this the single code path.
+export const tunerApi = {
+  VRM_MODEL_URL,
+  createVrmParts,
+  setBone,
+  resetVrmPose,
+  setVrmFingerPose,
+  applyVrmExpression,
+  fitVrmToScene,
+  tintVrmClothing,
+  CLOTHING_COLOR,
+  // Bones a clip keyframe addresses, and the finger/expression vocabularies the tuner offers.
+  CLIP_BONES: ["rightUpperArm", "rightLowerArm", "rightHand", "leftUpperArm", "leftLowerArm", "leftHand", "head"],
+  FINGER_POSES: ["relaxed", "flat", "fist", "point", "thumb", "y", "spell", "two", "three", "five", "six", "seven", "eight", "nine"],
+  EXPRESSIONS: ["neutral", "smile", "soft", "sad", "firm", "question", "focus"],
+};
+
 // playbackSpeed < 1 activates learning mode: word timing windows are stretched so the
 // avatar signs slower than the video — driven by applySlowPlayback from timelineScheduler.
-export default function SignAvatar({ caption, isActive, currentTime = 0, sentenceNMM = NEUTRAL_NMM, playbackSpeed = 1.0 }) {
+export default function SignAvatar({ caption, isActive, currentTime = 0, sentenceNMM = NEUTRAL_NMM, playbackSpeed = 1.0, fingerspellMode = false }) {
   const [signClip, setSignClip] = useState(null);
 
   // Word timing via resolveSignState (single source of truth in timelineScheduler).
@@ -2181,15 +2411,26 @@ export default function SignAvatar({ caption, isActive, currentTime = 0, sentenc
     const { wordIndex, wordProgress, isCatchingUp } = resolveSignState(
       caption,
       currentTime * 1000,
-      playbackSpeed
+      playbackSpeed,
+      fingerspellMode
     );
     return { wordIndex, wordProgress, isCatchingUp };
-  }, [caption, currentTime, isActive, playbackSpeed]);
+  }, [caption, currentTime, isActive, playbackSpeed, fingerspellMode]);
 
   const words = caption?.words ?? [];
 
   const currentWord = words[wordIndex] || "";
-  const signInfo = getSignInfo(currentWord);
+  const signInfo = getSignInfo(currentWord, fingerspellMode);
+
+  // When the current word is being fingerspelled, expose its letters + the active letter
+  // (derived from wordProgress, same mapping the avatar uses) so the strip below can show
+  // the viewer exactly which letter is on the hand right now and that none were skipped.
+  const spellLetters = signInfo.motion === "fingerspell" && signInfo.letters
+    ? signInfo.letters.split("")
+    : [];
+  const activeLetterIdx = spellLetters.length
+    ? Math.min(spellLetters.length - 1, Math.floor(Math.max(0, wordProgress) * spellLetters.length))
+    : -1;
 
   // Resolve word-onset NMM: only activate once avatar reaches the triggering word.
   // effectiveNMM neutralizes the NMM until currentWordIndex >= nmm.wordIndex.
@@ -2251,6 +2492,26 @@ export default function SignAvatar({ caption, isActive, currentTime = 0, sentenc
                   title={displayGlossWord(word)}
                 />
               ))}
+            </div>
+          )}
+
+          {spellLetters.length > 0 && (
+            <div className="fingerspell-strip" aria-label={`Fingerspelling ${signInfo.label}`}>
+              <div className="fingerspell-letters">
+                {spellLetters.map((ch, index) => (
+                  <span
+                    key={`${ch}-${index}`}
+                    className={`fs-letter ${index === activeLetterIdx ? "active" : ""} ${
+                      index < activeLetterIdx ? "done" : ""
+                    }`}
+                  >
+                    {ch}
+                  </span>
+                ))}
+              </div>
+              <span className="fingerspell-count">
+                letter {activeLetterIdx + 1} of {spellLetters.length}
+              </span>
             </div>
           )}
 

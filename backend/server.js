@@ -7,6 +7,8 @@ const rateLimit = require("express-rate-limit");
 const axios = require("axios");
 
 const rootEnvPath = path.resolve(__dirname, "../.env");
+const DEMO_VIDEO_ID = "aircAruvnKk"; // 3Blue1Brown - Neural Networks
+const DEMO_MIN_CACHE_SEGMENTS = 50;
 
 dotenv.config({ path: rootEnvPath });
 dotenv.config({ path: path.resolve(__dirname, ".env") });
@@ -28,6 +30,7 @@ const videoRoutes = require("./routes/video");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+app.set("trust proxy", 1);
 
 // ── Persistent file cache ────────────────────────────────────────────────────
 // Two-layer cache: hot (Map) + cold (JSON files in backend/cache/).
@@ -41,6 +44,23 @@ try {
   // Ignore — directory may already exist or be read-only in some CI envs.
 }
 
+function normalizeCachePayload(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (payload && Array.isArray(payload.results)) return payload.results;
+  return null;
+}
+
+function isUsableCache(videoId, results) {
+  if (!Array.isArray(results) || results.length === 0) return false;
+  if (videoId === DEMO_VIDEO_ID && results.length < DEMO_MIN_CACHE_SEGMENTS) return false;
+  return results.every((item) =>
+    item &&
+    typeof item.start === "number" &&
+    typeof item.end === "number" &&
+    typeof item.text === "string"
+  );
+}
+
 function cacheFilePath(videoId) {
   // Sanitize videoId to safe filename — only alphanumeric, dash, underscore.
   const safe = String(videoId).replace(/[^A-Za-z0-9_-]/g, "_");
@@ -50,7 +70,9 @@ function cacheFilePath(videoId) {
 function readFileCache(videoId) {
   try {
     const raw = fs.readFileSync(cacheFilePath(videoId), "utf8");
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    const results = normalizeCachePayload(parsed);
+    return isUsableCache(videoId, results) ? results : null;
   } catch {
     return null;
   }
@@ -58,7 +80,10 @@ function readFileCache(videoId) {
 
 function writeFileCache(videoId, data) {
   try {
-    fs.writeFileSync(cacheFilePath(videoId), JSON.stringify(data), "utf8");
+    const targetPath = cacheFilePath(videoId);
+    const tempPath = `${targetPath}.tmp`;
+    fs.writeFileSync(tempPath, JSON.stringify(data), "utf8");
+    fs.renameSync(tempPath, targetPath);
   } catch (err) {
     console.warn(`[cache] Could not write file cache for ${videoId}: ${err.message}`);
   }
@@ -194,19 +219,28 @@ app.get("/api/cache/:videoId", (req, res) => {
 
 // Health check
 app.get("/health", (req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
+  res.json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    deploymentCommit: process.env.RENDER_GIT_COMMIT || null,
+  });
 });
 
 // Pre-warm the demo lecture cache 3 seconds after startup.
 // Best-effort: failures are logged and ignored.
-const DEMO_VIDEO_ID = "aircAruvnKk"; // 3Blue1Brown - Neural Networks
+const SHOULD_PREFETCH_DEMO = /^true$/i.test(process.env.SIGNOLIGHT_PREFETCH_DEMO || "");
+
+function warmDemoFromFileCache() {
+  const existing = readFileCache(DEMO_VIDEO_ID);
+  if (!existing || existing.length === 0) return false;
+  videoCache.set(DEMO_VIDEO_ID, existing);
+  console.log(`[cache] Demo lecture loaded from file cache (${existing.length} segments).`);
+  return true;
+}
 
 async function prefetchDemoLecture() {
   // Skip if file cache already has the demo — avoids redundant API calls on restart.
-  const existing = readFileCache(DEMO_VIDEO_ID);
-  if (existing && existing.length > 0) {
-    videoCache.set(DEMO_VIDEO_ID, existing);
-    console.log(`[cache] Demo lecture loaded from file cache (${existing.length} segments).`);
+  if (warmDemoFromFileCache()) {
     return;
   }
 
@@ -243,7 +277,9 @@ async function prefetchDemoLecture() {
 if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`SignLearn backend running on http://localhost:${PORT}`);
-    setTimeout(prefetchDemoLecture, 3000);
+    if (!warmDemoFromFileCache() && SHOULD_PREFETCH_DEMO) {
+      setTimeout(prefetchDemoLecture, 3000);
+    }
   });
 }
 

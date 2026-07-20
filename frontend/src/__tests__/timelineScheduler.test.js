@@ -37,6 +37,16 @@ describe("computeWordTimings", () => {
   it("returns empty array for null caption", () => {
     expect(computeWordTimings(null)).toHaveLength(0);
   });
+
+  it("gives unknown and Bangla words enough time for every character", () => {
+    const timings = computeWordTimings({
+      start: 0,
+      end: 6000,
+      words: ["HELLO", "[CONCEPT:iron]", "[BANGLA:আমার]"],
+    });
+    expect(timings[1].durationMs).toBeGreaterThan(timings[0].durationMs);
+    expect(timings[2].word).toBe("[BANGLA:আমার]");
+  });
 });
 
 // ---------------------------------------------------------------------------

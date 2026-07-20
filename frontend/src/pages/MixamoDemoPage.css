@@ -1,0 +1,401 @@
+.mixamo-demo-page {
+  --mx-accent: #e0ff6b;
+  --mx-panel: #101317;
+  --mx-border: rgba(255, 255, 255, 0.12);
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  color: #f7f8f3;
+  background: #070809;
+}
+
+.mixamo-demo-header {
+  min-height: 78px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 18px;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--mx-border);
+  background: rgba(7, 8, 9, 0.96);
+}
+
+.mixamo-demo-header h1 {
+  margin: 1px 0 0;
+  font-family: var(--font-display);
+  font-size: 21px;
+  line-height: 1.1;
+}
+
+.mixamo-kicker,
+.mixamo-section-label {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.48);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+
+.mixamo-header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.mixamo-view-btn,
+.mixamo-group-tabs button,
+.mixamo-gesture-grid button {
+  border: 1px solid var(--mx-border);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.68);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.mixamo-view-btn {
+  padding: 9px 13px;
+  border-radius: 999px;
+}
+
+.mixamo-view-btn.active,
+.mixamo-view-btn:hover {
+  border-color: var(--mx-accent);
+  color: #0a0b08;
+  background: var(--mx-accent);
+}
+
+.mixamo-demo-main {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 370px;
+  overflow: hidden;
+}
+
+.mixamo-stage-panel {
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+  border-right: 1px solid var(--mx-border);
+}
+
+.mixamo-stage-panel .mixamo-avatar {
+  height: 100%;
+  min-height: 0;
+}
+
+.mixamo-stage-label {
+  position: absolute;
+  left: 42px;
+  bottom: 38px;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 15px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  background: rgba(4, 5, 6, 0.72);
+  backdrop-filter: blur(12px);
+}
+
+.mixamo-stage-label span {
+  color: rgba(255, 255, 255, 0.46);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.mixamo-stage-label strong {
+  color: var(--mx-accent);
+  font-family: var(--font-display);
+  font-size: 22px;
+}
+
+.mixamo-controls {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    var(--mx-panel);
+  background-size: 100% 34px;
+}
+
+.mixamo-rig-card {
+  padding: 16px;
+  border: 1px solid var(--mx-border);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.mixamo-rig-heading {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 16px;
+}
+
+.mixamo-rig-heading div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.mixamo-rig-heading strong {
+  font-size: 13px;
+}
+
+.mixamo-rig-heading span {
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 11px;
+}
+
+.rig-light {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #64748b;
+  box-shadow: 0 0 0 5px rgba(100, 116, 139, 0.12);
+}
+
+.rig-light.ready {
+  background: var(--mx-accent);
+  box-shadow: 0 0 16px rgba(224, 255, 107, 0.75);
+}
+
+.rig-metric {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-top: 13px;
+  border-top: 1px solid var(--mx-border);
+}
+
+.rig-metric span {
+  color: rgba(255, 255, 255, 0.52);
+  font-size: 12px;
+}
+
+.rig-metric strong {
+  color: var(--mx-accent);
+  font-family: var(--font-display);
+  font-size: 20px;
+}
+
+.mixamo-rig-error {
+  margin: 12px 0 0;
+  color: #ff8d8d;
+  font-size: 12px;
+}
+
+.mixamo-sentence-progress {
+  margin-top: 4px;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 11px;
+  font-style: normal;
+}
+
+.mixamo-sentence-card {
+  padding: 16px;
+  border: 1px solid var(--mx-border);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.mixamo-sentence-input-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.mixamo-sentence-input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--mx-border);
+  border-radius: 9px;
+  background: rgba(0, 0, 0, 0.3);
+  color: #f7f8f3;
+  font: inherit;
+  font-size: 13px;
+}
+
+.mixamo-sentence-input:focus {
+  outline: none;
+  border-color: var(--mx-accent);
+}
+
+.mixamo-sentence-btn {
+  padding: 0 16px;
+  border: 1px solid var(--mx-accent);
+  border-radius: 9px;
+  background: var(--mx-accent);
+  color: #0a0b08;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.mixamo-sentence-btn.stop {
+  border-color: rgba(255, 141, 141, 0.65);
+  background: transparent;
+  color: #ff8d8d;
+}
+
+.mixamo-sentence-card .mixamo-note {
+  margin: 12px 0 0;
+}
+
+.mixamo-group-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.mixamo-group-tabs button {
+  min-height: 42px;
+  padding: 7px;
+  border-radius: 9px;
+}
+
+.mixamo-group-tabs button.active {
+  border-color: rgba(224, 255, 107, 0.65);
+  color: var(--mx-accent);
+  background: rgba(224, 255, 107, 0.06);
+}
+
+.mixamo-gesture-section {
+  min-height: 0;
+}
+
+.mixamo-gesture-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.mixamo-gesture-grid.alphabet {
+  grid-template-columns: repeat(6, 1fr);
+}
+
+.mixamo-gesture-grid.bangla {
+  grid-template-columns: repeat(6, 1fr);
+}
+
+.mixamo-gesture-grid.bangla button {
+  font-family: "Noto Sans Bengali", "Hind Siliguri", sans-serif;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.mixamo-gesture-grid button {
+  min-height: 40px;
+  border-radius: 9px;
+}
+
+.mixamo-gesture-grid button:hover,
+.mixamo-gesture-grid button.active {
+  border-color: var(--mx-accent);
+  color: #0a0b08;
+  background: var(--mx-accent);
+}
+
+.mixamo-note {
+  margin: auto 0 0;
+  padding: 14px;
+  border-left: 2px solid var(--mx-accent);
+  color: rgba(255, 255, 255, 0.52);
+  font-size: 11px;
+  line-height: 1.6;
+  background: rgba(224, 255, 107, 0.035);
+}
+
+@media (max-width: 980px) {
+  .mixamo-demo-main {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(260px, 55%) minmax(0, 45%);
+  }
+
+  .mixamo-stage-panel {
+    min-height: 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--mx-border);
+  }
+}
+
+@media (max-height: 800px) {
+  .mixamo-demo-header {
+    min-height: 64px;
+    padding-block: 9px;
+  }
+
+  .mixamo-controls {
+    gap: 14px;
+    padding: 14px;
+  }
+
+  .mixamo-rig-card {
+    padding: 12px;
+  }
+
+  .mixamo-rig-heading {
+    margin-bottom: 10px;
+  }
+
+  .mixamo-group-tabs button {
+    min-height: 36px;
+  }
+
+  .mixamo-gesture-grid {
+    gap: 6px;
+  }
+
+  .mixamo-gesture-grid button {
+    min-height: 34px;
+  }
+
+  .mixamo-note {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .mixamo-demo-header {
+    grid-template-columns: auto 1fr;
+    padding: 12px 14px;
+  }
+
+  .mixamo-header-actions {
+    grid-column: 1 / -1;
+  }
+
+  .mixamo-view-btn {
+    flex: 1;
+  }
+
+  .mixamo-controls {
+    padding: 16px;
+  }
+
+  .mixamo-stage-label {
+    left: 24px;
+    bottom: 24px;
+  }
+}

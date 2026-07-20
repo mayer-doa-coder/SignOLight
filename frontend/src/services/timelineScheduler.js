@@ -37,7 +37,7 @@
  * @param {object} caption - { start, end, words: string[], spokenTimings?: Array }
  * @returns {Array<{ word, index, startMs, endMs, durationMs }>}
  */
-export function computeWordTimings(caption) {
+export function computeWordTimings(caption, fingerspellMode = false) {
   const words = caption?.words ?? [];
   if (words.length === 0) return [];
 
@@ -58,8 +58,30 @@ export function computeWordTimings(caption) {
 
   const duration = Math.max(1, effectiveEnd - effectiveStart);
 
+  // Fingerspell mode weights each word by its spellable letter count (the bracket tag,
+  // e.g. [FINGERSPELL:GPT], is stripped first) so long words get proportionally more of the
+  // window to spell out. Normal mode weights by syllable count for natural sign pacing.
   const charCounts = words.map((w) => {
-    const clean = String(w).replace(/[^A-Za-z]/g, "").toUpperCase();
+    const raw = String(w);
+    const banglaTag = raw.match(/^\[BANGLA:(.+)\]$/u);
+    if (banglaTag) {
+      return Math.max(
+        1,
+        [...banglaTag[1].normalize("NFC")].filter((character) =>
+          /[\u0980-\u09FF]/u.test(character) && !["্", "়"].includes(character)
+        ).length
+      );
+    }
+
+    const spellingTag = raw.match(/^\[(?:FINGERSPELL|CONCEPT|NUMBER):(.+)\]$/i);
+    if (spellingTag) {
+      return Math.max(1, spellingTag[1].replace(/[^A-Za-z0-9]/g, "").length);
+    }
+
+    if (fingerspellMode) {
+      return Math.max(1, raw.replace(/[^A-Za-z0-9]/g, "").length);
+    }
+    const clean = raw.replace(/[^A-Za-z]/g, "").toUpperCase();
     const syllables = clean.match(/[AEIOU]+/g);
     return Math.max(1, syllables ? syllables.length : 1);
   });
@@ -71,7 +93,7 @@ export function computeWordTimings(caption) {
     cumulative += charCounts[i];
     const wordEnd = effectiveStart + (cumulative / totalChars) * duration;
     return {
-      word: String(word).toUpperCase().replace(/[^A-Z[\]:]/g, ""),
+      word: String(word),
       index: i,
       startMs: wordStart,
       endMs: wordEnd,
@@ -100,12 +122,12 @@ const SNAP_THRESHOLD = 0.65;
  * @param {number} [speedFactor]  - playback speed (1.0 = normal, <1 = slow / learning mode)
  * @returns {{ wordIndex, wordProgress, wordTiming, isActive, isCatchingUp }}
  */
-export function resolveSignState(caption, currentTimeMs, speedFactor = 1.0) {
+export function resolveSignState(caption, currentTimeMs, speedFactor = 1.0, fingerspellMode = false) {
   if (!caption) {
     return { wordIndex: 0, wordProgress: 0, wordTiming: null, isActive: false, isCatchingUp: false };
   }
 
-  let timings = computeWordTimings(caption);
+  let timings = computeWordTimings(caption, fingerspellMode);
   if (speedFactor > 0 && speedFactor < 1) {
     timings = applySlowPlayback(timings, speedFactor);
   }
