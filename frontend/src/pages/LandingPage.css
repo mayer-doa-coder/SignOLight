@@ -53,6 +53,53 @@
   background: rgba(255, 255, 255, 0.06);
 }
 
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.nav-link-accent {
+  border-color: rgba(224, 255, 107, 0.5);
+  color: #e0ff6b;
+}
+
+.landing-mixamo {
+  --lp-border-strong: rgba(224, 255, 107, 0.62);
+}
+
+.avatar-mode-switch {
+  display: inline-flex;
+  gap: 4px;
+  margin: 0 auto 26px;
+  padding: 4px;
+  border: 1px solid var(--lp-border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.avatar-mode-switch button {
+  padding: 9px 15px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--lp-text-muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.avatar-mode-switch button.active {
+  color: #000000;
+  background: #ffffff;
+}
+
+.landing-mixamo .avatar-mode-switch button.active,
+.landing-mixamo .hero-btn {
+  background: #e0ff6b;
+}
+
 /* Hero */
 .landing-hero {
   position: relative;
@@ -283,6 +330,15 @@
 @media (max-width: 640px) {
   .landing-nav {
     padding: 18px 20px;
+  }
+
+  .nav-actions {
+    gap: 6px;
+  }
+
+  .nav-link {
+    padding: 8px 11px;
+    font-size: 11px;
   }
 
   .hero-input-wrapper {

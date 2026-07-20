@@ -5,4 +5,11 @@ node_modules/
 frontend/build/
 frontend/.env
 backend/.env
-backend/cache/
+# Ship real video caches so Render can serve them before contacting YouTube.
+# Render's free runtime filesystem is ephemeral, so an ignored local cache is
+# not a deployment cache. Keep only diagnostics and mutable gap telemetry out.
+backend/cache/*
+!backend/cache/*.json
+backend/cache/long-video-probe.json
+backend/cache/probe-demo-video.json
+backend/cache/vocabulary_gaps.json

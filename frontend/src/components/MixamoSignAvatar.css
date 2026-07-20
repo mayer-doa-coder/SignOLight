@@ -1,0 +1,110 @@
+.mixamo-sign-avatar {
+  flex: 1;
+  min-height: 520px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #070809;
+}
+
+.mixamo-player-stage {
+  flex: 1;
+  min-height: 470px;
+}
+
+.mixamo-player-stage .mixamo-avatar {
+  min-height: 470px;
+}
+
+.mixamo-player-idle {
+  margin: 0;
+  padding: 12px;
+  color: var(--text-muted);
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.mixamo-spelling-strip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 9px 12px;
+  border-top: 1px solid rgba(224, 255, 107, 0.12);
+  background: rgba(224, 255, 107, 0.035);
+}
+
+.mixamo-spelling-strip strong {
+  color: #e0ff6b;
+  font-size: 12px;
+}
+
+.mixamo-spelling-strip > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 5px;
+}
+
+.mixamo-spelling-strip span {
+  min-width: 25px;
+  padding: 4px 7px;
+  border: 1px solid rgba(224, 255, 107, 0.18);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.48);
+  font-family: "Noto Sans Bengali", "Hind Siliguri", var(--font-display);
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+}
+
+.mixamo-spelling-strip span.active {
+  color: #0a0b08;
+  border-color: #e0ff6b;
+  background: #e0ff6b;
+  transform: translateY(-1px) scale(1.12);
+}
+
+.mixamo-spelling-strip span.done {
+  opacity: 0.38;
+}
+
+.mixamo-player-gloss {
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  padding: 8px 12px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mixamo-player-gloss span {
+  padding: 3px 6px;
+  border-radius: 5px;
+  color: rgba(255, 255, 255, 0.42);
+  background: rgba(255, 255, 255, 0.04);
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.mixamo-player-gloss span.active {
+  color: #0a0b08;
+  background: #e0ff6b;
+}
+
+.mixamo-player-gloss span.done {
+  opacity: 0.38;
+}
+
+@media (max-width: 900px) {
+  .mixamo-sign-avatar,
+  .mixamo-player-stage,
+  .mixamo-player-stage .mixamo-avatar {
+    min-height: 0;
+  }
+}

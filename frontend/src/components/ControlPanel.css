@@ -13,6 +13,40 @@
   overflow: hidden;
 }
 
+.language-btns {
+  display: flex;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+}
+
+.language-btns button {
+  padding: 6px 10px;
+  border: 0;
+  border-right: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font-family: "Noto Sans Bengali", "Hind Siliguri", var(--font-body);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.language-btns button:last-child {
+  border-right: 0;
+}
+
+.language-btns button.active {
+  color: #000;
+  background: var(--text-primary);
+}
+
+.language-btns button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
 .layout-btn {
   padding: 6px 12px;
   background: transparent;
